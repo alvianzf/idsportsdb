@@ -1,0 +1,27 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.production
+*.log
+.DS_Store
+
+# Prisma
+apps/api/prisma/migrations/dev.db
+
+# Uploads (local dev storage)
+apps/api/uploads/*
+!apps/api/uploads/.gitkeep
+
+# Capacitor / mobile build outputs
+apps/web/android/
+apps/web/ios/
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+*.pdf
+specs/

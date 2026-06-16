@@ -1,0 +1,327 @@
+// KONI Batam — Prisma schema
+// See specs/004-atlet/spec.md etc. for the spec each model implements.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  SUPER_ADMIN_KONI
+  ADMIN_KONI
+  ADMIN_CABOR
+  ATLET
+}
+
+enum Gender {
+  L // Laki-laki
+  P // Perempuan
+}
+
+enum AthleteStatus {
+  ACTIVE
+  INACTIVE
+  INJURED
+  TRAINING_CAMP // pemusatan latihan
+  TRANSFERRED // mutasi
+}
+
+enum AthleteLevel {
+  PEMULA
+  DAERAH
+  PROVINSI
+  NASIONAL
+  INTERNASIONAL
+}
+
+enum CompetitionLevel {
+  KOTA
+  PROVINSI
+  NASIONAL
+  INTERNASIONAL
+}
+
+enum Medal {
+  GOLD
+  SILVER
+  BRONZE
+  NONE
+}
+
+enum DocumentType {
+  KTP
+  KK
+  AKTA_KELAHIRAN
+  PAS_FOTO
+  SERTIFIKAT_PRESTASI
+}
+
+enum MonitoringEventType {
+  INJURY
+  MUTATION
+  TRAINING_CAMP
+  SELECTION
+  STATUS_CHANGE
+}
+
+enum MutationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+model User {
+  id               String   @id @default(uuid())
+  email            String   @unique
+  passwordHash     String
+  role             Role
+  fullName         String
+  isActive         Boolean  @default(true)
+
+  // Required for ADMIN_CABOR; null for other roles (spec 001)
+  cabangOlahragaId String?
+  cabangOlahraga   CabangOlahraga? @relation(fields: [cabangOlahragaId], references: [id])
+
+  // Links an ATLET-role user to their own athlete record (spec 001, 004)
+  athleteId        String?  @unique
+  athlete          Atlet?   @relation(fields: [athleteId], references: [id])
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  auditLogs        AuditLog[]
+  monitoringEvents MonitoringEvent[] @relation("MonitoringCreatedBy")
+  articles         Article[]
+
+  @@index([cabangOlahragaId])
+}
+
+model CabangOlahraga {
+  id          String   @id @default(uuid())
+  nama        String   @unique
+  ketuaCabor  String?
+  sekretariat String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  atlets        Atlet[]
+  pelatihs      Pelatih[]
+  pengurus      PengurusCabor[]
+  users         User[]
+  atletTambahan AtletCabor[]
+
+  // jumlahAtlet / jumlahPelatih (Modul E) are derived via _count, not stored;
+  // jumlahAtlet includes athletes whose primary cabor is this one plus those
+  // who additionally compete here via AtletCabor (atletTambahan).
+}
+
+model Atlet {
+  id                String        @id @default(uuid())
+  nomorIndukAtlet   String        @unique
+  nomorRegistrasi   String        @unique
+  namaLengkap       String
+  nik               String        @unique
+  tempatLahir       String
+  tanggalLahir      DateTime
+  jenisKelamin      Gender
+  alamat            String
+  // Not in the source PDF field list; added to support the
+  // "data atlet per kecamatan" report (Modul H). See spec 004 open questions.
+  kecamatan         String?
+  nomorHp           String?
+  email             String?
+  fotoUrl           String?
+
+  cabangOlahragaId  String
+  cabangOlahraga    CabangOlahraga @relation(fields: [cabangOlahragaId], references: [id])
+
+  statusAtlet       AthleteStatus @default(ACTIVE)
+  tingkatAtlet      AthleteLevel
+  pendidikan        String?
+  pekerjaan         String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  documents        AtletDocument[]
+  prestasis        Prestasi[]
+  monitoringEvents MonitoringEvent[]
+  cards            AtletCard[]
+  user             User?
+
+  // Additional sport disciplines this athlete also competes in, beyond
+  // their primary `cabangOlahragaId` (spec 004 — multi-cabor athletes).
+  caborTambahan    AtletCabor[]
+
+  @@index([cabangOlahragaId])
+  @@index([statusAtlet])
+  @@index([kecamatan])
+}
+
+// Join table for athletes who compete in more than one sport discipline.
+// `Atlet.cabangOlahragaId` remains the athlete's primary/home cabor; rows
+// here represent additional cabor memberships. See spec 004.
+model AtletCabor {
+  id               String         @id @default(uuid())
+  atletId          String
+  atlet            Atlet          @relation(fields: [atletId], references: [id], onDelete: Cascade)
+  cabangOlahragaId String
+  cabangOlahraga   CabangOlahraga @relation(fields: [cabangOlahragaId], references: [id], onDelete: Cascade)
+  nomorIndukAtlet  String?
+  nomorRegistrasi  String?
+  createdAt        DateTime       @default(now())
+
+  @@unique([atletId, cabangOlahragaId])
+  @@index([cabangOlahragaId])
+}
+
+model AtletDocument {
+  id         String       @id @default(uuid())
+  atletId    String
+  atlet      Atlet        @relation(fields: [atletId], references: [id], onDelete: Cascade)
+  type       DocumentType
+  fileUrl    String
+  uploadedAt DateTime     @default(now())
+
+  @@index([atletId, type])
+}
+
+model Pelatih {
+  id                 String   @id @default(uuid())
+  namaPelatih        String
+  nomorLisensi       String   @unique
+  cabangOlahragaId   String
+  cabangOlahraga     CabangOlahraga @relation(fields: [cabangOlahragaId], references: [id])
+  tingkatanLisensi   String
+  masaBerlakuMulai   DateTime?
+  masaBerlakuAkhir   DateTime?
+  // Free text for v1; normalize to a separate table if structured history is needed (spec 005).
+  riwayatKepelatihan String?  @db.Text
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([cabangOlahragaId])
+}
+
+model PengurusCabor {
+  id               String   @id @default(uuid())
+  cabangOlahragaId String
+  cabangOlahraga   CabangOlahraga @relation(fields: [cabangOlahragaId], references: [id])
+  namaPengurus     String
+  jabatan          String
+  masaBaktiMulai   DateTime
+  masaBaktiAkhir   DateTime
+  kontak           String?
+
+  // Hierarchical org structure (specs/006-pengurus-cabor/spec.md §"Struktur Organisasi")
+  reportsToId      String?
+  reportsTo        PengurusCabor?  @relation("PengurusHierarchy", fields: [reportsToId], references: [id], onDelete: SetNull)
+  reports          PengurusCabor[] @relation("PengurusHierarchy")
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([cabangOlahragaId])
+  @@index([reportsToId])
+}
+
+model Prestasi {
+  id               String   @id @default(uuid())
+  atletId          String
+  atlet            Atlet    @relation(fields: [atletId], references: [id], onDelete: Cascade)
+  namaKejuaraan    String
+  tingkatKejuaraan CompetitionLevel
+  tahun            Int
+  medali           Medal
+  peringkat        Int?
+  sertifikatUrl    String?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([atletId])
+  @@index([tahun])
+  @@index([medali])
+}
+
+// Unified monitoring/timeline log for Modul G (cedera, mutasi, pemusatan latihan,
+// seleksi atlet, perubahan status). See spec 008 for rationale vs. separate tables.
+model MonitoringEvent {
+  id             String          @id @default(uuid())
+  atletId        String
+  atlet          Atlet           @relation(fields: [atletId], references: [id], onDelete: Cascade)
+  type           MonitoringEventType
+  description    String?         @db.Text
+  fromValue      String?
+  toValue        String?
+  mutationStatus MutationStatus? // only meaningful when type = MUTATION
+
+  eventDate      DateTime        @default(now())
+
+  createdById    String
+  createdBy      User            @relation("MonitoringCreatedBy", fields: [createdById], references: [id])
+
+  createdAt      DateTime        @default(now())
+
+  @@index([atletId, type])
+}
+
+// Digital athlete card (Modul I). QR encodes a public verify URL containing cardCode.
+model AtletCard {
+  id           String    @id @default(uuid())
+  atletId      String
+  atlet        Atlet     @relation(fields: [atletId], references: [id], onDelete: Cascade)
+  cardCode     String    @unique
+  qrPayloadUrl String
+  issuedAt     DateTime  @default(now())
+  expiresAt    DateTime?
+  isRevoked    Boolean   @default(false)
+
+  @@index([atletId])
+}
+
+// News/announcement CMS surfaced on the public landing page (specs/011-artikel/spec.md).
+model Article {
+  id            String    @id @default(uuid())
+  title         String
+  slug          String    @unique
+  excerpt       String?
+  content       String    @db.Text
+  coverImageUrl String?
+  published     Boolean   @default(false)
+  publishedAt   DateTime?
+
+  authorId      String
+  author        User      @relation(fields: [authorId], references: [id])
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([published, publishedAt])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String // CREATE | UPDATE | DELETE
+  entity    String // "Atlet", "Pelatih", etc.
+  entityId  String
+  changes   Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+}
