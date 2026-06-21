@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Trash2 } from "lucide-react";
 import { DATA_ADMIN_ROLES, UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Input, Badge, Pagination, Combobox } from "../../components/ui";
+import { Card, PageHeader, Button, Input, Badge, Pagination, Combobox, DataTable, type Column, type BulkAction } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
+import { confirmAction } from "../../lib/confirm";
+import toast from "react-hot-toast";
 
 interface PelatihRow {
   id: string;
@@ -24,6 +26,7 @@ interface CaborOption {
 export function PelatihListPage() {
   const role = useAuthStore((state) => state.user?.role);
   const canCreate = role && DATA_ADMIN_ROLES.includes(role);
+  const canDelete = role && UNSCOPED_ADMIN_ROLES.includes(role);
   const isUnscopedAdmin = role && UNSCOPED_ADMIN_ROLES.includes(role);
 
   const [items, setItems] = useState<PelatihRow[] | null>(null);
@@ -34,6 +37,7 @@ export function PelatihListPage() {
   const [page, setPage] = useState(1);
   const [cabors, setCabors] = useState<CaborOption[]>([]);
   const [error, setError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const pageSize = 20;
 
@@ -66,13 +70,83 @@ export function PelatihListPage() {
     return () => {
       cancelled = true;
     };
-  }, [search, cabor, expiring, page]);
+  }, [search, cabor, expiring, page, reloadKey]);
 
   function isExpiringSoon(date: string | null) {
     if (!date) return false;
     const days = (new Date(date).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
     return days <= 90;
   }
+
+  async function handleBulkDelete(ids: string[]) {
+    const confirmed = await confirmAction({
+      text: `Hapus ${ids.length} pelatih? Tindakan ini tidak dapat dibatalkan.`,
+      danger: true,
+      confirmText: "Hapus",
+    });
+    if (!confirmed) return;
+    const results = await Promise.allSettled(ids.map((id) => api.delete(`/pelatih/${id}`)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed === 0) {
+      toast.success(`${ids.length} pelatih berhasil dihapus.`);
+    } else {
+      toast.error(`${failed} dari ${ids.length} pelatih gagal dihapus.`);
+    }
+    setReloadKey((k) => k + 1);
+  }
+
+  const columns: Column<PelatihRow>[] = [
+    {
+      key: "namaPelatih",
+      label: "Nama",
+      sortable: true,
+      getValue: (p) => p.namaPelatih,
+      render: (p) => (
+        <Link to={`/pelatih/${p.id}`} className="font-medium text-primary hover:underline">
+          {p.namaPelatih}
+        </Link>
+      ),
+    },
+    {
+      key: "cabor",
+      label: "Cabor",
+      sortable: true,
+      getValue: (p) => p.cabangOlahraga.nama,
+      render: (p) => <span className="text-neutral-600">{p.cabangOlahraga.nama}</span>,
+    },
+    {
+      key: "nomorLisensi",
+      label: "Nomor Lisensi",
+      sortable: true,
+      getValue: (p) => p.nomorLisensi,
+      render: (p) => <span className="text-neutral-600">{p.nomorLisensi}</span>,
+    },
+    {
+      key: "tingkatanLisensi",
+      label: "Tingkatan",
+      sortable: true,
+      getValue: (p) => p.tingkatanLisensi,
+      render: (p) => <span className="text-neutral-600">{p.tingkatanLisensi}</span>,
+    },
+    {
+      key: "masaBerlakuAkhir",
+      label: "Masa Berlaku",
+      sortable: true,
+      getValue: (p) => p.masaBerlakuAkhir ?? "",
+      render: (p) =>
+        p.masaBerlakuAkhir ? (
+          <Badge tone={isExpiringSoon(p.masaBerlakuAkhir) ? "warning" : "neutral"}>
+            {new Date(p.masaBerlakuAkhir).toLocaleDateString("id-ID")}
+          </Badge>
+        ) : (
+          <span className="text-neutral-600">-</span>
+        ),
+    },
+  ];
+
+  const bulkActions: BulkAction[] = canDelete
+    ? [{ label: "Hapus", icon: Trash2, variant: "danger", onClick: handleBulkDelete }]
+    : [];
 
   return (
     <div>
@@ -134,48 +208,13 @@ export function PelatihListPage() {
 
       {items === null ? (
         <Card className="text-sm text-neutral-500">Memuat data...</Card>
-      ) : items.length === 0 ? (
-        <Card className="text-sm text-neutral-500">Belum ada data pelatih.</Card>
       ) : (
-        <Card className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b border-neutral-200 text-left text-neutral-500">
-              <tr>
-                <th className="px-4 py-3 font-medium">Nama</th>
-                <th className="px-4 py-3 font-medium">Cabor</th>
-                <th className="px-4 py-3 font-medium">Nomor Lisensi</th>
-                <th className="px-4 py-3 font-medium">Tingkatan</th>
-                <th className="px-4 py-3 font-medium">Masa Berlaku</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {items.map((p) => (
-                <tr key={p.id} className="hover:bg-neutral-50">
-                  <td className="px-4 py-3">
-                    <Link to={`/pelatih/${p.id}`} className="font-medium text-primary hover:underline">
-                      {p.namaPelatih}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-neutral-600">{p.cabangOlahraga.nama}</td>
-                  <td className="px-4 py-3 text-neutral-600">{p.nomorLisensi}</td>
-                  <td className="px-4 py-3 text-neutral-600">{p.tingkatanLisensi}</td>
-                  <td className="px-4 py-3">
-                    {p.masaBerlakuAkhir ? (
-                      <Badge tone={isExpiringSoon(p.masaBerlakuAkhir) ? "warning" : "neutral"}>
-                        {new Date(p.masaBerlakuAkhir).toLocaleDateString("id-ID")}
-                      </Badge>
-                    ) : (
-                      "-"
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="p-4">
+        <>
+          <DataTable columns={columns} rows={items} bulkActions={bulkActions} emptyMessage="Belum ada data pelatih." />
+          <div className="mt-3">
             <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
           </div>
-        </Card>
+        </>
       )}
     </div>
   );

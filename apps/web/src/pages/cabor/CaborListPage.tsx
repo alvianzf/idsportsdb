@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Trash2 } from "lucide-react";
 import { UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Input } from "../../components/ui";
+import { Card, PageHeader, Button, Input, DataTable, type Column, type BulkAction } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
+import { confirmAction } from "../../lib/confirm";
+import toast from "react-hot-toast";
 
 interface CaborRow {
   id: string;
@@ -23,6 +25,7 @@ export function CaborListPage() {
   const [items, setItems] = useState<CaborRow[] | null>(null);
   const [search, setSearch] = useState("");
   const [error, setError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,7 +41,68 @@ export function CaborListPage() {
     return () => {
       cancelled = true;
     };
-  }, [search]);
+  }, [search, reloadKey]);
+
+  async function handleBulkDelete(ids: string[]) {
+    const confirmed = await confirmAction({
+      text: `Hapus ${ids.length} cabang olahraga? Tindakan ini tidak dapat dibatalkan.`,
+      danger: true,
+      confirmText: "Hapus",
+    });
+    if (!confirmed) return;
+    const results = await Promise.allSettled(ids.map((id) => api.delete(`/cabor/${id}`)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed === 0) {
+      toast.success(`${ids.length} cabang olahraga berhasil dihapus.`);
+    } else {
+      toast.error(`${failed} dari ${ids.length} cabang olahraga gagal dihapus.`);
+    }
+    setReloadKey((k) => k + 1);
+  }
+
+  const columns: Column<CaborRow>[] = [
+    {
+      key: "nama",
+      label: "Nama",
+      sortable: true,
+      getValue: (c) => c.nama,
+      render: (c) => (
+        <Link to={`/cabor/${c.id}`} className="font-medium text-primary hover:underline">
+          {c.nama}
+        </Link>
+      ),
+    },
+    {
+      key: "ketuaCabor",
+      label: "Ketua",
+      getValue: (c) => c.ketuaCabor ?? "",
+      render: (c) => <span className="text-neutral-600">{c.ketuaCabor ?? "-"}</span>,
+    },
+    {
+      key: "sekretariat",
+      label: "Sekretariat",
+      getValue: (c) => c.sekretariat ?? "",
+      render: (c) => <span className="text-neutral-600">{c.sekretariat ?? "-"}</span>,
+    },
+    {
+      key: "jumlahAtlet",
+      label: "Atlet",
+      sortable: true,
+      getValue: (c) => c.jumlahAtlet,
+      render: (c) => <span className="text-neutral-600">{c.jumlahAtlet} atlet</span>,
+    },
+    {
+      key: "jumlahPelatih",
+      label: "Pelatih",
+      sortable: true,
+      getValue: (c) => c.jumlahPelatih,
+      render: (c) => <span className="text-neutral-600">{c.jumlahPelatih} pelatih</span>,
+    },
+  ];
+
+  const bulkActions: BulkAction[] = canCreate
+    ? [{ label: "Hapus", icon: Trash2, variant: "danger", onClick: handleBulkDelete }]
+    : [];
 
   return (
     <div>
@@ -72,25 +136,8 @@ export function CaborListPage() {
 
       {items === null ? (
         <Card className="text-sm text-neutral-500">Memuat data...</Card>
-      ) : items.length === 0 ? (
-        <Card className="text-sm text-neutral-500">Belum ada cabang olahraga.</Card>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {items.map((cabor) => (
-            <Link key={cabor.id} to={`/cabor/${cabor.id}`}>
-              <Card className="h-full transition-colors hover:border-primary-200">
-                <h3 className="font-semibold text-neutral-900">{cabor.nama}</h3>
-                {cabor.ketuaCabor && (
-                  <p className="mt-1 text-sm text-neutral-500">Ketua: {cabor.ketuaCabor}</p>
-                )}
-                <div className="mt-3 flex gap-4 text-sm text-neutral-600">
-                  <span>{cabor.jumlahAtlet} atlet</span>
-                  <span>{cabor.jumlahPelatih} pelatih</span>
-                </div>
-              </Card>
-            </Link>
-          ))}
-        </div>
+        <DataTable columns={columns} rows={items} bulkActions={bulkActions} emptyMessage="Belum ada cabang olahraga." />
       )}
     </div>
   );

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { ROLES, ROLE_LABELS, type Role } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Badge, Select } from "../../components/ui";
+import { Card, PageHeader, Button, Badge, Select, DataTable, type Column, type BulkAction } from "../../components/ui";
 import { api } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 import toast from "react-hot-toast";
@@ -56,6 +56,79 @@ export function UsersListPage() {
     }
   }
 
+  async function handleBulkDeactivate(ids: string[]) {
+    const confirmed = await confirmAction({
+      text: `Nonaktifkan ${ids.length} akun pengguna? Pengguna tidak akan bisa login lagi.`,
+      danger: true,
+      confirmText: "Nonaktifkan",
+    });
+    if (!confirmed) return;
+    const results = await Promise.allSettled(ids.map((id) => api.delete(`/users/${id}`)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed === 0) {
+      toast.success(`${ids.length} akun berhasil dinonaktifkan.`);
+    } else {
+      toast.error(`${failed} dari ${ids.length} akun gagal dinonaktifkan.`);
+    }
+    load();
+  }
+
+  const columns: Column<UserRow>[] = [
+    {
+      key: "fullName",
+      label: "Nama",
+      sortable: true,
+      getValue: (r) => r.fullName,
+      render: (r) => <span className="font-medium text-neutral-900">{r.fullName}</span>,
+    },
+    {
+      key: "email",
+      label: "Email",
+      sortable: true,
+      getValue: (r) => r.email,
+      render: (r) => <span className="text-neutral-600">{r.email}</span>,
+    },
+    {
+      key: "role",
+      label: "Role",
+      sortable: true,
+      getValue: (r) => r.role,
+      render: (r) => <Badge tone={ROLE_BADGE_TONE[r.role]}>{ROLE_LABELS[r.role]}</Badge>,
+    },
+    {
+      key: "isActive",
+      label: "Status",
+      sortable: true,
+      getValue: (r) => (r.isActive ? "1" : "0"),
+      render: (r) =>
+        r.isActive ? <Badge tone="success">Aktif</Badge> : <Badge tone="neutral">Nonaktif</Badge>,
+    },
+    {
+      key: "aksi",
+      label: "Aksi",
+      render: (user) => (
+        <div className="flex gap-2">
+          <Link to={`/users/${user.id}/edit`}>
+            <Button variant="outline">Edit</Button>
+          </Link>
+          {user.isActive && (
+            <Button
+              variant="outline"
+              onClick={() => handleDeactivate(user)}
+              className="border-danger/30 text-danger hover:bg-danger-light"
+            >
+              Nonaktifkan
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  const bulkActions: BulkAction[] = [
+    { label: "Nonaktifkan", variant: "danger", onClick: handleBulkDeactivate },
+  ];
+
   return (
     <div>
       <PageHeader
@@ -89,56 +162,8 @@ export function UsersListPage() {
       <Card>
         {users === null ? (
           <p className="text-sm text-neutral-500">Memuat data...</p>
-        ) : users.length === 0 ? (
-          <p className="text-sm text-neutral-500">Belum ada pengguna.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-neutral-100 text-left text-xs text-neutral-500">
-                  <th className="pb-2 font-medium">Nama</th>
-                  <th className="pb-2 font-medium">Email</th>
-                  <th className="pb-2 font-medium">Role</th>
-                  <th className="pb-2 font-medium">Status</th>
-                  <th className="pb-2 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100">
-                {users.map((user) => (
-                  <tr key={user.id}>
-                    <td className="py-2 font-medium text-neutral-900">{user.fullName}</td>
-                    <td className="py-2 text-neutral-600">{user.email}</td>
-                    <td className="py-2">
-                      <Badge tone={ROLE_BADGE_TONE[user.role]}>{ROLE_LABELS[user.role]}</Badge>
-                    </td>
-                    <td className="py-2">
-                      {user.isActive ? (
-                        <Badge tone="success">Aktif</Badge>
-                      ) : (
-                        <Badge tone="neutral">Nonaktif</Badge>
-                      )}
-                    </td>
-                    <td className="py-2">
-                      <div className="flex gap-2">
-                        <Link to={`/users/${user.id}/edit`}>
-                          <Button variant="outline">Edit</Button>
-                        </Link>
-                        {user.isActive && (
-                          <Button
-                            variant="outline"
-                            onClick={() => handleDeactivate(user)}
-                            className="border-danger/30 text-danger hover:bg-danger-light"
-                          >
-                            Nonaktifkan
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable columns={columns} rows={users} bulkActions={bulkActions} emptyMessage="Belum ada pengguna." />
         )}
       </Card>
     </div>

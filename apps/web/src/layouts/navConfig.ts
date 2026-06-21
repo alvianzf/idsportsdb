@@ -8,6 +8,7 @@ import {
   FileBarChart,
   ShieldCheck,
   Newspaper,
+  ScanLine,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@inasportdb/shared-types";
@@ -26,12 +27,13 @@ const ADMIN_ROLES: Role[] = ["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"];
 export const ADMIN_NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, mobile: true, roles: ADMIN_ROLES },
   { to: "/atlet", label: "Atlet", icon: Users, mobile: true, roles: ADMIN_ROLES },
-  { to: "/prestasi", label: "Prestasi", icon: Trophy, mobile: true, roles: ADMIN_ROLES },
+  { to: "/scan", label: "Scan Kartu", icon: ScanLine, mobile: true, roles: ADMIN_ROLES },
+  { to: "/reports", label: "Pelaporan", icon: FileBarChart, mobile: true, roles: ADMIN_ROLES },
+  { to: "/prestasi", label: "Prestasi", icon: Trophy, roles: ADMIN_ROLES },
   { to: "/pelatih", label: "Pelatih", icon: UserCog, roles: ADMIN_ROLES },
   { to: "/cabor", label: "Cabang Olahraga", icon: Building2, roles: ADMIN_ROLES },
   { to: "/monitoring", label: "Monitoring", icon: Activity, roles: ADMIN_ROLES },
   { to: "/artikel", label: "Artikel", icon: Newspaper, roles: ["SUPER_ADMIN_KONI", "ADMIN_KONI"] },
-  { to: "/reports", label: "Pelaporan", icon: FileBarChart, mobile: true, roles: ADMIN_ROLES },
   { to: "/users", label: "Pengguna", icon: ShieldCheck, roles: ["SUPER_ADMIN_KONI"] },
 ];
 

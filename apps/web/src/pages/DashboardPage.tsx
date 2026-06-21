@@ -199,7 +199,7 @@ export function DashboardPage() {
               <p className="text-sm text-neutral-500">Belum ada data prestasi.</p>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {prestasiStats.map((stat) => (
+                {prestasiStats.filter((stat) => stat.key !== "NONE").map((stat) => (
                   <Badge key={stat.key} tone={MEDAL_BADGE_TONE[stat.key as MedalType] ?? "neutral"}>
                     {MEDAL_LABELS[stat.key as MedalType] ?? stat.key}: {stat.count}
                   </Badge>

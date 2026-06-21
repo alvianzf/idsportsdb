@@ -151,6 +151,7 @@ monitoringRouter.patch(
         where: { id: req.params.id },
         data: parsed.data,
       });
+      emit("monitoring:change");
       res.json(updated);
     } catch (err) {
       if (isNotFoundError(err)) {

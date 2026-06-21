@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, ScanLine, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { DATA_ADMIN_ROLES, UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
 import { PageHeader, Button } from "../../components/ui";
@@ -63,11 +63,19 @@ export function AtletDetailPage() {
 
   return (
     <div>
+      <button onClick={() => navigate(-1)} className="mb-3 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-700">
+        <ArrowLeft size={15} /> Kembali
+      </button>
       <PageHeader
         title={atlet.namaLengkap}
         description={`${atlet.nomorIndukAtlet} · ${atlet.cabangOlahraga.nama}`}
         actions={
           <div className="flex gap-2">
+            <Link to={`/atlet/${atlet.id}/rekam`}>
+              <Button variant="outline">
+                <ScanLine size={16} /> Rekam Atlet
+              </Button>
+            </Link>
             {canEdit && (
               <Link to={`/atlet/${atlet.id}/edit`}>
                 <Button variant="outline">

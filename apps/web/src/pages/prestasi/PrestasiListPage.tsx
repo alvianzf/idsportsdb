@@ -1,17 +1,21 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Trash2 } from "lucide-react";
 import {
   COMPETITION_LEVELS,
   COMPETITION_LEVEL_LABELS,
+  DATA_ADMIN_ROLES,
   MEDALS,
   MEDAL_LABELS,
   UNSCOPED_ADMIN_ROLES,
   type CompetitionLevel,
   type Medal,
 } from "@inasportdb/shared-types";
-import { Card, PageHeader, Input, Select, Badge, Pagination, Combobox } from "../../components/ui";
+import { Card, PageHeader, Input, Select, Badge, Pagination, Combobox, DataTable, type Column, type BulkAction } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
+import { confirmAction } from "../../lib/confirm";
+import toast from "react-hot-toast";
 
 interface PrestasiRow {
   id: string;
@@ -44,6 +48,7 @@ const MEDAL_TONE: Record<Medal, "gold" | "silver" | "bronze" | "neutral"> = {
 export function PrestasiListPage() {
   const role = useAuthStore((state) => state.user?.role);
   const isUnscopedAdmin = role && UNSCOPED_ADMIN_ROLES.includes(role);
+  const canDelete = role && DATA_ADMIN_ROLES.includes(role);
 
   const [items, setItems] = useState<PrestasiRow[] | null>(null);
   const [total, setTotal] = useState(0);
@@ -54,6 +59,7 @@ export function PrestasiListPage() {
   const [page, setPage] = useState(1);
   const [cabors, setCabors] = useState<CaborOption[]>([]);
   const [error, setError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const pageSize = 20;
 
@@ -87,7 +93,82 @@ export function PrestasiListPage() {
     return () => {
       cancelled = true;
     };
-  }, [cabor, tahun, tingkat, medali, page]);
+  }, [cabor, tahun, tingkat, medali, page, reloadKey]);
+
+  async function handleBulkDelete(ids: string[]) {
+    const confirmed = await confirmAction({
+      text: `Hapus ${ids.length} prestasi? Tindakan ini tidak dapat dibatalkan.`,
+      danger: true,
+      confirmText: "Hapus",
+    });
+    if (!confirmed) return;
+    const results = await Promise.allSettled(ids.map((id) => api.delete(`/prestasi/${id}`)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed === 0) {
+      toast.success(`${ids.length} prestasi berhasil dihapus.`);
+    } else {
+      toast.error(`${failed} dari ${ids.length} prestasi gagal dihapus.`);
+    }
+    setReloadKey((k) => k + 1);
+  }
+
+  const columns: Column<PrestasiRow>[] = [
+    {
+      key: "atlet",
+      label: "Atlet",
+      sortable: true,
+      getValue: (p) => p.atlet.namaLengkap,
+      render: (p) => (
+        <Link to={`/atlet/${p.atlet.id}`} className="font-medium text-primary hover:underline">
+          {p.atlet.namaLengkap}
+        </Link>
+      ),
+    },
+    {
+      key: "cabor",
+      label: "Cabor",
+      sortable: true,
+      getValue: (p) => p.atlet.cabangOlahraga.nama,
+      render: (p) => <span className="text-neutral-600">{p.atlet.cabangOlahraga.nama}</span>,
+    },
+    {
+      key: "namaKejuaraan",
+      label: "Kejuaraan",
+      sortable: true,
+      getValue: (p) => p.namaKejuaraan,
+      render: (p) => <span className="text-neutral-600">{p.namaKejuaraan}</span>,
+    },
+    {
+      key: "tingkatKejuaraan",
+      label: "Tingkat",
+      sortable: true,
+      getValue: (p) => p.tingkatKejuaraan,
+      render: (p) => <span className="text-neutral-600">{COMPETITION_LEVEL_LABELS[p.tingkatKejuaraan]}</span>,
+    },
+    {
+      key: "tahun",
+      label: "Tahun",
+      sortable: true,
+      getValue: (p) => p.tahun,
+      render: (p) => <span className="text-neutral-600">{p.tahun}</span>,
+    },
+    {
+      key: "medali",
+      label: "Hasil",
+      sortable: true,
+      getValue: (p) => p.medali,
+      render: (p) => (
+        <div className="flex items-center gap-2">
+          <Badge tone={MEDAL_TONE[p.medali]}>{MEDAL_LABELS[p.medali]}</Badge>
+          {p.peringkat && <span className="text-neutral-500">Peringkat {p.peringkat}</span>}
+        </div>
+      ),
+    },
+  ];
+
+  const bulkActions: BulkAction[] = canDelete
+    ? [{ label: "Hapus", icon: Trash2, variant: "danger", onClick: handleBulkDelete }]
+    : [];
 
   return (
     <div>
@@ -152,47 +233,13 @@ export function PrestasiListPage() {
 
       {items === null ? (
         <Card className="text-sm text-neutral-500">Memuat data...</Card>
-      ) : items.length === 0 ? (
-        <Card className="text-sm text-neutral-500">Belum ada data prestasi.</Card>
       ) : (
-        <Card className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b border-neutral-200 text-left text-neutral-500">
-              <tr>
-                <th className="px-4 py-3 font-medium">Atlet</th>
-                <th className="px-4 py-3 font-medium">Cabor</th>
-                <th className="px-4 py-3 font-medium">Kejuaraan</th>
-                <th className="px-4 py-3 font-medium">Tingkat</th>
-                <th className="px-4 py-3 font-medium">Tahun</th>
-                <th className="px-4 py-3 font-medium">Hasil</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {items.map((p) => (
-                <tr key={p.id} className="hover:bg-neutral-50">
-                  <td className="px-4 py-3">
-                    <Link to={`/atlet/${p.atlet.id}`} className="font-medium text-primary hover:underline">
-                      {p.atlet.namaLengkap}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-neutral-600">{p.atlet.cabangOlahraga.nama}</td>
-                  <td className="px-4 py-3 text-neutral-600">{p.namaKejuaraan}</td>
-                  <td className="px-4 py-3 text-neutral-600">{COMPETITION_LEVEL_LABELS[p.tingkatKejuaraan]}</td>
-                  <td className="px-4 py-3 text-neutral-600">{p.tahun}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Badge tone={MEDAL_TONE[p.medali]}>{MEDAL_LABELS[p.medali]}</Badge>
-                      {p.peringkat && <span className="text-neutral-500">Peringkat {p.peringkat}</span>}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="p-4">
+        <>
+          <DataTable columns={columns} rows={items} bulkActions={bulkActions} emptyMessage="Belum ada data prestasi." />
+          <div className="mt-3">
             <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
           </div>
-        </Card>
+        </>
       )}
     </div>
   );

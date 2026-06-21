@@ -133,3 +133,8 @@ body {
 .rte-content .ProseMirror code { font-family: monospace; }
 .rte-content .ProseMirror a { color: var(--color-primary); text-decoration: underline; }
 .rte-content .ProseMirror img { max-width: 100%; height: auto; border-radius: 0.375rem; margin: 0.5rem 0; }
+
+@keyframes scan {
+  0%   { top: 0; }
+  100% { top: 100%; }
+}

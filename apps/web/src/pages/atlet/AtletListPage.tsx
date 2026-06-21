@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Trash2 } from "lucide-react";
 import {
   ATHLETE_STATUSES,
   ATHLETE_STATUS_LABELS,
@@ -9,9 +9,11 @@ import {
   UNSCOPED_ADMIN_ROLES,
   type AthleteStatus,
 } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Input, Select, Badge, Pagination, Combobox } from "../../components/ui";
+import { Card, PageHeader, Button, Input, Select, Badge, Pagination, Combobox, DataTable, type Column, type BulkAction } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
+import { confirmAction } from "../../lib/confirm";
+import toast from "react-hot-toast";
 
 interface AtletRow {
   id: string;
@@ -42,6 +44,7 @@ const STATUS_TONE: Record<AthleteStatus, "success" | "danger" | "warning" | "inf
 export function AtletListPage() {
   const role = useAuthStore((state) => state.user?.role);
   const canCreate = role && DATA_ADMIN_ROLES.includes(role);
+  const canDelete = role && UNSCOPED_ADMIN_ROLES.includes(role);
   const isUnscopedAdmin = role && UNSCOPED_ADMIN_ROLES.includes(role);
 
   const [items, setItems] = useState<AtletRow[] | null>(null);
@@ -53,6 +56,7 @@ export function AtletListPage() {
   const [page, setPage] = useState(1);
   const [cabors, setCabors] = useState<CaborOption[]>([]);
   const [error, setError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const pageSize = 20;
 
@@ -87,7 +91,82 @@ export function AtletListPage() {
     return () => {
       cancelled = true;
     };
-  }, [search, cabor, status, kecamatan, page]);
+  }, [search, cabor, status, kecamatan, page, reloadKey]);
+
+  async function handleBulkDelete(ids: string[]) {
+    const confirmed = await confirmAction({
+      text: `Hapus ${ids.length} atlet? Tindakan ini tidak dapat dibatalkan.`,
+      danger: true,
+      confirmText: "Hapus",
+    });
+    if (!confirmed) return;
+    const results = await Promise.allSettled(ids.map((id) => api.delete(`/atlet/${id}`)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed === 0) {
+      toast.success(`${ids.length} atlet berhasil dihapus.`);
+    } else {
+      toast.error(`${failed} dari ${ids.length} atlet gagal dihapus.`);
+    }
+    setReloadKey((k) => k + 1);
+  }
+
+  const columns: Column<AtletRow>[] = [
+    {
+      key: "namaLengkap",
+      label: "Nama",
+      mobile: true,
+      sortable: true,
+      getValue: (a) => a.namaLengkap,
+      render: (a) => (
+        <Link to={`/atlet/${a.id}`} className="font-medium text-primary hover:underline">
+          {a.namaLengkap}
+        </Link>
+      ),
+    },
+    {
+      key: "cabor",
+      label: "Cabor",
+      sortable: true,
+      getValue: (a) => a.cabangOlahraga.nama,
+      render: (a) => (
+        <span className="text-neutral-600">
+          {a.cabangOlahraga.nama}
+          {a.caborTambahan.length > 0 && (
+            <span className="text-neutral-400">
+              {" "}
+              +{a.caborTambahan.map((c) => c.cabangOlahraga.nama).join(", ")}
+            </span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: "nomorRegistrasi",
+      label: "No. Registrasi",
+      sortable: true,
+      getValue: (a) => a.nomorRegistrasi,
+      render: (a) => <span className="text-neutral-600">{a.nomorRegistrasi}</span>,
+    },
+    {
+      key: "kecamatan",
+      label: "Kecamatan",
+      sortable: true,
+      getValue: (a) => a.kecamatan ?? "",
+      render: (a) => <span className="text-neutral-600">{a.kecamatan ?? "-"}</span>,
+    },
+    {
+      key: "statusAtlet",
+      label: "Status",
+      mobile: true,
+      sortable: true,
+      getValue: (a) => a.statusAtlet,
+      render: (a) => <Badge tone={STATUS_TONE[a.statusAtlet]}>{ATHLETE_STATUS_LABELS[a.statusAtlet]}</Badge>,
+    },
+  ];
+
+  const bulkActions: BulkAction[] = canDelete
+    ? [{ label: "Hapus", icon: Trash2, variant: "danger", onClick: handleBulkDelete }]
+    : [];
 
   return (
     <div>
@@ -168,50 +247,13 @@ export function AtletListPage() {
 
       {items === null ? (
         <Card className="text-sm text-neutral-500">Memuat data...</Card>
-      ) : items.length === 0 ? (
-        <Card className="text-sm text-neutral-500">Belum ada data atlet.</Card>
       ) : (
-        <Card className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b border-neutral-200 text-left text-neutral-500">
-              <tr>
-                <th className="px-4 py-3 font-medium">Nama</th>
-                <th className="px-4 py-3 font-medium">Cabor</th>
-                <th className="px-4 py-3 font-medium">No. Registrasi</th>
-                <th className="px-4 py-3 font-medium">Kecamatan</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {items.map((a) => (
-                <tr key={a.id} className="hover:bg-neutral-50">
-                  <td className="px-4 py-3">
-                    <Link to={`/atlet/${a.id}`} className="font-medium text-primary hover:underline">
-                      {a.namaLengkap}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-neutral-600">
-                    {a.cabangOlahraga.nama}
-                    {a.caborTambahan.length > 0 && (
-                      <span className="text-neutral-400">
-                        {" "}
-                        +{a.caborTambahan.map((c) => c.cabangOlahraga.nama).join(", ")}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-neutral-600">{a.nomorRegistrasi}</td>
-                  <td className="px-4 py-3 text-neutral-600">{a.kecamatan ?? "-"}</td>
-                  <td className="px-4 py-3">
-                    <Badge tone={STATUS_TONE[a.statusAtlet]}>{ATHLETE_STATUS_LABELS[a.statusAtlet]}</Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="p-4">
+        <>
+          <DataTable columns={columns} rows={items} bulkActions={bulkActions} emptyMessage="Belum ada data atlet." />
+          <div className="mt-3">
             <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
           </div>
-        </Card>
+        </>
       )}
     </div>
   );

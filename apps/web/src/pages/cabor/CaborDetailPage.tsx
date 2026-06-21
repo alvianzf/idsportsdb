@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Field, Input, Modal, Combobox } from "../../components/ui";
@@ -163,6 +163,9 @@ export function CaborDetailPage() {
 
   return (
     <div>
+      <button onClick={() => navigate(-1)} className="mb-3 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-700">
+        <ArrowLeft size={15} /> Kembali
+      </button>
       <PageHeader
         title={cabor.nama}
         description="Detail cabang olahraga"

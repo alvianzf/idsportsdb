@@ -6,4 +6,5 @@ export * from "./Field";
 export * from "./Pagination";
 export * from "./Modal";
 export * from "./Combobox";
-export * from "./RichTextEditor";;
+export * from "./RichTextEditor";
+export * from "./DataTable";

@@ -28,7 +28,10 @@ const CaborFormPage = page(() => import("../pages/cabor/CaborFormPage"), "CaborF
 const AtletListPage = page(() => import("../pages/atlet/AtletListPage"), "AtletListPage");
 const AtletDetailPage = page(() => import("../pages/atlet/AtletDetailPage"), "AtletDetailPage");
 const AtletFormPage = page(() => import("../pages/atlet/AtletFormPage"), "AtletFormPage");
+const AtletRecordPage = page(() => import("../pages/atlet/AtletRecordPage"), "AtletRecordPage");
 const MePage = page(() => import("../pages/atlet/MePage"), "MePage");
+
+const ScannerPage = page(() => import("../pages/ScannerPage"), "ScannerPage");
 
 const PelatihListPage = page(() => import("../pages/pelatih/PelatihListPage"), "PelatihListPage");
 const PelatihDetailPage = page(() => import("../pages/pelatih/PelatihDetailPage"), "PelatihDetailPage");
@@ -62,6 +65,22 @@ function PageLoader() {
 
 const router = createBrowserRouter([
   { path: "/", element: <LandingPage /> },
+  {
+    path: "/scan",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <ScannerPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/atlet/:id/rekam",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <AtletRecordPage />
+      </Suspense>
+    ),
+  },
   {
     path: "/artikel/:slug",
     element: (

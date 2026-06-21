@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle2, XCircle } from "lucide-react";
-import { ATHLETE_STATUS_LABELS, type AthleteStatus } from "@inasportdb/shared-types";
+import { DATA_ADMIN_ROLES, ATHLETE_STATUS_LABELS, type AthleteStatus } from "@inasportdb/shared-types";
 import { Card, Badge } from "../components/ui";
 import { api, resolveFileUrl } from "../lib/api";
+import { useAuthStore } from "../store/authStore";
 
 type VerifyReason = "NOT_FOUND" | "REVOKED" | "EXPIRED" | "INACTIVE";
 
@@ -11,6 +12,7 @@ interface VerifyResult {
   valid: boolean;
   reason?: VerifyReason;
   athlete?: {
+    atletId: string;
     namaLengkap: string;
     nomorIndukAtlet: string;
     cabangOlahraga: { id: string; nama: string };
@@ -32,6 +34,8 @@ const REASON_LABELS: Record<VerifyReason, string> = {
  */
 export function VerifyCardPage() {
   const { cardCode } = useParams<{ cardCode: string }>();
+  const navigate = useNavigate();
+  const role = useAuthStore((state) => state.user?.role);
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [error, setError] = useState(false);
 
@@ -39,7 +43,14 @@ export function VerifyCardPage() {
     if (!cardCode) return;
     api
       .get<VerifyResult>(`/cards/verify/${cardCode}`)
-      .then((res) => setResult(res.data))
+      .then((res) => {
+        const data = res.data;
+        if (data.valid && data.athlete && role && DATA_ADMIN_ROLES.includes(role)) {
+          navigate(`/atlet/${data.athlete.atletId}/rekam`, { replace: true });
+          return;
+        }
+        setResult(data);
+      })
       .catch((err) => {
         if (err.response?.data) {
           setResult(err.response.data);
@@ -47,7 +58,7 @@ export function VerifyCardPage() {
           setError(true);
         }
       });
-  }, [cardCode]);
+  }, [cardCode, role, navigate]);
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-neutral-50 p-4">
