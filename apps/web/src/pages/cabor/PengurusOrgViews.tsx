@@ -280,22 +280,22 @@ function ChartNode({
           <div className="pointer-events-none absolute inset-0 z-10 flex flex-col overflow-hidden rounded-md">
             {/* Top half — swap/replace */}
             <div
-              className={`flex flex-1 items-center justify-center text-xs font-semibold transition-colors ${
+              className={`flex flex-1 items-center justify-center text-xs font-bold transition-colors ${
                 dragZone === "top"
-                  ? "bg-primary/20 text-primary"
-                  : "bg-neutral-100/60 text-neutral-400"
+                  ? "bg-primary/80 text-white"
+                  : "bg-black/40 text-white/70"
               }`}
             >
               ↕ Tukar Posisi
             </div>
             {/* Divider */}
-            <div className="h-px bg-primary/30" />
+            <div className="h-px bg-white/40" />
             {/* Bottom half — make direct report */}
             <div
-              className={`flex flex-1 items-center justify-center text-xs font-semibold transition-colors ${
+              className={`flex flex-1 items-center justify-center text-xs font-bold transition-colors ${
                 dragZone === "bottom"
-                  ? "bg-primary/20 text-primary"
-                  : "bg-neutral-100/60 text-neutral-400"
+                  ? "bg-primary/80 text-white"
+                  : "bg-black/40 text-white/70"
               }`}
             >
               ↓ Jadikan Bawahan
