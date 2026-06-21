@@ -44,9 +44,10 @@ interface ViewProps {
   onEdit: (p: Pengurus) => void;
   onDelete: (p: Pengurus) => void;
   onReassign: (id: string, reportsToId: string | null) => void;
+  onSwap: (idA: string, idB: string) => void;
 }
 
-export function PengurusViews({ pengurus, canManage, onEdit, onDelete, onReassign }: ViewProps) {
+export function PengurusViews({ pengurus, canManage, onEdit, onDelete, onReassign, onSwap }: ViewProps) {
   const [view, setView] = useState<"table" | "card" | "chart">("table");
   const nameById = new Map(pengurus.map((p) => [p.id, p.namaPengurus]));
   const tree = buildTree(pengurus);
@@ -66,7 +67,7 @@ export function PengurusViews({ pengurus, canManage, onEdit, onDelete, onReassig
         <CardView tree={tree} canManage={canManage} onEdit={onEdit} onDelete={onDelete} />
       )}
       {view === "chart" && (
-        <ChartView tree={tree} canManage={canManage} onEdit={onEdit} onDelete={onDelete} onReassign={onReassign} />
+        <ChartView tree={tree} canManage={canManage} onEdit={onEdit} onDelete={onDelete} onReassign={onReassign} onSwap={onSwap} />
       )}
     </div>
   );
@@ -214,12 +215,14 @@ function ChartNode({
   onEdit,
   onDelete,
   onReassign,
+  onSwap,
 }: {
   node: PengurusNode;
   canManage: boolean;
   onEdit: (p: Pengurus) => void;
   onDelete: (p: Pengurus) => void;
   onReassign: (id: string, reportsToId: string | null) => void;
+  onSwap: (idA: string, idB: string) => void;
 }) {
   const [dragOver, setDragOver] = useState(false);
 
@@ -239,7 +242,8 @@ function ChartNode({
     e.preventDefault();
     setDragOver(false);
     const draggedId = e.dataTransfer.getData("text/plain");
-    if (draggedId && draggedId !== node.id) onReassign(draggedId, node.id);
+    // Drop onto another card → swap positions (exchange reportsToId)
+    if (draggedId && draggedId !== node.id) onSwap(draggedId, node.id);
   }
 
   return (
@@ -267,7 +271,7 @@ function ChartNode({
           <div className="h-4 w-px bg-neutral-300" />
           <div className="flex gap-6 border-t border-neutral-300 pt-4">
             {node.children.map((child) => (
-              <ChartNode key={child.id} node={child} canManage={canManage} onEdit={onEdit} onDelete={onDelete} onReassign={onReassign} />
+              <ChartNode key={child.id} node={child} canManage={canManage} onEdit={onEdit} onDelete={onDelete} onReassign={onReassign} onSwap={onSwap} />
             ))}
           </div>
         </>
@@ -282,12 +286,14 @@ function ChartView({
   onEdit,
   onDelete,
   onReassign,
+  onSwap,
 }: {
   tree: PengurusNode[];
   canManage: boolean;
   onEdit: (p: Pengurus) => void;
   onDelete: (p: Pengurus) => void;
   onReassign: (id: string, reportsToId: string | null) => void;
+  onSwap: (idA: string, idB: string) => void;
 }) {
   const [dragOver, setDragOver] = useState(false);
 
@@ -303,14 +309,13 @@ function ChartView({
     <div className="space-y-2">
       {canManage && (
         <p className="text-xs text-neutral-400">
-          Seret kartu ke kotak lain untuk mengubah hierarki "Melapor Kepada", atau ke area di bawah untuk menjadikannya
-          paling atas.
+          Seret kartu ke kotak lain untuk menukar posisi, atau ke area di bawah untuk menjadikannya paling atas (tidak melapor kepada siapa pun).
         </p>
       )}
       <div className="overflow-x-auto rounded-md border border-neutral-100 p-4">
         <div className="flex min-w-fit justify-center gap-8">
           {tree.map((node) => (
-            <ChartNode key={node.id} node={node} canManage={canManage} onEdit={onEdit} onDelete={onDelete} onReassign={onReassign} />
+            <ChartNode key={node.id} node={node} canManage={canManage} onEdit={onEdit} onDelete={onDelete} onReassign={onReassign} onSwap={onSwap} />
           ))}
         </div>
       </div>

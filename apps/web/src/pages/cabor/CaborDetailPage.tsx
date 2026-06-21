@@ -136,6 +136,39 @@ export function CaborDetailPage() {
     }
   }
 
+  async function handleSwapPengurus(idA: string, idB: string) {
+    if (!cabor) return;
+    const a = cabor.pengurus.find((p) => p.id === idA);
+    const b = cabor.pengurus.find((p) => p.id === idB);
+    if (!a || !b) return;
+
+    // Guard: prevent swap between a node and its ancestor/descendant (would create cycle)
+    function isAncestor(ancestorId: string, nodeId: string): boolean {
+      const node = cabor!.pengurus.find((p) => p.id === nodeId);
+      if (!node?.reportsToId) return false;
+      if (node.reportsToId === ancestorId) return true;
+      return isAncestor(ancestorId, node.reportsToId);
+    }
+
+    if (isAncestor(idA, idB) || isAncestor(idB, idA)) {
+      toast.error("Tidak dapat menukar pengurus yang memiliki hubungan hierarki langsung.");
+      return;
+    }
+
+    try {
+      // Exchange the two reportsToId values simultaneously
+      await Promise.all([
+        api.patch(`/pengurus/${idA}`, { reportsToId: b.reportsToId }),
+        api.patch(`/pengurus/${idB}`, { reportsToId: a.reportsToId }),
+      ]);
+      toast.success("Posisi berhasil ditukar.");
+      load();
+    } catch (err) {
+      const message = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
+      toast.error(message ?? "Gagal menukar posisi.");
+    }
+  }
+
   async function handleDeletePengurus(p: Pengurus) {
     if (!(await confirmAction({ text: `Hapus pengurus "${p.namaPengurus}"?` }))) return;
     try {
@@ -245,6 +278,7 @@ export function CaborDetailPage() {
             onEdit={openEdit}
             onDelete={handleDeletePengurus}
             onReassign={handleReassignPengurus}
+            onSwap={handleSwapPengurus}
           />
         )}
       </Card>
