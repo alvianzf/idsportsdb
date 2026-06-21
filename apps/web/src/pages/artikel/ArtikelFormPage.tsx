@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Eye, Trash2, Upload } from "lucide-react";
 import toast from "react-hot-toast";
-import { Card, PageHeader, Button, Field, Input, Textarea, RichTextEditor } from "../../components/ui";
+import { Card, PageHeader, Button, Field, Input, Textarea, RichTextEditor, Modal } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
 
 interface ArtikelForm {
@@ -33,9 +34,14 @@ export function ArtikelFormPage() {
   const [form, setForm] = useState<ArtikelForm>(empty);
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   // Track the article ID assigned after create so inline image uploads have a context
   const articleIdRef = useRef<string | undefined>(id);
 
@@ -79,9 +85,39 @@ export function ArtikelFormPage() {
     }
   }
 
+  function applyFile(file: File) {
+    setCoverFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setCoverPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
   function handleCoverChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    if (file) setCoverFile(file);
+    if (file) applyFile(file);
+    event.target.value = "";
+  }
+
+  function handleDragOver(e: DragEvent) {
+    e.preventDefault();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: DragEvent) {
+    if (!dropRef.current?.contains(e.relatedTarget as Node)) setIsDragging(false);
+  }
+
+  function handleDrop(e: DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) applyFile(file);
+  }
+
+  function removeCover() {
+    setCoverFile(null);
+    setCoverPreview(null);
+    setCoverImageUrl(null);
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -158,12 +194,93 @@ export function ArtikelFormPage() {
               onImageUpload={handleImageUpload}
             />
           </Field>
-          <Field label="Gambar Sampul" htmlFor="cover">
-            {coverImageUrl && !coverFile && (
-              <img src={resolveFileUrl(coverImageUrl)} alt="" className="mb-2 h-32 w-auto rounded-md object-cover" />
+          <Field label="Gambar Sampul">
+            {/* Show thumbnail when an image exists (uploaded or staged) */}
+            {(coverPreview || coverImageUrl) ? (
+              <div className="flex items-start gap-3">
+                {/* Thumbnail with action overlay */}
+                <div className="group relative h-36 w-56 shrink-0 overflow-hidden rounded-lg border border-neutral-200">
+                  <img
+                    src={coverPreview ?? resolveFileUrl(coverImageUrl!)}
+                    alt="Gambar sampul"
+                    className="h-full w-full object-cover"
+                  />
+                  {/* Overlay on hover */}
+                  <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                    <button
+                      type="button"
+                      title="Lihat gambar"
+                      onClick={() => setShowPreviewModal(true)}
+                      className="rounded-full bg-white/90 p-2 text-neutral-800 hover:bg-white"
+                    >
+                      <Eye size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      title="Hapus gambar"
+                      onClick={removeCover}
+                      className="rounded-full bg-white/90 p-2 text-danger hover:bg-white"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+                {/* Replace button */}
+                <div className="flex flex-col gap-2 text-sm text-neutral-500">
+                  <p className="font-medium text-neutral-700">Gambar terpilih</p>
+                  {coverFile && <p className="text-xs">{coverFile.name}</p>}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Ganti gambar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Drag-and-drop drop zone */
+              <div
+                ref={dropRef}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed px-6 py-10 transition-colors ${
+                  isDragging
+                    ? "border-primary bg-primary-50"
+                    : "border-neutral-300 bg-neutral-50 hover:border-primary hover:bg-primary-50"
+                }`}
+              >
+                <Upload size={28} className={isDragging ? "text-primary" : "text-neutral-400"} />
+                <div className="text-center">
+                  <p className="text-sm font-medium text-neutral-700">
+                    Seret & lepas gambar di sini
+                  </p>
+                  <p className="mt-0.5 text-xs text-neutral-400">atau klik untuk memilih file</p>
+                  <p className="mt-1 text-xs text-neutral-400">PNG, JPG, WebP — maks. 15 MB</p>
+                </div>
+              </div>
             )}
-            <input id="cover" type="file" accept="image/*" onChange={handleCoverChange} className="text-sm" />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleCoverChange}
+            />
           </Field>
+
+          {/* Full-size preview modal */}
+          {showPreviewModal && (coverPreview || coverImageUrl) && (
+            <Modal title="Gambar Sampul" onClose={() => setShowPreviewModal(false)}>
+              <img
+                src={coverPreview ?? resolveFileUrl(coverImageUrl!)}
+                alt="Gambar sampul"
+                className="max-h-[70vh] w-full rounded-lg object-contain"
+              />
+            </Modal>
+          )}
           <label className="flex items-center gap-2 text-sm text-neutral-700">
             <input
               type="checkbox"
