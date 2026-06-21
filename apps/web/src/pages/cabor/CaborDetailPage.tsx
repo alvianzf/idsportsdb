@@ -185,11 +185,23 @@ export function CaborDetailPage() {
       newReportsToB = a.reportsToId;
     }
 
+    // Collect direct reports of A and B (excluding each other in parent↔child case)
+    const reportsOfA = cabor.pengurus.filter(
+      (p) => p.reportsToId === idA && p.id !== idB,
+    );
+    const reportsOfB = cabor.pengurus.filter(
+      (p) => p.reportsToId === idB && p.id !== idA,
+    );
+
     try {
-      // Exchange jabatan AND reportsToId so the position slot moves, not the person
       await Promise.all([
+        // Swap A and B themselves (jabatan + reportsToId)
         api.patch(`/pengurus/${idA}`, { jabatan: b.jabatan, reportsToId: newReportsToA }),
         api.patch(`/pengurus/${idB}`, { jabatan: a.jabatan, reportsToId: newReportsToB }),
+        // Redirect A's direct reports to B (they now report to B's position)
+        ...reportsOfA.map((p) => api.patch(`/pengurus/${p.id}`, { reportsToId: idB })),
+        // Redirect B's direct reports to A (they now report to A's position)
+        ...reportsOfB.map((p) => api.patch(`/pengurus/${p.id}`, { reportsToId: idA })),
       ]);
       toast.success("Posisi berhasil ditukar.");
       load();
