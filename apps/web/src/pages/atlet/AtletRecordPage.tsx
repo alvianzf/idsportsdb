@@ -121,6 +121,13 @@ export function AtletRecordPage() {
         </button>
       </div>
 
+      {/* Non-active banner — shown when accessed via QR scan for an inactive athlete */}
+      {atlet.statusAtlet !== "ACTIVE" && (
+        <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-xs font-medium text-amber-700">
+          Kartu valid namun status atlet saat ini: {ATHLETE_STATUS_LABELS[atlet.statusAtlet]}
+        </div>
+      )}
+
       {/* Profile card */}
       <div className="bg-white">
         {/* Name & cabor */}

@@ -14,15 +14,23 @@ import {
 
 type ScanState = "idle" | "scanning" | "processing" | "error";
 
+interface VerifyResponse {
+  valid: boolean;
+  reason?: string;
+  athlete?: { atletId: string };
+}
+
 const ERROR_LABELS: Record<string, string> = {
   NOT_FOUND: "Kartu tidak ditemukan.",
   REVOKED: "Kartu telah dicabut.",
   EXPIRED: "Kartu telah habis masa berlaku.",
-  INACTIVE: "Status atlet tidak aktif.",
   camera_denied: "Akses kamera ditolak. Izinkan kamera di pengaturan.",
   bad_qr: "QR code ini bukan kartu atlet KONI Batam.",
   network: "Gagal menghubungi server.",
 };
+
+// Reasons where we navigate to the record page even though valid=false
+const SHOW_RECORD_ANYWAY = new Set(["INACTIVE"]);
 
 export function ScannerPage() {
   const user = useAuthStore((s) => s.user);
@@ -39,7 +47,6 @@ export function ScannerPage() {
   if (!user) return <Navigate to="/login" replace />;
   if (!DATA_ADMIN_ROLES.includes(user.role)) return <Navigate to="/dashboard" replace />;
 
-  // Always stop camera on unmount
   useEffect(() => {
     return () => {
       stopRef.current?.();
@@ -59,13 +66,14 @@ export function ScannerPage() {
 
     setState("processing");
     try {
-      const res = await api.get<{ valid: boolean; reason?: string; athlete?: { atletId: string } }>(
-        `/cards/verify/${cardCode}`,
-      );
-      if (res.data.valid && res.data.athlete?.atletId) {
-        navigate(`/atlet/${res.data.athlete.atletId}/rekam`, { replace: true });
+      const res = await api.get<VerifyResponse>(`/cards/verify/${cardCode}`);
+      const { valid, reason, athlete } = res.data;
+
+      // Navigate to record page if valid, OR if inactive (data still exists)
+      if ((valid || (reason && SHOW_RECORD_ANYWAY.has(reason))) && athlete?.atletId) {
+        navigate(`/atlet/${athlete.atletId}/rekam`, { replace: true });
       } else {
-        setErrorCode(res.data.reason ?? "NOT_FOUND");
+        setErrorCode(reason ?? "NOT_FOUND");
         setState("error");
       }
     } catch {
@@ -92,7 +100,6 @@ export function ScannerPage() {
     }
   }
 
-  // Auto-start web scanner when component mounts
   useEffect(() => {
     if (!native) startScan();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,50 +111,67 @@ export function ScannerPage() {
     navigate(-1);
   }
 
+  const showViewfinder = !native && state !== "processing" && state !== "error";
+
   return (
-    <div className="fixed inset-0 flex flex-col bg-black">
+    <div className="fixed inset-0 flex flex-col" style={{ background: "#000" }}>
       {/* Header */}
-      <div className="relative z-20 flex h-14 shrink-0 items-center justify-between bg-black/80 px-4 pt-[env(safe-area-inset-top)]">
+      <div
+        className="relative z-20 flex h-14 shrink-0 items-center justify-between px-4"
+        style={{ background: "rgba(0,0,0,0.8)", paddingTop: "env(safe-area-inset-top)" }}
+      >
         <button
           onClick={handleBack}
-          className="flex items-center gap-1.5 text-sm font-medium text-white/80 hover:text-white"
+          className="flex items-center gap-1.5 text-sm font-medium"
+          style={{ color: "rgba(255,255,255,0.8)" }}
         >
           <ArrowLeft size={18} /> Kembali
         </button>
-        <span className="text-xs font-medium uppercase tracking-widest text-white/40">Scan Kartu</span>
+        <span
+          className="text-xs font-medium uppercase tracking-widest"
+          style={{ color: "rgba(255,255,255,0.4)" }}
+        >
+          Scan Kartu
+        </span>
       </div>
 
-      {/* Camera / content area */}
-      <div className="relative flex-1 overflow-hidden">
+      {/* Camera area — no overflow-hidden so overlay rects aren't clipped */}
+      <div style={{ position: "relative", flex: 1 }}>
 
-        {/* Web: native <video> fills the container */}
+        {/* Video feed */}
         {!native && (
           <video
             ref={videoRef}
-            className="absolute inset-0 h-full w-full object-cover"
             autoPlay
             playsInline
             muted
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
           />
         )}
 
-        {/* Viewfinder overlay — always present on web so the frame is visible immediately */}
-        {!native && state !== "processing" && state !== "error" && (
-          <div className="pointer-events-none absolute inset-0 z-10">
-            {/* 4-rect dark surround with transparent centre */}
-            <div className="absolute inset-x-0 top-0 bg-black/55" style={{ bottom: "calc(50% + 120px)" }} />
-            <div className="absolute inset-x-0 bottom-0 bg-black/55" style={{ top: "calc(50% + 120px)" }} />
-            <div className="absolute bg-black/55" style={{ top: "calc(50% - 120px)", bottom: "calc(50% - 120px)", left: 0, right: "calc(50% + 120px)" }} />
-            <div className="absolute bg-black/55" style={{ top: "calc(50% - 120px)", bottom: "calc(50% - 120px)", left: "calc(50% + 120px)", right: 0 }} />
+        {/* Viewfinder overlay — 4 dark rects with a transparent 240×240 hole in the centre.
+            Using inline styles throughout so Tailwind compilation is irrelevant. */}
+        {showViewfinder && (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, pointerEvents: "none" }}>
+            {/* top */}
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: "calc(50% + 120px)", background: "rgba(0,0,0,0.6)" }} />
+            {/* bottom */}
+            <div style={{ position: "absolute", top: "calc(50% + 120px)", left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.6)" }} />
+            {/* left */}
+            <div style={{ position: "absolute", top: "calc(50% - 120px)", bottom: "calc(50% - 120px)", left: 0, right: "calc(50% + 120px)", background: "rgba(0,0,0,0.6)" }} />
+            {/* right */}
+            <div style={{ position: "absolute", top: "calc(50% - 120px)", bottom: "calc(50% - 120px)", left: "calc(50% + 120px)", right: 0, background: "rgba(0,0,0,0.6)" }} />
 
-            {/* Corner brackets + scan line */}
-            <div className="absolute" style={{ top: "calc(50% - 120px)", left: "calc(50% - 120px)", width: 240, height: 240 }}>
-              <span className="absolute left-0 top-0 h-8 w-8 rounded-tl-lg border-l-4 border-t-4 border-white" />
-              <span className="absolute right-0 top-0 h-8 w-8 rounded-tr-lg border-r-4 border-t-4 border-white" />
-              <span className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-lg border-b-4 border-l-4 border-white" />
-              <span className="absolute bottom-0 right-0 h-8 w-8 rounded-br-lg border-b-4 border-r-4 border-white" />
+            {/* Corner brackets */}
+            <div style={{ position: "absolute", top: "calc(50% - 120px)", left: "calc(50% - 120px)", width: 240, height: 240 }}>
+              <span style={{ position: "absolute", top: 0, left: 0, width: 32, height: 32, borderTop: "4px solid #fff", borderLeft: "4px solid #fff", borderRadius: "6px 0 0 0" }} />
+              <span style={{ position: "absolute", top: 0, right: 0, width: 32, height: 32, borderTop: "4px solid #fff", borderRight: "4px solid #fff", borderRadius: "0 6px 0 0" }} />
+              <span style={{ position: "absolute", bottom: 0, left: 0, width: 32, height: 32, borderBottom: "4px solid #fff", borderLeft: "4px solid #fff", borderRadius: "0 0 0 6px" }} />
+              <span style={{ position: "absolute", bottom: 0, right: 0, width: 32, height: 32, borderBottom: "4px solid #fff", borderRight: "4px solid #fff", borderRadius: "0 0 6px 0" }} />
+
+              {/* Animated scan line */}
               {state === "scanning" && (
-                <div className="absolute inset-x-0 top-0 h-0.5 bg-primary animate-[scan_2s_linear_infinite]" />
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "#1a56db", animation: "scan 2s linear infinite" }} />
               )}
             </div>
           </div>
@@ -156,15 +180,16 @@ export function ScannerPage() {
         {/* Native idle */}
         {native && state === "idle" && (
           <div className="flex h-full flex-col items-center justify-center gap-6 px-8">
-            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white/10">
-              <QrCode size={48} className="text-white" />
+            <div className="flex h-24 w-24 items-center justify-center rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
+              <QrCode size={48} style={{ color: "#fff" }} />
             </div>
-            <p className="text-center text-sm text-white/60">
+            <p className="text-center text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
               Arahkan kamera ke QR code pada kartu atlet fisik
             </p>
             <button
               onClick={startScan}
-              className="flex items-center gap-2 rounded-full bg-primary px-8 py-3 text-sm font-semibold text-white shadow-lg transition hover:opacity-90 active:scale-95"
+              className="flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold text-white shadow-lg transition hover:opacity-90 active:scale-95"
+              style={{ background: "#1a56db" }}
             >
               <ScanLine size={18} /> Mulai Scan
             </button>
@@ -174,7 +199,10 @@ export function ScannerPage() {
         {/* Processing */}
         {state === "processing" && (
           <div className="flex h-full flex-col items-center justify-center gap-4">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-white" />
+            <div
+              className="h-12 w-12 animate-spin rounded-full border-4"
+              style={{ borderColor: "rgba(255,255,255,0.2)", borderTopColor: "#fff" }}
+            />
             <p className="text-sm font-medium text-white">Memeriksa kartu...</p>
           </div>
         )}
@@ -182,16 +210,19 @@ export function ScannerPage() {
         {/* Error */}
         {state === "error" && (
           <div className="flex h-full flex-col items-center justify-center gap-5 px-8">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-500/20">
-              <QrCode size={40} className="text-red-400" />
+            <div className="flex h-20 w-20 items-center justify-center rounded-full" style={{ background: "rgba(239,68,68,0.2)" }}>
+              <QrCode size={40} style={{ color: "rgb(248,113,113)" }} />
             </div>
             <div className="text-center">
               <p className="text-base font-semibold text-white">Scan Gagal</p>
-              <p className="mt-2 text-sm text-white/60">{ERROR_LABELS[errorCode ?? ""] ?? "Terjadi kesalahan."}</p>
+              <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
+                {ERROR_LABELS[errorCode ?? ""] ?? "Terjadi kesalahan."}
+              </p>
             </div>
             <button
               onClick={startScan}
-              className="flex items-center gap-2 rounded-full border border-white/20 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-white/10"
+              className="flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-medium text-white transition"
+              style={{ border: "1px solid rgba(255,255,255,0.2)" }}
             >
               <RefreshCw size={16} /> Coba Lagi
             </button>
@@ -201,9 +232,17 @@ export function ScannerPage() {
 
       {/* Bottom hint */}
       {state === "scanning" && (
-        <div className="relative z-20 flex shrink-0 flex-col items-center gap-1.5 bg-black/80 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3">
-          <ScanLine size={16} className="text-white/40" />
-          <p className="text-xs text-white/40">Arahkan ke QR code kartu atlet</p>
+        <div
+          className="relative z-20 flex shrink-0 flex-col items-center gap-1.5 pt-3"
+          style={{
+            background: "rgba(0,0,0,0.8)",
+            paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",
+          }}
+        >
+          <ScanLine size={16} style={{ color: "rgba(255,255,255,0.4)" }} />
+          <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+            Arahkan ke QR code kartu atlet
+          </p>
         </div>
       )}
     </div>

@@ -287,21 +287,22 @@ cardsRouter.get(
       res.json({ valid: false, reason: "EXPIRED" });
       return;
     }
+    // Always include atletId so authenticated admins can navigate to the record page
+    // even when the athlete is inactive.
+    const athletePayload = {
+      atletId: card.atlet.id,
+      namaLengkap: card.atlet.namaLengkap,
+      nomorIndukAtlet: card.atlet.nomorIndukAtlet,
+      cabangOlahraga: card.atlet.cabangOlahraga,
+      fotoUrl: card.atlet.fotoUrl,
+      statusAtlet: card.atlet.statusAtlet,
+    };
+
     if (card.atlet.statusAtlet !== "ACTIVE") {
-      res.json({ valid: false, reason: "INACTIVE" });
+      res.json({ valid: false, reason: "INACTIVE", athlete: athletePayload });
       return;
     }
 
-    res.json({
-      valid: true,
-      athlete: {
-        atletId: card.atlet.id,
-        namaLengkap: card.atlet.namaLengkap,
-        nomorIndukAtlet: card.atlet.nomorIndukAtlet,
-        cabangOlahraga: card.atlet.cabangOlahraga,
-        fotoUrl: card.atlet.fotoUrl,
-        statusAtlet: card.atlet.statusAtlet,
-      },
-    });
+    res.json({ valid: true, athlete: athletePayload });
   }),
 );
