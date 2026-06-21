@@ -1,4 +1,4 @@
-import { useState, type DragEvent } from "react";
+import { useState, type DragEvent, type RefObject, useRef } from "react";
 import { LayoutGrid, GitBranch, Table as TableIcon, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "../../components/ui";
 
@@ -224,7 +224,13 @@ function ChartNode({
   onReassign: (id: string, reportsToId: string | null) => void;
   onSwap: (idA: string, idB: string) => void;
 }) {
-  const [dragOver, setDragOver] = useState(false);
+  const [dragZone, setDragZone] = useState<"top" | "bottom" | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  function getZone(e: DragEvent<HTMLDivElement>): "top" | "bottom" {
+    const rect = (cardRef as RefObject<HTMLDivElement>).current!.getBoundingClientRect();
+    return e.clientY < rect.top + rect.height / 2 ? "top" : "bottom";
+  }
 
   function handleDragStart(e: DragEvent<HTMLDivElement>) {
     e.dataTransfer.setData("text/plain", node.id);
@@ -234,30 +240,69 @@ function ChartNode({
   function handleDragOver(e: DragEvent<HTMLDivElement>) {
     if (!canManage) return;
     e.preventDefault();
-    setDragOver(true);
+    setDragZone(getZone(e));
+  }
+
+  function handleDragLeave(e: DragEvent<HTMLDivElement>) {
+    if (!cardRef.current?.contains(e.relatedTarget as Node)) setDragZone(null);
   }
 
   function handleDrop(e: DragEvent<HTMLDivElement>) {
     if (!canManage) return;
     e.preventDefault();
-    setDragOver(false);
+    const zone = getZone(e);
+    setDragZone(null);
     const draggedId = e.dataTransfer.getData("text/plain");
-    // Drop onto another card → swap positions (exchange reportsToId)
-    if (draggedId && draggedId !== node.id) onSwap(draggedId, node.id);
+    if (!draggedId || draggedId === node.id) return;
+    if (zone === "top") {
+      onSwap(draggedId, node.id);
+    } else {
+      // Make dragged node report to this node
+      onReassign(draggedId, node.id);
+    }
   }
 
   return (
     <div className="flex flex-col items-center">
       <div
+        ref={cardRef}
         draggable={canManage}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
-        onDragLeave={() => setDragOver(false)}
+        onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`min-w-[180px] rounded-md border-2 bg-white p-2 text-center text-sm shadow-sm transition-colors ${
-          dragOver ? "border-primary bg-primary-50" : "border-neutral-200"
+        className={`relative min-w-[180px] rounded-md border-2 bg-white p-2 text-center text-sm shadow-sm transition-colors ${
+          dragZone ? "border-primary" : "border-neutral-200"
         } ${canManage ? "cursor-grab active:cursor-grabbing" : ""}`}
       >
+        {/* Split drop-zone overlay — visible while dragging over this card */}
+        {dragZone && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex flex-col overflow-hidden rounded-md">
+            {/* Top half — swap/replace */}
+            <div
+              className={`flex flex-1 items-center justify-center text-xs font-semibold transition-colors ${
+                dragZone === "top"
+                  ? "bg-primary/20 text-primary"
+                  : "bg-neutral-100/60 text-neutral-400"
+              }`}
+            >
+              ↕ Tukar Posisi
+            </div>
+            {/* Divider */}
+            <div className="h-px bg-primary/30" />
+            {/* Bottom half — make direct report */}
+            <div
+              className={`flex flex-1 items-center justify-center text-xs font-semibold transition-colors ${
+                dragZone === "bottom"
+                  ? "bg-primary/20 text-primary"
+                  : "bg-neutral-100/60 text-neutral-400"
+              }`}
+            >
+              ↓ Jadikan Bawahan
+            </div>
+          </div>
+        )}
+
         <p className="font-medium text-neutral-900">{node.namaPengurus}</p>
         <p className="text-xs text-neutral-500">{node.jabatan}</p>
         {canManage && (
@@ -309,7 +354,7 @@ function ChartView({
     <div className="space-y-2">
       {canManage && (
         <p className="text-xs text-neutral-400">
-          Seret kartu ke kotak lain untuk menukar posisi, atau ke area di bawah untuk menjadikannya paling atas (tidak melapor kepada siapa pun).
+          Seret kartu ke kotak lain: lepas di <strong>bagian atas</strong> kartu untuk tukar posisi, atau di <strong>bagian bawah</strong> untuk menjadikannya bawahan langsung. Lepas ke area kosong di bawah untuk menjadikannya paling atas.
         </p>
       )}
       <div className="overflow-x-auto rounded-md border border-neutral-100 p-4">
