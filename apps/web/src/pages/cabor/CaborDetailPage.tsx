@@ -156,10 +156,10 @@ export function CaborDetailPage() {
     }
 
     try {
-      // Exchange the two reportsToId values simultaneously
+      // Exchange jabatan AND reportsToId so the position slot moves, not the person
       await Promise.all([
-        api.patch(`/pengurus/${idA}`, { reportsToId: b.reportsToId }),
-        api.patch(`/pengurus/${idB}`, { reportsToId: a.reportsToId }),
+        api.patch(`/pengurus/${idA}`, { jabatan: b.jabatan, reportsToId: b.reportsToId }),
+        api.patch(`/pengurus/${idB}`, { jabatan: a.jabatan, reportsToId: a.reportsToId }),
       ]);
       toast.success("Posisi berhasil ditukar.");
       load();
