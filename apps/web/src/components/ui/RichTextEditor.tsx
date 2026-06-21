@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import ImageExtension from "@tiptap/extension-image";
@@ -90,6 +90,9 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const initializedRef = useRef(false);
+  // Incremented on every selection change so the toolbar re-renders and
+  // editor.isActive("image") is re-evaluated when the user clicks an image.
+  const [, forceRender] = useState(0);
 
   const editor = useEditor({
     extensions: [
@@ -101,6 +104,9 @@ export function RichTextEditor({
     content: value,
     onUpdate({ editor }) {
       onChange(editor.getHTML());
+    },
+    onSelectionUpdate() {
+      forceRender((n) => n + 1);
     },
   });
 
