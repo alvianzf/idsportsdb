@@ -145,3 +145,5 @@ body.barcode-scanner-active #root {
   background: transparent !important;
   background-color: transparent !important;
 }
+
+.rte-content .ProseMirror img.ProseMirror-selectednode { outline: 2px solid var(--color-primary); outline-offset: 2px; }

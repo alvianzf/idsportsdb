@@ -18,7 +18,25 @@ import {
   ImagePlus,
   Undo2,
   Redo2,
+  Trash2,
 } from "lucide-react";
+
+// Extend Image to support a width attribute so users can resize inline
+const ResizableImage = ImageExtension.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: "100%",
+        parseHTML: (el) =>
+          el.style.width || el.getAttribute("width") || "100%",
+        renderHTML: (attrs) => ({
+          style: `width: ${attrs.width}; height: auto; display: block;`,
+        }),
+      },
+    };
+  },
+});
 
 interface RichTextEditorProps {
   value: string;
@@ -56,10 +74,17 @@ function Divider() {
   return <div className="mx-0.5 h-5 w-px bg-neutral-200" />;
 }
 
+const SIZE_PRESETS = [
+  { label: "25%", value: "25%" },
+  { label: "50%", value: "50%" },
+  { label: "75%", value: "75%" },
+  { label: "100%", value: "100%" },
+];
+
 export function RichTextEditor({
   value,
   onChange,
-  placeholder = "Tulis konten artikel di sini...",
+  placeholder = "Tulis konten pengumuman di sini...",
   onImageUpload,
   className = "",
 }: RichTextEditorProps) {
@@ -69,7 +94,7 @@ export function RichTextEditor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: { levels: [2, 3] } }),
-      ImageExtension.configure({ inline: false, allowBase64: false }),
+      ResizableImage.configure({ inline: false, allowBase64: false }),
       LinkExtension.configure({ openOnClick: false, autolink: true }),
       Placeholder.configure({ placeholder }),
     ],
@@ -79,7 +104,6 @@ export function RichTextEditor({
     },
   });
 
-  // Sync external value changes (e.g., when edit form loads data from API)
   useEffect(() => {
     if (!editor || initializedRef.current) return;
     if (value) {
@@ -113,7 +137,20 @@ export function RichTextEditor({
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
   }
 
+  function setImageWidth(width: string) {
+    if (!editor) return;
+    editor.chain().focus().updateAttributes("image", { width }).run();
+  }
+
+  function deleteImage() {
+    if (!editor) return;
+    editor.chain().focus().deleteSelection().run();
+  }
+
   if (!editor) return null;
+
+  const currentWidth: string =
+    (editor.isActive("image") && editor.getAttributes("image").width) || "100%";
 
   return (
     <div className={`overflow-hidden rounded-md border border-neutral-300 focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500 ${className}`}>
@@ -170,6 +207,37 @@ export function RichTextEditor({
         <ToolbarButton title="Redo" onClick={() => editor.chain().focus().redo().run()}>
           <Redo2 size={14} />
         </ToolbarButton>
+
+        {/* Image controls — only visible when an image node is selected */}
+        {editor.isActive("image") && (
+          <>
+            <Divider />
+            <span className="text-xs font-medium text-neutral-400 ml-1">Gambar:</span>
+            {SIZE_PRESETS.map(({ label, value }) => (
+              <button
+                key={value}
+                type="button"
+                title={`Lebar ${label}`}
+                onClick={() => setImageWidth(value)}
+                className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
+                  currentWidth === value
+                    ? "bg-primary text-white"
+                    : "text-neutral-600 hover:bg-neutral-100"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+            <button
+              type="button"
+              title="Hapus gambar"
+              onClick={deleteImage}
+              className="flex h-7 w-7 items-center justify-center rounded text-danger hover:bg-red-50 transition-colors"
+            >
+              <Trash2 size={14} />
+            </button>
+          </>
+        )}
       </div>
 
       {/* Editor content area */}
