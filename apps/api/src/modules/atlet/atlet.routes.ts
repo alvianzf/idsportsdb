@@ -337,6 +337,11 @@ atletRouter.delete(
 
     await prisma.atletDocument.delete({ where: { id: req.params.docId } });
 
+    // If deleting the PAS_FOTO, also clear fotoUrl on the atlet record
+    if (document.type === "PAS_FOTO") {
+      await prisma.atlet.update({ where: { id: req.params.id }, data: { fotoUrl: null } });
+    }
+
     const filePath = path.join(uploadRoot, document.fileUrl.replace("/uploads/", ""));
     fs.unlink(filePath, () => undefined);
 

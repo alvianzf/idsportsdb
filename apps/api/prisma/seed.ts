@@ -55,21 +55,21 @@ async function main() {
   console.log("Seeding cabang olahraga...");
 
   const caborData = [
-    { nama: "Atletik", ketuaCabor: "Budi Santoso", sekretariat: "Jl. Sudirman No. 1, Batam Kota" },
-    { nama: "Renang", ketuaCabor: "Dewi Kusuma", sekretariat: "Jl. Hang Tuah No. 5, Sekupang" },
-    { nama: "Bulu Tangkis", ketuaCabor: "Ahmad Fauzi", sekretariat: "Jl. Imam Bonjol No. 12, Lubuk Baja" },
-    { nama: "Karate", ketuaCabor: "Hendri Wijaya", sekretariat: "Jl. Raja Ali Haji No. 3, Batu Ampar" },
-    { nama: "Taekwondo", ketuaCabor: "Siti Rahayu", sekretariat: "Jl. Duyung No. 7, Nongsa" },
-    { nama: "Pencak Silat", ketuaCabor: "Ruslan Hakim", sekretariat: "Jl. Brigjen Katamso No. 9, Sagulung" },
-    { nama: "Bola Voli", ketuaCabor: "Maya Sari", sekretariat: "Jl. Ahmad Yani No. 15, Bengkong" },
-    { nama: "Sepak Bola", ketuaCabor: "Rudi Hermawan", sekretariat: "Jl. Laksamana Bintan No. 2, Batam Kota" },
+    { nama: "Atletik", ketuaCabor: "Budi Santoso", sekretariat: "Jl. Sudirman No. 1, Batam Kota", organisasiNasional: "PASI" },
+    { nama: "Renang", ketuaCabor: "Dewi Kusuma", sekretariat: "Jl. Hang Tuah No. 5, Sekupang", organisasiNasional: "PRSI" },
+    { nama: "Bulu Tangkis", ketuaCabor: "Ahmad Fauzi", sekretariat: "Jl. Imam Bonjol No. 12, Lubuk Baja", organisasiNasional: "PBSI" },
+    { nama: "Karate", ketuaCabor: "Hendri Wijaya", sekretariat: "Jl. Raja Ali Haji No. 3, Batu Ampar", organisasiNasional: "FORKI" },
+    { nama: "Taekwondo", ketuaCabor: "Siti Rahayu", sekretariat: "Jl. Duyung No. 7, Nongsa", organisasiNasional: "PBTI" },
+    { nama: "Pencak Silat", ketuaCabor: "Ruslan Hakim", sekretariat: "Jl. Brigjen Katamso No. 9, Sagulung", organisasiNasional: "IPSI" },
+    { nama: "Bola Voli", ketuaCabor: "Maya Sari", sekretariat: "Jl. Ahmad Yani No. 15, Bengkong", organisasiNasional: "PBVSI" },
+    { nama: "Sepak Bola", ketuaCabor: "Rudi Hermawan", sekretariat: "Jl. Laksamana Bintan No. 2, Batam Kota", organisasiNasional: "PSSI" },
   ];
 
   const caborMap: Record<string, string> = {};
   for (const data of caborData) {
     const c = await prisma.cabangOlahraga.upsert({
       where: { nama: data.nama },
-      update: { ketuaCabor: data.ketuaCabor, sekretariat: data.sekretariat },
+      update: { ketuaCabor: data.ketuaCabor, sekretariat: data.sekretariat, organisasiNasional: data.organisasiNasional },
       create: data,
     });
     caborMap[data.nama] = c.id;

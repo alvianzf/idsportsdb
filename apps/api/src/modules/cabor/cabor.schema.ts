@@ -4,6 +4,7 @@ export const createCaborSchema = z.object({
   nama: z.string().min(1),
   ketuaCabor: z.string().optional(),
   sekretariat: z.string().optional(),
+  organisasiNasional: z.string().optional(),
 });
 
 export const updateCaborSchema = createCaborSchema.partial();

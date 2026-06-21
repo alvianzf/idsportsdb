@@ -109,12 +109,15 @@ model User {
 }
 
 model CabangOlahraga {
-  id          String   @id @default(uuid())
-  nama        String   @unique
-  ketuaCabor  String?
-  sekretariat String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  nama                String   @unique
+  ketuaCabor          String?
+  sekretariat         String?
+  // National sports organisation for this discipline (e.g. FORKI for Karate)
+  organisasiNasional  String?
+  logoOrganisasiUrl   String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   atlets        Atlet[]
   pelatihs      Pelatih[]

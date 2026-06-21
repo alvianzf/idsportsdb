@@ -24,11 +24,12 @@ interface FieldProps {
   label: string;
   required?: boolean;
   error?: string;
+  hint?: string;
   children: ReactNode;
   htmlFor?: string;
 }
 
-export function Field({ label, required, error, children, htmlFor }: FieldProps) {
+export function Field({ label, required, error, hint, children, htmlFor }: FieldProps) {
   return (
     <div>
       <label htmlFor={htmlFor} className="mb-1 block text-sm font-medium text-neutral-700">
@@ -36,6 +37,7 @@ export function Field({ label, required, error, children, htmlFor }: FieldProps)
         {required && <span className="text-danger"> *</span>}
       </label>
       {children}
+      {hint && !error && <p className="mt-1 text-xs text-neutral-400">{hint}</p>}
       {error && <p className="mt-1 text-xs text-danger">{error}</p>}
     </div>
   );

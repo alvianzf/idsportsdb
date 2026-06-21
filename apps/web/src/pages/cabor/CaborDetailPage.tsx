@@ -4,7 +4,7 @@ import { ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Field, Input, Modal, Combobox } from "../../components/ui";
-import { api } from "../../lib/api";
+import { api, resolveFileUrl } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 import { useAuthStore } from "../../store/authStore";
 import { PengurusViews, type Pengurus } from "./PengurusOrgViews";
@@ -14,6 +14,8 @@ interface CaborDetail {
   nama: string;
   ketuaCabor: string | null;
   sekretariat: string | null;
+  organisasiNasional: string | null;
+  logoOrganisasiUrl: string | null;
   jumlahAtlet: number;
   jumlahPelatih: number;
   pengurus: Pengurus[];
@@ -188,24 +190,40 @@ export function CaborDetailPage() {
       />
 
       <Card className="mb-4">
-        <dl className="grid gap-3 text-sm md:grid-cols-2">
-          <div>
-            <dt className="text-neutral-500">Ketua Cabor</dt>
-            <dd className="font-medium text-neutral-900">{cabor.ketuaCabor ?? "-"}</dd>
-          </div>
-          <div>
-            <dt className="text-neutral-500">Sekretariat</dt>
-            <dd className="font-medium text-neutral-900">{cabor.sekretariat ?? "-"}</dd>
-          </div>
-          <div>
-            <dt className="text-neutral-500">Jumlah Atlet</dt>
-            <dd className="font-medium text-neutral-900">{cabor.jumlahAtlet}</dd>
-          </div>
-          <div>
-            <dt className="text-neutral-500">Jumlah Pelatih</dt>
-            <dd className="font-medium text-neutral-900">{cabor.jumlahPelatih}</dd>
-          </div>
-        </dl>
+        <div className="flex items-start gap-4">
+          {/* Org logo */}
+          {cabor.logoOrganisasiUrl && (
+            <img
+              src={resolveFileUrl(cabor.logoOrganisasiUrl)}
+              alt={cabor.organisasiNasional ?? "Logo"}
+              className="h-20 w-20 shrink-0 rounded-lg border border-neutral-200 object-contain p-1"
+            />
+          )}
+          <dl className="grid flex-1 gap-3 text-sm md:grid-cols-2">
+            {cabor.organisasiNasional && (
+              <div className="md:col-span-2">
+                <dt className="text-neutral-500">Organisasi Nasional</dt>
+                <dd className="font-semibold text-neutral-900">{cabor.organisasiNasional}</dd>
+              </div>
+            )}
+            <div>
+              <dt className="text-neutral-500">Ketua Cabor</dt>
+              <dd className="font-medium text-neutral-900">{cabor.ketuaCabor ?? "-"}</dd>
+            </div>
+            <div>
+              <dt className="text-neutral-500">Sekretariat</dt>
+              <dd className="font-medium text-neutral-900">{cabor.sekretariat ?? "-"}</dd>
+            </div>
+            <div>
+              <dt className="text-neutral-500">Jumlah Atlet</dt>
+              <dd className="font-medium text-neutral-900">{cabor.jumlahAtlet}</dd>
+            </div>
+            <div>
+              <dt className="text-neutral-500">Jumlah Pelatih</dt>
+              <dd className="font-medium text-neutral-900">{cabor.jumlahPelatih}</dd>
+            </div>
+          </dl>
+        </div>
       </Card>
 
       <Card>

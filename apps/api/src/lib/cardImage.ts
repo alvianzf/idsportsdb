@@ -81,11 +81,11 @@ export async function generateCardJpeg(opts: {
   ctx.fillStyle = "rgba(255,255,255,0.75)";
   ctx.fillText("Kartu Atlet Digital", textX, 126);
 
-  // ── Photo (left column) ───────────────────────────────────────────────────
+  // ── Photo (left column) — 2:3 portrait ratio (4×6 pasfoto) ─────────────
   const photoX = 40;
   const photoY = headerH + 28;
-  const photoW = 210;
-  const photoH = H - headerH - 28 - 40; // leave 40px bottom padding
+  const photoW = 194;
+  const photoH = Math.round(photoW * 1.5); // 2:3 → 194×291
 
   if (opts.fotoPath && fs.existsSync(opts.fotoPath)) {
     try {

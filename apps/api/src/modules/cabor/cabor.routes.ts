@@ -1,9 +1,20 @@
+import path from "node:path";
 import { Router } from "express";
+import multer from "multer";
 import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole } from "../../middleware/auth.js";
 import { isNotFoundError, isUniqueConstraintError } from "../../lib/prismaErrors.js";
+import { uploadRoot } from "../../lib/storage.js";
 import { createCaborSchema, updateCaborSchema, listCaborQuerySchema } from "./cabor.schema.js";
+
+const logoUpload = multer({
+  dest: path.join(uploadRoot, "cabor-logos"),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter: (_req, file, cb) => {
+    cb(null, /^image\//.test(file.mimetype));
+  },
+});
 
 export const caborRouter = Router();
 
@@ -133,5 +144,32 @@ caborRouter.delete(
 
     await prisma.cabangOlahraga.delete({ where: { id: req.params.id } });
     res.status(204).send();
+  }),
+);
+
+/** POST /cabor/:id/logo — upload/replace the organisasi logo. */
+caborRouter.post(
+  "/:id/logo",
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI"]),
+  logoUpload.single("file"),
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      res.status(400).json({ error: "File gambar diperlukan." });
+      return;
+    }
+    const ext = path.extname(req.file.originalname).toLowerCase() || ".png";
+    const filename = `${req.params.id}${ext}`;
+    const destPath = path.join(uploadRoot, "cabor-logos", filename);
+
+    // Rename from multer temp file to stable name keyed by cabor id
+    const fs = await import("node:fs/promises");
+    await fs.rename(req.file.path, destPath);
+
+    const logoOrganisasiUrl = `/uploads/cabor-logos/${filename}`;
+    const cabor = await prisma.cabangOlahraga.update({
+      where: { id: req.params.id },
+      data: { logoOrganisasiUrl },
+    });
+    res.json({ logoOrganisasiUrl: cabor.logoOrganisasiUrl });
   }),
 );

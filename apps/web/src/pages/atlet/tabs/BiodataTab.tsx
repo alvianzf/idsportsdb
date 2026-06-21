@@ -4,7 +4,9 @@ import {
   GENDER_LABELS,
   type AthleteStatus,
 } from "@inasportdb/shared-types";
+import { User } from "lucide-react";
 import { Card, Badge } from "../../../components/ui";
+import { resolveFileUrl } from "../../../lib/api";
 import type { AtletDetail } from "../types";
 
 const STATUS_TONE: Record<AthleteStatus, "success" | "danger" | "warning" | "info" | "neutral"> = {
@@ -22,6 +24,21 @@ function formatDate(value: string) {
 export function BiodataTab({ atlet }: { atlet: AtletDetail }) {
   return (
     <Card className="space-y-4">
+      {/* Athlete photo */}
+      <div className="flex justify-center sm:justify-start">
+        {atlet.fotoUrl ? (
+          <img
+            src={resolveFileUrl(atlet.fotoUrl)}
+            alt={atlet.namaLengkap}
+            className="h-32 w-24 rounded-lg border border-neutral-200 object-cover shadow-sm"
+          />
+        ) : (
+          <div className="flex h-32 w-24 items-center justify-center rounded-lg border border-dashed border-neutral-300 bg-neutral-50">
+            <User size={36} className="text-neutral-300" />
+          </div>
+        )}
+      </div>
+
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone={STATUS_TONE[atlet.statusAtlet]}>{ATHLETE_STATUS_LABELS[atlet.statusAtlet]}</Badge>
         <Badge tone="neutral">{ATHLETE_LEVEL_LABELS[atlet.tingkatAtlet]}</Badge>
