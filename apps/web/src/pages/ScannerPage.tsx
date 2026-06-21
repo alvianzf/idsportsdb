@@ -111,7 +111,13 @@ export function ScannerPage() {
     navigate(-1);
   }
 
-  const showViewfinder = !native && state !== "processing" && state !== "error";
+  // Show viewfinder on both web AND native (native camera is behind the webview).
+  // Hide only during processing/error overlay states.
+  const showViewfinder = state === "scanning";
+
+  // On native, the ML Kit camera renders behind the webview — the camera area
+  // must be transparent so the camera is visible through it.
+  const cameraAreaBg = native && state === "scanning" ? "transparent" : "#000";
 
   return (
     <div className="fixed inset-0 flex flex-col" style={{ background: "#000" }}>
@@ -135,10 +141,10 @@ export function ScannerPage() {
         </span>
       </div>
 
-      {/* Camera area — no overflow-hidden so overlay rects aren't clipped */}
-      <div style={{ position: "relative", flex: 1 }}>
+      {/* Camera area */}
+      <div style={{ position: "relative", flex: 1, background: cameraAreaBg }}>
 
-        {/* Video feed */}
+        {/* Web only: own <video> element as camera feed */}
         {!native && (
           <video
             ref={videoRef}
@@ -149,8 +155,10 @@ export function ScannerPage() {
           />
         )}
 
-        {/* Viewfinder overlay — 4 dark rects with a transparent 240×240 hole in the centre.
-            Using inline styles throughout so Tailwind compilation is irrelevant. */}
+        {/* Viewfinder overlay — shown on BOTH web and native.
+            4 semi-transparent rects surround a transparent 240×240 hole.
+            On native the camera renders behind the webview so the hole shows it.
+            All inline styles — no Tailwind dependency. */}
         {showViewfinder && (
           <div style={{ position: "absolute", inset: 0, zIndex: 10, pointerEvents: "none" }}>
             {/* top */}

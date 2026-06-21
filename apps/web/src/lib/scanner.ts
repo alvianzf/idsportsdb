@@ -88,6 +88,12 @@ export async function startNativeScan(onResult: OnResultFn): Promise<StopFn> {
     if (granted !== "granted") throw new Error("camera_denied");
   }
 
+  // Make the webview transparent so the native camera preview shows through.
+  // Our overlay rects in the webview will provide the dark surround + corner brackets.
+  document.documentElement.style.setProperty("--scanner-bg", "transparent");
+  document.body.style.background = "transparent";
+  document.documentElement.style.background = "transparent";
+
   let stopped = false;
   const listener = await BarcodeScanner.addListener("barcodesScanned", (event) => {
     const raw = event.barcodes[0]?.rawValue;
@@ -100,5 +106,8 @@ export async function startNativeScan(onResult: OnResultFn): Promise<StopFn> {
     stopped = true;
     listener.remove();
     BarcodeScanner.stopScan();
+    // Restore webview background
+    document.body.style.background = "";
+    document.documentElement.style.background = "";
   };
 }
