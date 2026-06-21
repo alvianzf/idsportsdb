@@ -69,6 +69,8 @@ export function AtletRecordPage() {
   const [prestasi, setPrestasi] = useState<Prestasi[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showQrModal, setShowQrModal] = useState(false);
+  // Must be called unconditionally before any early returns (Rules of Hooks)
+  const fotoSrc = useAuthenticatedUrl(atlet?.fotoUrl);
 
   if (!user) return <Navigate to="/login" replace />;
 
@@ -108,7 +110,6 @@ export function AtletRecordPage() {
   }
 
   const activeCard = card && !card.isRevoked ? card : null;
-  const fotoSrc = useAuthenticatedUrl(atlet.fotoUrl);
 
   return (
     <div className="min-h-svh bg-neutral-100">
