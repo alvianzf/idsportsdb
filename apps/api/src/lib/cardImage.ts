@@ -147,16 +147,26 @@ export async function generateCardJpeg(opts: {
   ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
 
   // ── Footer strip ──────────────────────────────────────────────────────────
-  const footerY = H - 56;
-  ctx.fillStyle = "#990000";
-  ctx.fillRect(0, footerY, W, 56);
+  const footerH = 72;
+  const footerY = H - footerH;
+  ctx.fillStyle = "#f4f4f5"; // light grey (NEUTRAL_100)
+  ctx.fillRect(0, footerY, W, footerH);
+  // top border
+  ctx.strokeStyle = NEUTRAL_200;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, footerY);
+  ctx.lineTo(W, footerY);
+  ctx.stroke();
 
-  ctx.fillStyle = "#ffffff";
-  ctx.font = `bold 20px sans-serif`;
-  ctx.fillText("KONI KOTA BATAM", 44, footerY + 22);
+  // Address + email centred vertically with generous padding
+  const footerMid = footerY + footerH / 2;
+  ctx.fillStyle = NEUTRAL_500;
+  ctx.font = `18px sans-serif`;
+  ctx.fillText("Kompleks Ruko KBC Blok A5 No.1, Kel. Belian, Kec. Batam Kota, Kota Batam", 44, footerMid - 10);
   ctx.font = `16px sans-serif`;
-  ctx.fillStyle = "rgba(255,255,255,0.75)";
-  ctx.fillText("Kompleks Ruko KBC Blok A5 No.1, Batam Kota  ·  konikotabatam2024@gmail.com", 44, footerY + 42);
+  ctx.fillStyle = "#a1a1aa";
+  ctx.fillText("konikotabatam2024@gmail.com", 44, footerMid + 14);
 
   // ── Card border ───────────────────────────────────────────────────────────
   roundRect(ctx, 0, 0, W, H, RADIUS);
