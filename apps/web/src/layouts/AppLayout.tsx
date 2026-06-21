@@ -20,23 +20,30 @@ export function AppLayout() {
       <Sidebar items={items} />
 
       <div className="flex min-h-svh flex-1 flex-col">
-        <header className="flex min-h-14 items-center justify-between border-b border-neutral-200 bg-white px-4 pt-[env(safe-area-inset-top)] md:h-16 md:px-6 md:pt-0">
+        <header
+          className="flex min-h-14 items-center justify-between px-4 pt-[env(safe-area-inset-top)] md:h-16 md:px-6 md:pt-0"
+          style={{ background: "#990000" }}
+        >
           <div className="flex items-center gap-2 md:hidden">
             <img src="/logo-koni-batam.png" alt="KONI Batam" className="h-8 w-8 object-contain" />
-            <span className="text-sm font-semibold">KONI Batam</span>
+            <span className="text-sm font-semibold text-white">KONI Batam</span>
           </div>
           <div className="hidden md:block" />
           <div className="flex items-center gap-3">
-            <Link to="/settings/profile" className="text-right hover:opacity-70 transition-opacity">
-              <p className="text-sm font-medium leading-tight">{user.fullName}</p>
-              <p className="text-xs text-neutral-500 leading-tight">
+            <Link
+              to="/settings/profile"
+              className="text-right transition-opacity hover:opacity-80"
+            >
+              <p className="text-sm font-medium leading-tight text-white">{user.fullName}</p>
+              <p className="text-xs leading-tight" style={{ color: "rgba(255,255,255,0.65)" }}>
                 {user.role.replace(/_/g, " ")}
               </p>
             </Link>
             <button
               onClick={logout}
               aria-label="Keluar"
-              className="rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-primary"
+              className="rounded-md p-2 transition-colors"
+              style={{ color: "rgba(255,255,255,0.75)" }}
             >
               <LogOut size={18} />
             </button>

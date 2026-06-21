@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, FileText, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, FileText, Pencil, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Field, Input, Modal, Combobox } from "../../components/ui";
+import { Card, PageHeader, Button, Field, Input, Modal, Combobox, DropZone } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 import { useAuthStore } from "../../store/authStore";
@@ -387,7 +387,6 @@ function CaborDokumenSection({ caborId, canManage }: { caborId: string; canManag
   const [deskripsi, setDeskripsi] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   function loadDocs() {
     api.get<CaborDoc[]>(`/cabor/${caborId}/documents`).then((r) => setDocs(r.data)).catch(() => undefined);
@@ -517,23 +516,13 @@ function CaborDokumenSection({ caborId, canManage }: { caborId: string; canManag
             <Field label="Deskripsi" htmlFor="deskripsi">
               <Input id="deskripsi" value={deskripsi} onChange={(e) => setDeskripsi(e.target.value)} />
             </Field>
-            <div>
-              <p className="mb-1.5 text-sm font-medium text-neutral-700">File <span className="text-danger">*</span></p>
-              {file ? (
-                <div className="flex items-center gap-2 text-sm">
-                  <FileText size={15} className="text-neutral-400" />
-                  <span className="text-neutral-700">{file.name}</span>
-                  <button type="button" onClick={() => setFile(null)} className="text-xs text-neutral-400 hover:text-danger">Hapus</button>
-                </div>
-              ) : (
-                <label className="cursor-pointer">
-                  <span className="inline-flex items-center gap-1.5 rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 hover:border-primary">
-                    <Upload size={14} /> Pilih file
-                  </span>
-                  <input ref={fileRef} type="file" className="hidden" onChange={(e: ChangeEvent<HTMLInputElement>) => setFile(e.target.files?.[0] ?? null)} />
-                </label>
-              )}
-            </div>
+            <Field label="File" required>
+              <DropZone
+                value={file}
+                onChange={setFile}
+                sublabel="PDF, DOC, JPG — maks. 20 MB"
+              />
+            </Field>
             <div className="flex gap-2 pt-1">
               <Button type="submit" disabled={saving}>{saving ? "Menyimpan…" : "Simpan"}</Button>
               <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Batal</Button>

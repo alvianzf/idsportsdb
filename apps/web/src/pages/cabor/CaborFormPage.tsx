@@ -1,8 +1,6 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Upload } from "lucide-react";
-import toast from "react-hot-toast";
-import { Card, PageHeader, Button, Field, Input } from "../../components/ui";
+import { Card, PageHeader, Button, Field, Input, DropZone } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
 
 interface CaborForm {
@@ -22,11 +20,12 @@ export function CaborFormPage() {
 
   const [form, setForm] = useState<CaborForm>(empty);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => {
     if (!id) return;
@@ -45,24 +44,8 @@ export function CaborFormPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  async function handleLogoUpload(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !id) return;
-    setUploadingLogo(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await api.post(`/cabor/${id}/logo`, fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setLogoUrl(res.data.logoOrganisasiUrl);
-      toast.success("Logo berhasil diunggah.");
-    } catch {
-      toast.error("Gagal mengunggah logo.");
-    } finally {
-      setUploadingLogo(false);
-      if (fileRef.current) fileRef.current.value = "";
-    }
+  function handleLogoFileChange(file: File | null) {
+    setLogoFile(file);
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -76,13 +59,28 @@ export function CaborFormPage() {
         sekretariat: form.sekretariat || undefined,
         organisasiNasional: form.organisasiNasional || undefined,
       };
+
+      let caborId = id;
       if (isEdit) {
         await api.patch(`/cabor/${id}`, payload);
-        navigate(`/cabor/${id}`);
       } else {
         const res = await api.post("/cabor", payload);
-        navigate(`/cabor/${res.data.id}`);
+        caborId = res.data.id;
       }
+
+      // Upload staged logo after the record is saved
+      if (logoFile && caborId) {
+        setUploadingLogo(true);
+        const fd = new FormData();
+        fd.append("file", logoFile);
+        await api.post(`/cabor/${caborId}/logo`, fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        setUploadingLogo(false);
+        setLogoFile(null);
+      }
+
+      navigate(`/cabor/${caborId}`);
     } catch (err) {
       const message =
         (err as { response?: { data?: { error?: string } } }).response?.data?.error ??
@@ -90,6 +88,7 @@ export function CaborFormPage() {
       setError(typeof message === "string" ? message : "Gagal menyimpan data.");
     } finally {
       setSaving(false);
+      setUploadingLogo(false);
     }
   }
 
@@ -135,36 +134,17 @@ export function CaborFormPage() {
 
           {/* Logo upload — only available when editing an existing cabor */}
           {isEdit && (
-            <div>
-              <p className="mb-1.5 text-sm font-medium text-neutral-700">Logo Organisasi</p>
-              <div className="flex items-center gap-4">
-                {logoUrl ? (
-                  <img
-                    src={resolveFileUrl(logoUrl)}
-                    alt="Logo"
-                    className="h-16 w-16 rounded-lg border border-neutral-200 object-contain p-1"
-                  />
-                ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-neutral-300 text-xs text-neutral-400">
-                    Belum ada
-                  </div>
-                )}
-                <label className="cursor-pointer">
-                  <span className="inline-flex items-center gap-1.5 rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 hover:border-primary hover:text-primary transition">
-                    <Upload size={14} /> {uploadingLogo ? "Mengunggah..." : "Unggah Logo"}
-                  </span>
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={uploadingLogo}
-                    onChange={handleLogoUpload}
-                  />
-                </label>
-              </div>
-              <p className="mt-1 text-xs text-neutral-400">PNG, JPG, SVG — maks. 5 MB</p>
-            </div>
+            <Field label="Logo Organisasi">
+              <DropZone
+                accept="image/*"
+                value={logoFile}
+                existingUrl={logoUrl ? resolveFileUrl(logoUrl) : null}
+                onChange={handleLogoFileChange}
+                disabled={uploadingLogo}
+                sublabel="PNG, JPG, SVG — maks. 5 MB"
+                label={uploadingLogo ? "Mengunggah..." : "Seret & lepas logo di sini"}
+              />
+            </Field>
           )}
 
           {error && <p className="text-sm text-danger">{error}</p>}
