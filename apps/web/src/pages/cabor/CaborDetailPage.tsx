@@ -172,13 +172,15 @@ export function CaborDetailPage() {
     let newReportsToB: string | null;
 
     if (aIsParentOfB) {
-      // A is B's parent. After swap: both report to A's original parent.
-      newReportsToA = a.reportsToId;
-      newReportsToB = a.reportsToId;
+      // A is B's parent. B takes A's senior slot (reports to A's original parent).
+      // A takes B's junior slot (now reports to B, the new senior).
+      newReportsToA = idB;          // A → reports to B
+      newReportsToB = a.reportsToId; // B → reports to A's original parent (or null)
     } else if (bIsParentOfA) {
-      // B is A's parent. After swap: both report to B's original parent.
-      newReportsToA = b.reportsToId;
-      newReportsToB = b.reportsToId;
+      // B is A's parent. A takes B's senior slot (reports to B's original parent).
+      // B takes A's junior slot (now reports to A, the new senior).
+      newReportsToA = b.reportsToId; // A → reports to B's original parent (or null)
+      newReportsToB = idA;           // B → reports to A
     } else {
       // Siblings or unrelated — plain exchange.
       newReportsToA = b.reportsToId;
