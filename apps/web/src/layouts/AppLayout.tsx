@@ -17,11 +17,14 @@ export function AppLayout() {
 
   return (
     <div className="flex min-h-svh bg-neutral-50">
-      <Sidebar items={items} />
+      {/* Sidebar sticks to the left viewport edge and doesn't scroll */}
+      <div className="sticky top-0 hidden h-svh shrink-0 md:block">
+        <Sidebar items={items} />
+      </div>
 
-      <div className="flex min-h-svh flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <header
-          className="flex min-h-14 items-center justify-between px-4 pt-[env(safe-area-inset-top)] md:h-16 md:px-6 md:pt-0"
+          className="sticky top-0 z-30 flex min-h-14 items-center justify-between px-4 pt-[env(safe-area-inset-top)] md:h-16 md:px-6 md:pt-0"
           style={{ background: "#990000" }}
         >
           <div className="flex items-center gap-2 md:hidden">

@@ -14,7 +14,7 @@ export function Sidebar({ items }: { items: NavItem[] }) {
 
   return (
     <aside
-      className="hidden shrink-0 flex-col md:flex transition-all duration-200"
+      className="flex h-full flex-col transition-all duration-200"
       style={{ width: collapsed ? 56 : 240, background: SIDEBAR_NAV_BG }}
     >
       {/* Brand header — same colour as top navbar */}
