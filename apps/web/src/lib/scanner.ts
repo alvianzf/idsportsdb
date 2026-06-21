@@ -88,11 +88,14 @@ export async function startNativeScan(onResult: OnResultFn): Promise<StopFn> {
     if (granted !== "granted") throw new Error("camera_denied");
   }
 
-  // Make the webview transparent so the native camera preview shows through.
-  // Our overlay rects in the webview will provide the dark surround + corner brackets.
-  document.documentElement.style.setProperty("--scanner-bg", "transparent");
+  // Make the ENTIRE webview transparent immediately (before startScan) so the native
+  // camera preview (rendered behind the webview by ML Kit) shows through.
+  // This must happen synchronously before startScan() or the camera won't be visible.
   document.body.style.background = "transparent";
   document.documentElement.style.background = "transparent";
+  document.body.classList.add("barcode-scanner-active");
+  const rootEl = document.getElementById("root");
+  if (rootEl) { rootEl.style.background = "transparent"; rootEl.style.backgroundColor = "transparent"; }
 
   let stopped = false;
   const listener = await BarcodeScanner.addListener("barcodesScanned", (event) => {
@@ -106,8 +109,11 @@ export async function startNativeScan(onResult: OnResultFn): Promise<StopFn> {
     stopped = true;
     listener.remove();
     BarcodeScanner.stopScan();
-    // Restore webview background
+    // Restore webview backgrounds
     document.body.style.background = "";
     document.documentElement.style.background = "";
+    document.body.classList.remove("barcode-scanner-active");
+    const rootEl = document.getElementById("root");
+    if (rootEl) { rootEl.style.background = ""; rootEl.style.backgroundColor = ""; }
   };
 }

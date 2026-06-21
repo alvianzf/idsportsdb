@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CreditCard, Download, Maximize2, XCircle } from "lucide-react";
+import { CreditCard, IdCard, QrCode, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { QRCodeSVG } from "qrcode.react";
 import { Card, Button, Badge, Modal } from "../../../components/ui";
@@ -72,7 +72,7 @@ export function KartuTab({ atletId, canManage, self = false }: KartuTabProps) {
     }
   }
 
-  async function handleDownload(format: "pdf" | "png") {
+  async function handleDownload(format: "jpeg" | "png") {
     if (!card) return;
     setBusy(true);
     try {
@@ -83,7 +83,7 @@ export function KartuTab({ atletId, canManage, self = false }: KartuTabProps) {
       const url = URL.createObjectURL(res.data as Blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = format === "pdf" ? "kartu-atlet.pdf" : "kartu-atlet-qr.png";
+      link.download = format === "jpeg" ? "kartu-atlet.jpg" : "kartu-atlet-qr.png";
       link.click();
       URL.revokeObjectURL(url);
     } catch {
@@ -147,19 +147,16 @@ export function KartuTab({ atletId, canManage, self = false }: KartuTabProps) {
           </div>
 
           {!card.isRevoked && (
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => setShowQrModal(true)}>
-                <Maximize2 size={16} /> Lihat QR
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => handleDownload("jpeg")} disabled={busy} title="Unduh Kartu">
+                <IdCard size={16} /> Kartu
               </Button>
-              <Button variant="outline" onClick={() => handleDownload("pdf")} disabled={busy}>
-                <Download size={16} /> Unduh PDF
-              </Button>
-              <Button variant="outline" onClick={() => handleDownload("png")} disabled={busy}>
-                <Download size={16} /> Unduh QR
+              <Button variant="outline" onClick={() => handleDownload("png")} disabled={busy} title="Unduh QR">
+                <QrCode size={16} /> QR
               </Button>
               {canManage && !self && (
                 <Button variant="danger" onClick={handleRevoke} disabled={busy}>
-                  <XCircle size={16} /> Cabut Kartu
+                  <XCircle size={16} /> Cabut
                 </Button>
               )}
             </div>

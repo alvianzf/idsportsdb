@@ -138,3 +138,10 @@ body {
   0%   { top: 0; }
   100% { top: 100%; }
 }
+
+/* Required for @capacitor-mlkit/barcode-scanning transparent webview mode */
+body.barcode-scanner-active,
+body.barcode-scanner-active #root {
+  background: transparent !important;
+  background-color: transparent !important;
+}

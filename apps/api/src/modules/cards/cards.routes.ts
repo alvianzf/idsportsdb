@@ -6,8 +6,9 @@ import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole, scopeToCabor } from "../../middleware/auth.js";
 import { caborTambahanInclude, canAccessAtlet } from "../atlet/atlet.service.js";
 import { generateQrPng } from "../../lib/qr.js";
-import { streamPdf } from "../../lib/pdf.js";
+import { generateCardJpeg } from "../../lib/cardImage.js";
 import { uploadRoot } from "../../lib/storage.js";
+// streamPdf removed — card download now serves JPEG via generateCardJpeg
 import { issueCardSchema, downloadCardQuerySchema } from "./cards.schema.js";
 import { issueCard, getCurrentCard } from "./cards.service.js";
 
@@ -162,103 +163,27 @@ atletCardRouter.get(
       return;
     }
 
-    streamPdf(res, `kartu-atlet-${atlet.nomorIndukAtlet}.pdf`, (doc) => {
-      // CR80 card: 85.6mm × 53.98mm = 242.6pt × 153pt, centred on A4
-      const cardW = 243;
-      const cardH = 153;
-      const pageW = doc.page.width;   // 595pt (A4)
-      const pageH = doc.page.height;  // 842pt
-      const cx = (pageW - cardW) / 2;
-      const cy = (pageH - cardH) / 2;
+    // JPEG card image (CR80 at 300 dpi — 1012 × 638 px)
+    const fotoPath = atlet.fotoUrl
+      ? path.join(uploadRoot, atlet.fotoUrl.replace("/uploads/", ""))
+      : null;
 
-      // ── Card outline ──────────────────────────────────────────────────────
-      doc.roundedRect(cx, cy, cardW, cardH, 6).fillAndStroke("#ffffff", "#cccccc");
-
-      // ── Header band ───────────────────────────────────────────────────────
-      const headerH = 30;
-      doc.save();
-      doc.roundedRect(cx, cy, cardW, headerH, 6).clip();
-      doc.rect(cx, cy, cardW, headerH).fill("#1a56db");
-      doc.restore();
-
-      doc.fillColor("#ffffff").fontSize(9).font("Helvetica-Bold")
-        .text("KONI BATAM", cx + 8, cy + 7, { width: cardW - 16 })
-        .fontSize(7).font("Helvetica")
-        .text("Kartu Atlet Digital", cx + 8, cy + 18, { width: cardW - 16 });
-
-      // ── Photo ─────────────────────────────────────────────────────────────
-      const photoX = cx + 8;
-      const photoY = cy + headerH + 8;
-      const photoW = 55;
-      const photoH = 70;
-
-      if (atlet.fotoUrl) {
-        const fotoPath = path.join(uploadRoot, atlet.fotoUrl.replace("/uploads/", ""));
-        try {
-          doc.save();
-          doc.rect(photoX, photoY, photoW, photoH).clip();
-          doc.image(fotoPath, photoX, photoY, { width: photoW, height: photoH, cover: [photoW, photoH] });
-          doc.restore();
-          doc.rect(photoX, photoY, photoW, photoH).stroke("#dddddd");
-        } catch {
-          // photo missing — draw placeholder
-          doc.rect(photoX, photoY, photoW, photoH).fillAndStroke("#f0f0f0", "#dddddd");
-          doc.fillColor("#aaaaaa").fontSize(7).text("Foto", photoX, photoY + photoH / 2 - 4, { width: photoW, align: "center" });
-        }
-      } else {
-        doc.rect(photoX, photoY, photoW, photoH).fillAndStroke("#f0f0f0", "#dddddd");
-        doc.fillColor("#aaaaaa").fontSize(7).text("Foto", photoX, photoY + photoH / 2 - 4, { width: photoW, align: "center" });
-      }
-
-      // ── Athlete info ──────────────────────────────────────────────────────
-      const infoX = cx + photoW + 16;
-      const infoW = cardW - photoW - 24;
-      let infoY = cy + headerH + 8;
-
-      doc.fillColor("#111111").font("Helvetica-Bold").fontSize(8.5)
-        .text(atlet.namaLengkap, infoX, infoY, { width: infoW });
-      infoY += 13;
-
-      doc.fillColor("#555555").font("Helvetica").fontSize(7)
-        .text(atlet.cabangOlahraga.nama, infoX, infoY, { width: infoW });
-      infoY += 11;
-
-      doc.fillColor("#777777").fontSize(6.5)
-        .text("No. Induk", infoX, infoY, { width: infoW });
-      infoY += 9;
-      doc.fillColor("#111111").font("Helvetica-Bold").fontSize(7.5)
-        .text(atlet.nomorIndukAtlet, infoX, infoY, { width: infoW });
-      infoY += 11;
-
-      doc.fillColor("#777777").font("Helvetica").fontSize(6.5)
-        .text("No. Registrasi", infoX, infoY, { width: infoW });
-      infoY += 9;
-      doc.fillColor("#111111").font("Helvetica-Bold").fontSize(7)
-        .text(atlet.nomorRegistrasi, infoX, infoY, { width: infoW });
-
-      // ── QR code ───────────────────────────────────────────────────────────
-      const qrSize = 48;
-      const qrX = cx + cardW - qrSize - 8;
-      const qrY = cy + headerH + 8;
-      doc.image(qrPng, qrX, qrY, { width: qrSize, height: qrSize });
-
-      // ── Footer strip ──────────────────────────────────────────────────────
-      const footerY = cy + cardH - 18;
-      doc.save();
-      doc.rect(cx, footerY, cardW, 18).clip();
-      // bottom corners need rounding — redraw clip with rounded bottom
-      doc.restore();
-      doc.rect(cx, footerY, cardW, 18).fill("#f8f8f8");
-      doc.moveTo(cx, footerY).lineTo(cx + cardW, footerY).stroke("#dddddd");
-
-      doc.fillColor("#888888").font("Helvetica").fontSize(5.5)
-        .text(`Kode: ${card.cardCode}`, cx + 8, footerY + 4, { width: cardW - 16 })
-        .text("Verifikasi: scan QR code di atas", cx + 8, footerY + 10, { width: cardW - 16 });
-
-      // ── Cut guide text ────────────────────────────────────────────────────
-      doc.fillColor("#aaaaaa").fontSize(7)
-        .text("Potong mengikuti garis kartu · CR80 85.6 × 54 mm", cx, cy + cardH + 8, { width: cardW, align: "center" });
+    const jpeg = await generateCardJpeg({
+      namaLengkap: atlet.namaLengkap,
+      nomorIndukAtlet: atlet.nomorIndukAtlet,
+      nomorRegistrasi: atlet.nomorRegistrasi,
+      cabangOlahraga: atlet.cabangOlahraga.nama,
+      statusAtlet: atlet.statusAtlet,
+      fotoPath,
+      qrPngBuffer: qrPng,
     });
+
+    res.setHeader("Content-Type", "image/jpeg");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="kartu-atlet-${atlet.nomorIndukAtlet}.jpg"`,
+    );
+    res.send(jpeg);
   }),
 );
 

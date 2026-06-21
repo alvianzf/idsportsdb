@@ -5,7 +5,8 @@ export const issueCardSchema = z.object({
 });
 
 export const downloadCardQuerySchema = z.object({
-  format: z.enum(["pdf", "png"]).default("png"),
+  // "jpeg" = full card image; "png" = QR code only (legacy)
+  format: z.enum(["jpeg", "png"]).default("jpeg"),
 });
 
 export type IssueCardInput = z.infer<typeof issueCardSchema>;

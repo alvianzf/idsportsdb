@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { ArrowLeft, QrCode, RefreshCw, ScanLine } from "lucide-react";
 import { DATA_ADMIN_ROLES } from "@inasportdb/shared-types";
@@ -111,16 +111,30 @@ export function ScannerPage() {
     navigate(-1);
   }
 
-  // Show viewfinder on both web AND native (native camera is behind the webview).
-  // Hide only during processing/error overlay states.
   const showViewfinder = state === "scanning";
 
-  // On native, the ML Kit camera renders behind the webview — the camera area
-  // must be transparent so the camera is visible through it.
-  const cameraAreaBg = native && state === "scanning" ? "transparent" : "#000";
+  // Inline keyframe so this page works even if index.css @keyframes isn't loaded
+  const scanKeyframe = `@keyframes scan-line { 0% { top: 0 } 100% { top: 100% } }`;
+  const scanLineStyle: CSSProperties = {
+    position: "absolute", top: 0, left: 0, right: 0, height: 2,
+    background: "#c8102e",
+    animationName: "scan-line",
+    animationDuration: "2s",
+    animationTimingFunction: "linear",
+    animationIterationCount: "infinite",
+  };
+
+  // When native scanning, EVERY layer must be transparent so the native camera
+  // (which renders behind the webview) shows through the transparent hole.
+  // The dark surround comes from the overlay's rgba rects, not the root background.
+  // On native: always transparent so ML Kit camera (behind webview) shows through.
+  // Transparency is also set imperatively in startNativeScan before the camera starts.
+  const rootBg = native ? "transparent" : "#000";
 
   return (
-    <div className="fixed inset-0 flex flex-col" style={{ background: "#000" }}>
+    <div className="fixed inset-0 flex flex-col" style={{ background: rootBg }}>
+      {/* Inject scan-line keyframe scoped to this page */}
+      <style>{scanKeyframe}</style>
       {/* Header */}
       <div
         className="relative z-20 flex h-14 shrink-0 items-center justify-between px-4"
@@ -141,8 +155,8 @@ export function ScannerPage() {
         </span>
       </div>
 
-      {/* Camera area */}
-      <div style={{ position: "relative", flex: 1, background: cameraAreaBg }}>
+      {/* Camera area — transparent when native scanning so ML Kit camera shows through */}
+      <div style={{ position: "relative", flex: 1, background: native ? "transparent" : "#000" }}>
 
         {/* Web only: own <video> element as camera feed */}
         {!native && (
@@ -178,9 +192,7 @@ export function ScannerPage() {
               <span style={{ position: "absolute", bottom: 0, right: 0, width: 32, height: 32, borderBottom: "4px solid #fff", borderRight: "4px solid #fff", borderRadius: "0 0 6px 0" }} />
 
               {/* Animated scan line */}
-              {state === "scanning" && (
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "#1a56db", animation: "scan 2s linear infinite" }} />
-              )}
+              {state === "scanning" && <div style={scanLineStyle} />}
             </div>
           </div>
         )}
