@@ -147,20 +147,16 @@ export async function generateCardJpeg(opts: {
   ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
 
   // ── Footer strip ──────────────────────────────────────────────────────────
-  const footerY = H - 52;
-  ctx.fillStyle = NEUTRAL_50;
-  ctx.fillRect(0, footerY, W, 52);
-  // Top border of footer
-  ctx.strokeStyle = NEUTRAL_200;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(0, footerY);
-  ctx.lineTo(W, footerY);
-  ctx.stroke();
+  const footerY = H - 56;
+  ctx.fillStyle = "#990000";
+  ctx.fillRect(0, footerY, W, 56);
 
-  ctx.fillStyle = NEUTRAL_500;
-  ctx.font = `22px sans-serif`;
-  ctx.fillText("Scan QR untuk verifikasi keaslian kartu ini  ·  KONI Batam", 44, H - 18);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `bold 20px sans-serif`;
+  ctx.fillText("KONI KOTA BATAM", 44, footerY + 22);
+  ctx.font = `16px sans-serif`;
+  ctx.fillStyle = "rgba(255,255,255,0.75)";
+  ctx.fillText("Kompleks Ruko KBC Blok A5 No.1, Batam Kota  ·  konikotabatam2024@gmail.com", 44, footerY + 42);
 
   // ── Card border ───────────────────────────────────────────────────────────
   roundRect(ctx, 0, 0, W, H, RADIUS);

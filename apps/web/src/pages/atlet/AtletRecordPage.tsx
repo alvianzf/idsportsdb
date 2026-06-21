@@ -13,7 +13,8 @@ import {
   type Medal,
 } from "@inasportdb/shared-types";
 import { Badge, Modal } from "../../components/ui";
-import { api, resolveFileUrl } from "../../lib/api";
+import { api } from "../../lib/api";
+import { useAuthenticatedUrl } from "../../hooks/useAuthenticatedUrl";
 import { useAuthStore } from "../../store/authStore";
 import type { AtletDetail } from "./types";
 
@@ -107,6 +108,7 @@ export function AtletRecordPage() {
   }
 
   const activeCard = card && !card.isRevoked ? card : null;
+  const fotoSrc = useAuthenticatedUrl(atlet.fotoUrl);
 
   return (
     <div className="min-h-svh bg-neutral-100">
@@ -143,9 +145,9 @@ export function AtletRecordPage() {
 
         {/* Circular photo */}
         <div className="mt-5 flex justify-center">
-          {atlet.fotoUrl ? (
+          {fotoSrc ? (
             <img
-              src={resolveFileUrl(atlet.fotoUrl)}
+              src={fotoSrc}
               alt={atlet.namaLengkap}
               className="h-40 w-40 rounded-full border-4 border-neutral-100 object-cover shadow"
             />

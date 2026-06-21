@@ -188,6 +188,23 @@ export function LandingPage() {
           </section>
         )}
       </main>
+
+      <footer className="border-t border-neutral-200 bg-white">
+        <div className="mx-auto max-w-5xl px-4 py-6 md:px-6">
+          <div className="flex flex-col gap-1 text-xs text-neutral-500 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="font-medium text-neutral-700">KONI Kota Batam</p>
+              <p>Kompleks Ruko KBC (Kuningan Business Centre) Blok A5 No. 1, Kel. Belian, Kec. Batam Kota, Kota Batam, Kepulauan Riau</p>
+            </div>
+            <div className="mt-2 md:mt-0 md:text-right">
+              <a href="mailto:konikotabatam2024@gmail.com" className="hover:text-primary">
+                konikotabatam2024@gmail.com
+              </a>
+              <p className="mt-0.5">© {new Date().getFullYear()} KONI Kota Batam</p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

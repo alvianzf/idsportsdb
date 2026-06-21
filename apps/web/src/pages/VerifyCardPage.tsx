@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { DATA_ADMIN_ROLES, ATHLETE_STATUS_LABELS, type AthleteStatus } from "@inasportdb/shared-types";
 import { Card, Badge } from "../components/ui";
-import { api, resolveFileUrl } from "../lib/api";
+import { api } from "../lib/api";
 import { useAuthStore } from "../store/authStore";
 
 type VerifyReason = "NOT_FOUND" | "REVOKED" | "EXPIRED" | "INACTIVE";
@@ -81,13 +81,11 @@ export function VerifyCardPage() {
           {result?.valid && result.athlete && (
             <div className="flex flex-col items-center gap-3">
               <CheckCircle2 size={40} className="text-success" />
-              {result.athlete.fotoUrl && (
-                <img
-                  src={resolveFileUrl(result.athlete.fotoUrl)}
-                  alt={result.athlete.namaLengkap}
-                  className="h-24 w-24 rounded-md object-cover"
-                />
-              )}
+              {/* Photo not shown on public verify page — auth-protected.
+                  Authenticated admins are redirected to /rekam which shows it. */}
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-neutral-100 text-neutral-400">
+                <span className="text-3xl font-bold">{result.athlete.namaLengkap.charAt(0)}</span>
+              </div>
               <div className="text-left">
                 <p className="text-base font-semibold text-neutral-900">{result.athlete.namaLengkap}</p>
                 <p className="text-sm text-neutral-500">{result.athlete.nomorIndukAtlet}</p>

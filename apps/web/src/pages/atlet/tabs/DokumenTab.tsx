@@ -3,7 +3,7 @@ import { CheckCircle2, Eye, FileText, Trash2, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS, type DocumentType } from "@inasportdb/shared-types";
 import { Card, Badge, Modal } from "../../../components/ui";
-import { api } from "../../../lib/api";
+import { api, resolveFileUrl } from "../../../lib/api";
 import { confirmAction } from "../../../lib/confirm";
 import type { AtletDocument } from "../types";
 
@@ -77,8 +77,8 @@ export function DokumenTab({ atletId, documents, canManage, onChange }: DokumenT
 
   async function openDocument(doc: AtletDocument) {
     try {
-      // Fetch with auth token via axios, then open as blob URL
-      const res = await api.get(doc.fileUrl, { responseType: "blob" });
+      // Resolve to absolute URL (avoids axios prepending /api/v1 to /uploads/... paths)
+      const res = await api.get(resolveFileUrl(doc.fileUrl), { responseType: "blob" });
       const url = URL.createObjectURL(res.data as Blob);
       window.open(url, "_blank");
       // Revoke after a short delay so the tab has time to load

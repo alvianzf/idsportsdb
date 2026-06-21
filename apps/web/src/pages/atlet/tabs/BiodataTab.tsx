@@ -6,7 +6,7 @@ import {
 } from "@inasportdb/shared-types";
 import { User } from "lucide-react";
 import { Card, Badge } from "../../../components/ui";
-import { resolveFileUrl } from "../../../lib/api";
+import { useAuthenticatedUrl } from "../../../hooks/useAuthenticatedUrl";
 import type { AtletDetail } from "../types";
 
 const STATUS_TONE: Record<AthleteStatus, "success" | "danger" | "warning" | "info" | "neutral"> = {
@@ -22,13 +22,15 @@ function formatDate(value: string) {
 }
 
 export function BiodataTab({ atlet }: { atlet: AtletDetail }) {
+  const fotoSrc = useAuthenticatedUrl(atlet.fotoUrl);
+
   return (
     <Card className="space-y-4">
       {/* Athlete photo */}
       <div className="flex justify-center sm:justify-start">
-        {atlet.fotoUrl ? (
+        {fotoSrc ? (
           <img
-            src={resolveFileUrl(atlet.fotoUrl)}
+            src={fotoSrc}
             alt={atlet.namaLengkap}
             className="h-32 w-24 rounded-lg border border-neutral-200 object-cover shadow-sm"
           />

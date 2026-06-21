@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Plus, Search, Trash2 } from "lucide-react";
 import { UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Input, DataTable, type Column, type BulkAction } from "../../components/ui";
-import { api } from "../../lib/api";
+import { api, resolveFileUrl } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import { confirmAction } from "../../lib/confirm";
 import toast from "react-hot-toast";
@@ -13,6 +13,8 @@ interface CaborRow {
   nama: string;
   ketuaCabor: string | null;
   sekretariat: string | null;
+  organisasiNasional: string | null;
+  logoOrganisasiUrl: string | null;
   jumlahAtlet: number;
   jumlahPelatih: number;
 }
@@ -63,13 +65,30 @@ export function CaborListPage() {
   const columns: Column<CaborRow>[] = [
     {
       key: "nama",
-      label: "Nama",
+      label: "Cabang Olahraga",
       sortable: true,
+      mobile: true,
       getValue: (c) => c.nama,
       render: (c) => (
-        <Link to={`/cabor/${c.id}`} className="font-medium text-primary hover:underline">
-          {c.nama}
-        </Link>
+        <div className="flex items-center gap-3">
+          {c.logoOrganisasiUrl ? (
+            <img
+              src={resolveFileUrl(c.logoOrganisasiUrl)}
+              alt={c.organisasiNasional ?? c.nama}
+              className="h-8 w-8 shrink-0 rounded object-contain"
+            />
+          ) : (
+            <div className="h-8 w-8 shrink-0 rounded bg-neutral-100" />
+          )}
+          <div>
+            <Link to={`/cabor/${c.id}`} className="font-medium text-primary hover:underline">
+              {c.nama}
+            </Link>
+            {c.organisasiNasional && (
+              <p className="text-xs text-neutral-400">{c.organisasiNasional}</p>
+            )}
+          </div>
+        </div>
       ),
     },
     {
@@ -88,6 +107,7 @@ export function CaborListPage() {
       key: "jumlahAtlet",
       label: "Atlet",
       sortable: true,
+      mobile: true,
       getValue: (c) => c.jumlahAtlet,
       render: (c) => <span className="text-neutral-600">{c.jumlahAtlet} atlet</span>,
     },
