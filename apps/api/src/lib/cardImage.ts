@@ -1,6 +1,12 @@
 import path from "node:path";
 import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import { createCanvas, loadImage, type SKRSContext2D } from "@napi-rs/canvas";
+
+const LOGO_PATH = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../assets/logo-koni-batam.png",
+);
 
 // KONI Batam brand colour (matches --color-primary-500 in the web app)
 const PRIMARY = "#c8102e";
@@ -60,13 +66,20 @@ export async function generateCardJpeg(opts: {
   // Square off the bottom corners of the header
   ctx.fillRect(0, headerH - RADIUS, W, RADIUS);
 
-  // Header text
+  // Logo + header text
+  const logoSize = headerH - 16;
+  try {
+    const logo = await loadImage(LOGO_PATH);
+    ctx.drawImage(logo, 12, 8, logoSize, logoSize);
+  } catch { /* logo missing — skip */ }
+
+  const textX = logoSize + 24;
   ctx.fillStyle = "#ffffff";
   ctx.font = `bold 52px sans-serif`;
-  ctx.fillText("KONI BATAM", 44, 90);
+  ctx.fillText("KONI KOTA BATAM", textX, 88);
   ctx.font = `28px sans-serif`;
   ctx.fillStyle = "rgba(255,255,255,0.75)";
-  ctx.fillText("Kartu Atlet Digital", 44, 128);
+  ctx.fillText("Kartu Atlet Digital", textX, 126);
 
   // ── Photo (left column) ───────────────────────────────────────────────────
   const photoX = 40;

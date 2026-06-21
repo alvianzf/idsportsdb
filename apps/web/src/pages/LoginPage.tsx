@@ -37,9 +37,7 @@ export function LoginPage() {
     <div className="flex min-h-svh items-center justify-center bg-neutral-50 p-4">
       <div className="w-full max-w-sm rounded-lg border border-neutral-200 bg-white p-6">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary text-lg font-bold text-white">
-            K
-          </div>
+          <img src="/logo-koni-batam.png" alt="KONI Batam" className="h-16 w-16 object-contain" />
           <h1 className="text-lg font-semibold text-neutral-900">KONI Batam</h1>
           <p className="text-sm text-neutral-500">Sistem Informasi Manajemen Atlet</p>
         </div>

@@ -63,9 +63,7 @@ export function VerifyCardPage() {
   return (
     <div className="flex min-h-svh items-center justify-center bg-neutral-50 p-4">
       <Card className="w-full max-w-sm text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-md bg-primary text-lg font-bold text-white">
-          K
-        </div>
+        <img src="/logo-koni-batam.png" alt="KONI Batam" className="mx-auto mb-3 h-16 w-16 object-contain" />
         <h1 className="text-lg font-semibold text-neutral-900">Verifikasi Kartu Atlet</h1>
         <p className="mt-1 break-all text-xs text-neutral-400">{cardCode}</p>
 

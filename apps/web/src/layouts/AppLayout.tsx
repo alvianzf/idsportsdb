@@ -22,9 +22,7 @@ export function AppLayout() {
       <div className="flex min-h-svh flex-1 flex-col">
         <header className="flex min-h-14 items-center justify-between border-b border-neutral-200 bg-white px-4 pt-[env(safe-area-inset-top)] md:h-16 md:px-6 md:pt-0">
           <div className="flex items-center gap-2 md:hidden">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-bold text-white">
-              K
-            </div>
+            <img src="/logo-koni-batam.png" alt="KONI Batam" className="h-8 w-8 object-contain" />
             <span className="text-sm font-semibold">KONI Batam</span>
           </div>
           <div className="hidden md:block" />

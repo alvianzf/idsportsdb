@@ -85,9 +85,7 @@ export function LandingPage() {
       <header className="border-b border-neutral-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 md:px-6">
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-sm font-bold text-white">
-              K
-            </div>
+            <img src="/logo-koni-batam.png" alt="KONI Batam" className="h-10 w-10 object-contain" />
             <div>
               <p className="text-sm font-semibold leading-tight text-neutral-900">KONI Batam</p>
               <p className="text-xs leading-tight text-neutral-500">Sistem Informasi Manajemen Atlet</p>
