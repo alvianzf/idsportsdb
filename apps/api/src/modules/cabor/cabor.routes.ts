@@ -10,10 +10,13 @@ import { createCaborSchema, updateCaborSchema, listCaborQuerySchema } from "./ca
 
 const logoUpload = multer({
   dest: path.join(uploadRoot, "cabor-logos"),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
-  fileFilter: (_req, file, cb) => {
-    cb(null, /^image\//.test(file.mimetype));
-  },
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => { cb(null, /^image\//.test(file.mimetype)); },
+});
+
+const docUpload = multer({
+  dest: path.join(uploadRoot, "cabor-documents"),
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
 });
 
 export const caborRouter = Router();
@@ -171,5 +174,78 @@ caborRouter.post(
       data: { logoOrganisasiUrl },
     });
     res.json({ logoOrganisasiUrl: cabor.logoOrganisasiUrl });
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// CaborDocument — SK and official documents
+// ---------------------------------------------------------------------------
+
+/** GET /cabor/:id/documents — list all documents for a cabor. */
+caborRouter.get(
+  "/:id/documents",
+  asyncHandler(async (req, res) => {
+    const docs = await prisma.caborDocument.findMany({
+      where: { caborId: req.params.id },
+      orderBy: { uploadedAt: "desc" },
+    });
+    res.json(docs);
+  }),
+);
+
+/** POST /cabor/:id/documents — upload a new document. */
+caborRouter.post(
+  "/:id/documents",
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI"]),
+  docUpload.single("file"),
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      res.status(400).json({ error: "File diperlukan." });
+      return;
+    }
+
+    const { jenis, nomorDokumen, tanggalDokumen, deskripsi } = req.body as {
+      jenis?: string;
+      nomorDokumen?: string;
+      tanggalDokumen?: string;
+      deskripsi?: string;
+    };
+
+    if (!jenis) {
+      res.status(400).json({ error: "Jenis dokumen diperlukan." });
+      return;
+    }
+
+    const fileUrl = `/uploads/cabor-documents/${req.file.filename}`;
+
+    const doc = await prisma.caborDocument.create({
+      data: {
+        caborId: req.params.id,
+        jenis,
+        nomorDokumen: nomorDokumen || null,
+        tanggalDokumen: tanggalDokumen ? new Date(tanggalDokumen) : null,
+        deskripsi: deskripsi || null,
+        fileUrl,
+      },
+    });
+    res.status(201).json(doc);
+  }),
+);
+
+/** DELETE /cabor/:id/documents/:docId */
+caborRouter.delete(
+  "/:id/documents/:docId",
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI"]),
+  asyncHandler(async (req, res) => {
+    const doc = await prisma.caborDocument.findUnique({ where: { id: req.params.docId } });
+    if (!doc || doc.caborId !== req.params.id) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    await prisma.caborDocument.delete({ where: { id: req.params.docId } });
+    const fs = await import("node:fs/promises");
+    const filePath = path.join(uploadRoot, doc.fileUrl.replace("/uploads/", ""));
+    fs.unlink(filePath).catch(() => undefined);
+    res.status(204).send();
   }),
 );

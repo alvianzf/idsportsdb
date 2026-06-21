@@ -86,6 +86,18 @@ export function ScannerPage() {
     handledRef.current = false;
     setErrorCode(null);
     setState("scanning");
+
+    // On native: set body/html/root transparent SYNCHRONOUSLY here, before the
+    // await inside startNativeScan. This eliminates the race where startScan()
+    // fires but body is still opaque when the ML Kit camera preview starts.
+    if (native) {
+      document.body.style.background = "transparent";
+      document.documentElement.style.background = "transparent";
+      document.body.classList.add("barcode-scanner-active");
+      const rootEl = document.getElementById("root");
+      if (rootEl) { rootEl.style.background = "transparent"; rootEl.style.backgroundColor = "transparent"; }
+    }
+
     try {
       if (native) {
         stopRef.current = await startNativeScan(handleRaw);
@@ -97,6 +109,14 @@ export function ScannerPage() {
       const msg = err instanceof Error ? err.message : "";
       setErrorCode(msg === "camera_denied" ? "camera_denied" : "network");
       setState("error");
+      // Restore body if camera failed
+      if (native) {
+        document.body.style.background = "";
+        document.documentElement.style.background = "";
+        document.body.classList.remove("barcode-scanner-active");
+        const rootEl = document.getElementById("root");
+        if (rootEl) { rootEl.style.background = ""; rootEl.style.backgroundColor = ""; }
+      }
     }
   }
 

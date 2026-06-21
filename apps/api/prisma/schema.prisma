@@ -124,10 +124,26 @@ model CabangOlahraga {
   pengurus      PengurusCabor[]
   users         User[]
   atletTambahan AtletCabor[]
+  documents     CaborDocument[]
 
   // jumlahAtlet / jumlahPelatih (Modul E) are derived via _count, not stored;
   // jumlahAtlet includes athletes whose primary cabor is this one plus those
   // who additionally compete here via AtletCabor (atletTambahan).
+}
+
+// SK (Surat Keputusan / decree) and other official documents for a CabangOlahraga.
+model CaborDocument {
+  id               String   @id @default(uuid())
+  caborId          String
+  cabor            CabangOlahraga @relation(fields: [caborId], references: [id], onDelete: Cascade)
+  jenis            String   // e.g. "SK Pengurus", "SK Pembentukan", "Sertifikat Afiliasi"
+  nomorDokumen     String?  // document/decree number
+  tanggalDokumen   DateTime?
+  deskripsi        String?
+  fileUrl          String
+  uploadedAt       DateTime @default(now())
+
+  @@index([caborId])
 }
 
 model Atlet {

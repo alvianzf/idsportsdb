@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, FileText, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import { UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Field, Input, Modal, Combobox } from "../../components/ui";
@@ -283,6 +283,9 @@ export function CaborDetailPage() {
         )}
       </Card>
 
+      {/* SK & Dokumen Resmi */}
+      <CaborDokumenSection caborId={cabor.id} canManage={!!isUnscopedAdmin} />
+
       {modalOpen && (
         <Modal title={editingPengurus ? "Ubah Pengurus" : "Tambah Pengurus"} onClose={() => setModalOpen(false)}>
           <form onSubmit={handleSavePengurus} className="space-y-4">
@@ -358,5 +361,186 @@ export function CaborDetailPage() {
         </Modal>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SK & Official Document Section
+// ---------------------------------------------------------------------------
+
+interface CaborDoc {
+  id: string;
+  jenis: string;
+  nomorDokumen: string | null;
+  tanggalDokumen: string | null;
+  deskripsi: string | null;
+  fileUrl: string;
+  uploadedAt: string;
+}
+
+function CaborDokumenSection({ caborId, canManage }: { caborId: string; canManage: boolean }) {
+  const [docs, setDocs] = useState<CaborDoc[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [jenis, setJenis] = useState("SK Pengurus");
+  const [nomorDokumen, setNomorDokumen] = useState("");
+  const [tanggalDokumen, setTanggalDokumen] = useState("");
+  const [deskripsi, setDeskripsi] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function loadDocs() {
+    api.get<CaborDoc[]>(`/cabor/${caborId}/documents`).then((r) => setDocs(r.data)).catch(() => undefined);
+  }
+
+  useEffect(() => { loadDocs(); }, [caborId]);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!file) { toast.error("Pilih file terlebih dahulu."); return; }
+    setSaving(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("jenis", jenis);
+      if (nomorDokumen) fd.append("nomorDokumen", nomorDokumen);
+      if (tanggalDokumen) fd.append("tanggalDokumen", tanggalDokumen);
+      if (deskripsi) fd.append("deskripsi", deskripsi);
+      await api.post(`/cabor/${caborId}/documents`, fd, { headers: { "Content-Type": "multipart/form-data" } });
+      toast.success("Dokumen berhasil diunggah.");
+      setShowForm(false);
+      setFile(null);
+      setJenis("SK Pengurus");
+      setNomorDokumen("");
+      setTanggalDokumen("");
+      setDeskripsi("");
+      loadDocs();
+    } catch {
+      toast.error("Gagal mengunggah dokumen.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(doc: CaborDoc) {
+    if (!(await confirmAction({ text: `Hapus dokumen "${doc.jenis}"? File akan dihapus permanen.`, danger: true, confirmText: "Hapus" }))) return;
+    try {
+      await api.delete(`/cabor/${caborId}/documents/${doc.id}`);
+      toast.success("Dokumen berhasil dihapus.");
+      loadDocs();
+    } catch {
+      toast.error("Gagal menghapus dokumen.");
+    }
+  }
+
+  return (
+    <Card className="mt-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-neutral-900">SK & Dokumen Resmi</h2>
+        {canManage && (
+          <Button variant="outline" onClick={() => setShowForm(true)}>
+            <Plus size={16} /> Unggah Dokumen
+          </Button>
+        )}
+      </div>
+
+      {docs.length === 0 ? (
+        <p className="text-sm text-neutral-500">Belum ada dokumen.</p>
+      ) : (
+        <ul className="divide-y divide-neutral-100">
+          {docs.map((doc) => (
+            <li key={doc.id} className="flex items-start justify-between gap-3 py-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <FileText size={15} className="shrink-0 text-neutral-400" />
+                  <span className="text-sm font-medium text-neutral-900">{doc.jenis}</span>
+                  {doc.nomorDokumen && (
+                    <span className="text-xs text-neutral-500">No. {doc.nomorDokumen}</span>
+                  )}
+                </div>
+                {doc.deskripsi && <p className="mt-0.5 text-xs text-neutral-500">{doc.deskripsi}</p>}
+                <div className="mt-1 flex gap-3 text-xs text-neutral-400">
+                  {doc.tanggalDokumen && (
+                    <span>{new Date(doc.tanggalDokumen).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" })}</span>
+                  )}
+                  <span>Diunggah {new Date(doc.uploadedAt).toLocaleDateString("id-ID")}</span>
+                </div>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <a
+                  href={resolveFileUrl(doc.fileUrl)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  Lihat
+                </a>
+                {canManage && (
+                  <button onClick={() => handleDelete(doc)} className="text-neutral-400 hover:text-danger">
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {showForm && (
+        <Modal title="Unggah Dokumen" onClose={() => setShowForm(false)}>
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <Field label="Jenis Dokumen" required htmlFor="jenis">
+              <Input
+                id="jenis"
+                list="jenis-list"
+                required
+                value={jenis}
+                onChange={(e) => setJenis(e.target.value)}
+                placeholder="SK Pengurus, SK Pembentukan, Sertifikat Afiliasi…"
+              />
+              <datalist id="jenis-list">
+                <option value="SK Pengurus" />
+                <option value="SK Pembentukan" />
+                <option value="SK Afiliasi" />
+                <option value="Sertifikat Afiliasi" />
+                <option value="Peraturan Organisasi" />
+                <option value="Anggaran Dasar" />
+                <option value="Anggaran Rumah Tangga" />
+              </datalist>
+            </Field>
+            <Field label="Nomor Dokumen" htmlFor="nomorDokumen">
+              <Input id="nomorDokumen" value={nomorDokumen} onChange={(e) => setNomorDokumen(e.target.value)} placeholder="Mis: 001/SK/KONI/2024" />
+            </Field>
+            <Field label="Tanggal Dokumen" htmlFor="tanggalDokumen">
+              <Input id="tanggalDokumen" type="date" value={tanggalDokumen} onChange={(e) => setTanggalDokumen(e.target.value)} />
+            </Field>
+            <Field label="Deskripsi" htmlFor="deskripsi">
+              <Input id="deskripsi" value={deskripsi} onChange={(e) => setDeskripsi(e.target.value)} />
+            </Field>
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-neutral-700">File <span className="text-danger">*</span></p>
+              {file ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <FileText size={15} className="text-neutral-400" />
+                  <span className="text-neutral-700">{file.name}</span>
+                  <button type="button" onClick={() => setFile(null)} className="text-xs text-neutral-400 hover:text-danger">Hapus</button>
+                </div>
+              ) : (
+                <label className="cursor-pointer">
+                  <span className="inline-flex items-center gap-1.5 rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 hover:border-primary">
+                    <Upload size={14} /> Pilih file
+                  </span>
+                  <input ref={fileRef} type="file" className="hidden" onChange={(e: ChangeEvent<HTMLInputElement>) => setFile(e.target.files?.[0] ?? null)} />
+                </label>
+              )}
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button type="submit" disabled={saving}>{saving ? "Menyimpan…" : "Simpan"}</Button>
+              <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Batal</Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </Card>
   );
 }
