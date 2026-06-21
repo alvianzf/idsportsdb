@@ -114,10 +114,13 @@ export function AtletRecordPage() {
   return (
     <div className="min-h-svh bg-neutral-100">
       {/* Header bar */}
-      <div className="sticky top-0 z-10 flex h-14 items-center border-b border-neutral-200 bg-white px-4 pt-[env(safe-area-inset-top)] shadow-sm">
+      <div
+        className="sticky top-0 z-10 flex h-14 items-center px-4 shadow-sm"
+        style={{ background: "#990000", paddingTop: "env(safe-area-inset-top)" }}
+      >
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 text-sm font-medium text-neutral-600 hover:text-neutral-900"
+          className="flex items-center gap-1.5 text-sm font-medium text-white/80 hover:text-white transition-colors"
         >
           <ArrowLeft size={18} />
           Kembali
