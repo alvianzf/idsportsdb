@@ -131,28 +131,24 @@ export function ScannerPage() {
           />
         )}
 
-        {/* Viewfinder overlay — 4-rect approach with transparent hole */}
-        {!native && state === "scanning" && (
-          <div className="pointer-events-none absolute inset-0">
-            {/* top bar */}
+        {/* Viewfinder overlay — always present on web so the frame is visible immediately */}
+        {!native && state !== "processing" && state !== "error" && (
+          <div className="pointer-events-none absolute inset-0 z-10">
+            {/* 4-rect dark surround with transparent centre */}
             <div className="absolute inset-x-0 top-0 bg-black/55" style={{ bottom: "calc(50% + 120px)" }} />
-            {/* bottom bar */}
             <div className="absolute inset-x-0 bottom-0 bg-black/55" style={{ top: "calc(50% + 120px)" }} />
-            {/* left bar */}
             <div className="absolute bg-black/55" style={{ top: "calc(50% - 120px)", bottom: "calc(50% - 120px)", left: 0, right: "calc(50% + 120px)" }} />
-            {/* right bar */}
             <div className="absolute bg-black/55" style={{ top: "calc(50% - 120px)", bottom: "calc(50% - 120px)", left: "calc(50% + 120px)", right: 0 }} />
 
-            {/* Corner brackets */}
-            <div
-              className="absolute"
-              style={{ top: "calc(50% - 120px)", left: "calc(50% - 120px)", width: 240, height: 240 }}
-            >
+            {/* Corner brackets + scan line */}
+            <div className="absolute" style={{ top: "calc(50% - 120px)", left: "calc(50% - 120px)", width: 240, height: 240 }}>
               <span className="absolute left-0 top-0 h-8 w-8 rounded-tl-lg border-l-4 border-t-4 border-white" />
               <span className="absolute right-0 top-0 h-8 w-8 rounded-tr-lg border-r-4 border-t-4 border-white" />
               <span className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-lg border-b-4 border-l-4 border-white" />
               <span className="absolute bottom-0 right-0 h-8 w-8 rounded-br-lg border-b-4 border-r-4 border-white" />
-              <div className="absolute inset-x-0 top-0 h-0.5 bg-primary animate-[scan_2s_linear_infinite]" />
+              {state === "scanning" && (
+                <div className="absolute inset-x-0 top-0 h-0.5 bg-primary animate-[scan_2s_linear_infinite]" />
+              )}
             </div>
           </div>
         )}

@@ -1,8 +1,8 @@
 import { useState, type ChangeEvent } from "react";
-import { FileText, Trash2, Upload } from "lucide-react";
+import { CheckCircle2, FileText, Trash2, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS, type DocumentType } from "@inasportdb/shared-types";
-import { Card, Button, Select } from "../../../components/ui";
+import { Card, Badge } from "../../../components/ui";
 import { api, resolveFileUrl } from "../../../lib/api";
 import { confirmAction } from "../../../lib/confirm";
 import type { AtletDocument } from "../types";
@@ -15,15 +15,21 @@ interface DokumenTabProps {
 }
 
 export function DokumenTab({ atletId, documents, canManage, onChange }: DokumenTabProps) {
-  const [type, setType] = useState<DocumentType>("KTP");
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState<DocumentType | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
+  const byType = Object.fromEntries(
+    DOCUMENT_TYPES.map((t) => [t, documents.filter((d) => d.type === t)]),
+  ) as Record<DocumentType, AtletDocument[]>;
+
+  const uploadedCount = documents.length;
+  const totalCount = DOCUMENT_TYPES.length;
+
+  async function handleUpload(type: DocumentType, event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
     setError(null);
-    setUploading(true);
+    setUploading(type);
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -31,18 +37,18 @@ export function DokumenTab({ atletId, documents, canManage, onChange }: DokumenT
       await api.post(`/atlet/${atletId}/documents`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      toast.success("Dokumen berhasil diunggah.");
+      toast.success(`${DOCUMENT_TYPE_LABELS[type]} berhasil diunggah.`);
       onChange();
     } catch {
-      setError("Gagal mengunggah dokumen.");
+      setError(`Gagal mengunggah ${DOCUMENT_TYPE_LABELS[type]}.`);
     } finally {
-      setUploading(false);
+      setUploading(null);
       event.target.value = "";
     }
   }
 
-  async function handleDelete(docId: string) {
-    if (!(await confirmAction({ text: "Hapus dokumen ini?" }))) return;
+  async function handleDelete(docId: string, type: DocumentType) {
+    if (!(await confirmAction({ text: `Hapus ${DOCUMENT_TYPE_LABELS[type]}?` }))) return;
     try {
       await api.delete(`/atlet/${atletId}/documents/${docId}`);
       toast.success("Dokumen berhasil dihapus.");
@@ -53,60 +59,93 @@ export function DokumenTab({ atletId, documents, canManage, onChange }: DokumenT
   }
 
   return (
-    <Card className="space-y-4">
-      {canManage && (
-        <div className="flex flex-wrap items-end gap-3 rounded-md border border-neutral-200 p-3">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-neutral-700">Jenis Dokumen</label>
-            <Select value={type} onChange={(e) => setType(e.target.value as DocumentType)} className="w-auto">
-              {DOCUMENT_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {DOCUMENT_TYPE_LABELS[t]}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <label>
-            <Button variant="outline" type="button" disabled={uploading} className="cursor-pointer">
-              <Upload size={16} /> {uploading ? "Mengunggah..." : "Unggah Berkas"}
-            </Button>
-            <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
-          </label>
-          {error && <p className="text-sm text-danger">{error}</p>}
-        </div>
-      )}
+    <Card className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-neutral-900">Dokumen</h2>
+        <Badge tone={uploadedCount === totalCount ? "success" : "neutral"}>
+          {uploadedCount}/{totalCount} diunggah
+        </Badge>
+      </div>
 
-      {documents.length === 0 ? (
-        <p className="text-sm text-neutral-500">Belum ada dokumen.</p>
-      ) : (
-        <ul className="divide-y divide-neutral-100">
-          {documents.map((doc) => (
-            <li key={doc.id} className="flex items-center justify-between gap-3 py-3 text-sm">
-              <a
-                href={resolveFileUrl(doc.fileUrl)}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 text-primary hover:underline"
-              >
-                <FileText size={16} />
-                {DOCUMENT_TYPE_LABELS[doc.type]}
-              </a>
-              <div className="flex items-center gap-3 text-neutral-500">
-                <span className="text-xs">{new Date(doc.uploadedAt).toLocaleDateString("id-ID")}</span>
+      {error && <p className="text-sm text-danger">{error}</p>}
+
+      <ul className="divide-y divide-neutral-100">
+        {DOCUMENT_TYPES.map((type) => {
+          const docs = byType[type];
+          const hasDoc = docs.length > 0;
+
+          return (
+            <li key={type} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:gap-4">
+              {/* Type label + status */}
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                {hasDoc
+                  ? <CheckCircle2 size={16} className="shrink-0 text-success" />
+                  : <div className="h-4 w-4 shrink-0 rounded-full border-2 border-neutral-300" />}
+                <span className="text-sm font-medium text-neutral-800">
+                  {DOCUMENT_TYPE_LABELS[type]}
+                </span>
+              </div>
+
+              {/* Uploaded files */}
+              <div className="flex flex-col gap-1 sm:items-end">
+                {docs.map((doc) => (
+                  <div key={doc.id} className="flex items-center gap-2 text-sm">
+                    <a
+                      href={resolveFileUrl(doc.fileUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-1.5 text-primary hover:underline"
+                    >
+                      <FileText size={14} />
+                      Lihat berkas
+                    </a>
+                    <span className="text-xs text-neutral-400">
+                      {new Date(doc.uploadedAt).toLocaleDateString("id-ID")}
+                    </span>
+                    {canManage && (
+                      <button
+                        onClick={() => handleDelete(doc.id, type)}
+                        aria-label="Hapus"
+                        className="rounded p-0.5 text-neutral-400 hover:text-danger"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+
+                {/* Upload button — always show for admins (allows replacing / adding extra) */}
                 {canManage && (
-                  <button
-                    onClick={() => handleDelete(doc.id)}
-                    aria-label="Hapus"
-                    className="rounded-md p-1.5 hover:bg-neutral-100"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <label className="cursor-pointer">
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition ${
+                        uploading === type
+                          ? "border-neutral-200 text-neutral-400"
+                          : hasDoc
+                          ? "border-neutral-200 text-neutral-600 hover:border-neutral-300"
+                          : "border-primary/40 text-primary hover:border-primary"
+                      }`}
+                    >
+                      <Upload size={13} />
+                      {uploading === type
+                        ? "Mengunggah..."
+                        : hasDoc
+                        ? "Ganti"
+                        : "Unggah"}
+                    </span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      disabled={!!uploading}
+                      onChange={(e) => handleUpload(type, e)}
+                    />
+                  </label>
                 )}
               </div>
             </li>
-          ))}
-        </ul>
-      )}
+          );
+        })}
+      </ul>
     </Card>
   );
 }
