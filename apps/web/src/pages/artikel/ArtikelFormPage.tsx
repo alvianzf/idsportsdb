@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Eye, Trash2, Upload } from "lucide-react";
+import { CalendarDays, Eye, Trash2, Upload, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { Card, PageHeader, Button, Field, Input, Textarea, RichTextEditor, Modal } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
@@ -37,6 +37,7 @@ export function ArtikelFormPage() {
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showArticlePreview, setShowArticlePreview] = useState(false);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -168,7 +169,14 @@ export function ArtikelFormPage() {
 
   return (
     <div>
-      <PageHeader title={isEdit ? "Ubah Pengumuman" : "Tambah Pengumuman"} />
+      <PageHeader
+        title={isEdit ? "Ubah Pengumuman" : "Tambah Pengumuman"}
+        actions={
+          <Button type="button" variant="outline" onClick={() => setShowArticlePreview(true)}>
+            <Eye size={16} /> Pratinjau
+          </Button>
+        }
+      />
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Field label="Judul" required htmlFor="title">
@@ -302,6 +310,52 @@ export function ArtikelFormPage() {
           </div>
         </form>
       </Card>
+
+      {/* Full-page article preview overlay */}
+      {showArticlePreview && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-neutral-50">
+          {/* Sticky preview header bar */}
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-200 bg-white px-4 py-3 shadow-sm">
+            <span className="text-sm font-medium text-neutral-500">Pratinjau Pengumuman</span>
+            <button
+              type="button"
+              onClick={() => setShowArticlePreview(false)}
+              className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-neutral-600 hover:bg-neutral-100"
+            >
+              <X size={16} /> Tutup Pratinjau
+            </button>
+          </div>
+
+          {/* Article rendered exactly as it appears on the public page */}
+          <main className="mx-auto max-w-2xl px-4 py-8 md:px-6 md:py-12">
+            {(coverPreview || coverImageUrl) && (
+              <img
+                src={coverPreview ?? resolveFileUrl(coverImageUrl!)}
+                alt=""
+                className="mb-6 h-56 w-full rounded-lg object-cover md:h-72"
+              />
+            )}
+            <h1 className="text-xl font-semibold text-neutral-900 md:text-2xl">
+              {form.title || <span className="italic text-neutral-400">Judul belum diisi</span>}
+            </h1>
+            <p className="mt-1 flex items-center gap-1 text-xs text-neutral-500">
+              <CalendarDays size={13} />
+              {new Date().toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" })}
+            </p>
+            {form.excerpt && (
+              <p className="mt-3 text-sm font-medium text-neutral-600">{form.excerpt}</p>
+            )}
+            {form.content ? (
+              <div
+                className="prose-article mt-4 text-sm text-neutral-700"
+                dangerouslySetInnerHTML={{ __html: form.content }}
+              />
+            ) : (
+              <p className="mt-4 italic text-sm text-neutral-400">Konten belum diisi.</p>
+            )}
+          </main>
+        </div>
+      )}
     </div>
   );
 }
