@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Maximize2, User } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import { KoniQR } from "../../components/ui";
 import {
   ATHLETE_LEVEL_LABELS,
   ATHLETE_STATUS_LABELS,
@@ -171,7 +171,7 @@ export function AtletRecordPage() {
               title="Perbesar QR"
               className="rounded-xl border border-neutral-200 p-2 shadow-sm transition hover:border-primary"
             >
-              <QRCodeSVG value={activeCard.qrPayloadUrl} size={88} />
+              <KoniQR value={activeCard.qrPayloadUrl} size={88} />
             </button>
             <p className="text-xs text-neutral-400">Ketuk untuk memperbesar</p>
           </div>
@@ -256,7 +256,7 @@ export function AtletRecordPage() {
       {showQrModal && activeCard && (
         <Modal title="QR Kartu Atlet" onClose={() => setShowQrModal(false)}>
           <div className="flex flex-col items-center gap-4 py-2">
-            <QRCodeSVG value={activeCard.qrPayloadUrl} size={240} />
+            <KoniQR value={activeCard.qrPayloadUrl} size={240} />
             <p className="text-sm font-semibold text-neutral-800">{atlet.namaLengkap}</p>
             <p className="max-w-xs break-all text-center text-xs text-neutral-500">
               {activeCard.qrPayloadUrl}

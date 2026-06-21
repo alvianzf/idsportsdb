@@ -8,8 +8,8 @@ const LOGO_PATH = path.join(
   "../assets/logo-koni-batam.png",
 );
 
-// KONI Batam brand colour (matches --color-primary-500 in the web app)
-const PRIMARY = "#c8102e";
+// KONI Batam brand colour for athlete cards
+const PRIMARY = "#990000";
 const NEUTRAL_800 = "#27272a";
 const NEUTRAL_500 = "#71717a";
 const NEUTRAL_200 = "#e4e4e7";

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { CreditCard, IdCard, QrCode, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
-import { QRCodeSVG } from "qrcode.react";
+import { KoniQR } from "../../../components/ui";
 import { Card, Button, Badge, Modal } from "../../../components/ui";
 import { api } from "../../../lib/api";
 import { confirmAction } from "../../../lib/confirm";
@@ -127,7 +127,7 @@ export function KartuTab({ atletId, canManage, self = false }: KartuTabProps) {
               title="Perbesar QR"
               className="shrink-0 rounded-lg border border-neutral-200 p-2 transition hover:border-primary"
             >
-              <QRCodeSVG value={card.qrPayloadUrl} size={120} />
+              <KoniQR value={card.qrPayloadUrl} size={120} />
             </button>
 
             <dl className="grid flex-1 gap-3 text-sm sm:grid-cols-2">
@@ -173,7 +173,7 @@ export function KartuTab({ atletId, canManage, self = false }: KartuTabProps) {
       {showQrModal && card && (
         <Modal title="QR Kartu Atlet" onClose={() => setShowQrModal(false)}>
           <div className="flex flex-col items-center gap-4 py-2">
-            <QRCodeSVG value={card.qrPayloadUrl} size={240} />
+            <KoniQR value={card.qrPayloadUrl} size={240} />
             <p className="max-w-xs break-all text-center text-xs text-neutral-500">
               {card.qrPayloadUrl}
             </p>
