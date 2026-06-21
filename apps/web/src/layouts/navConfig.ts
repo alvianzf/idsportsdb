@@ -33,7 +33,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { to: "/pelatih", label: "Pelatih", icon: UserCog, roles: ADMIN_ROLES },
   { to: "/cabor", label: "Cabang Olahraga", icon: Building2, roles: ADMIN_ROLES },
   { to: "/monitoring", label: "Monitoring", icon: Activity, roles: ADMIN_ROLES },
-  { to: "/artikel", label: "Artikel", icon: Newspaper, roles: ["SUPER_ADMIN_KONI", "ADMIN_KONI"] },
+  { to: "/artikel", label: "Pengumuman", icon: Newspaper, roles: ["SUPER_ADMIN_KONI", "ADMIN_KONI"] },
   { to: "/users", label: "Pengguna", icon: ShieldCheck, roles: ["SUPER_ADMIN_KONI"] },
 ];
 

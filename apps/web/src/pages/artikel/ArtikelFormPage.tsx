@@ -117,7 +117,7 @@ export function ArtikelFormPage() {
         });
       }
 
-      toast.success(isEdit ? "Artikel berhasil diubah." : "Artikel berhasil ditambahkan.");
+      toast.success(isEdit ? "Pengumuman berhasil diubah." : "Pengumuman berhasil ditambahkan.");
       navigate("/artikel");
     } catch (err) {
       setError(extractError(err));
@@ -132,7 +132,7 @@ export function ArtikelFormPage() {
 
   return (
     <div>
-      <PageHeader title={isEdit ? "Ubah Artikel" : "Tambah Artikel"} />
+      <PageHeader title={isEdit ? "Ubah Pengumuman" : "Tambah Pengumuman"} />
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Field label="Judul" required htmlFor="title">

@@ -49,7 +49,7 @@ export function ArtikelListPage() {
     if (!(await confirmAction({ text: `Hapus artikel "${item.title}"?` }))) return;
     try {
       await api.delete(`/artikel/${item.id}`);
-      toast.success("Artikel berhasil dihapus.");
+      toast.success("Pengumuman berhasil dihapus.");
       load();
     } catch {
       toast.error("Gagal menghapus artikel.");
@@ -59,12 +59,12 @@ export function ArtikelListPage() {
   return (
     <div>
       <PageHeader
-        title="Artikel & Berita"
+        title="Pengumuman"
         description="Konten yang ditampilkan pada halaman utama publik"
         actions={
           <Link to="/artikel/new">
             <Button>
-              <Plus size={16} /> Tambah Artikel
+              <Plus size={16} /> Tambah Pengumuman
             </Button>
           </Link>
         }

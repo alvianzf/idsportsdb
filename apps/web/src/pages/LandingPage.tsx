@@ -147,7 +147,7 @@ export function LandingPage() {
         )}
         {articles.length > 0 && (
           <section className="mt-8 md:mt-10">
-            <h2 className="mb-4 text-base font-semibold text-neutral-900">Artikel &amp; Berita</h2>
+            <h2 className="mb-4 text-base font-semibold text-neutral-900">Pengumuman</h2>
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
               {articles.map((a) => (
                 <Link
