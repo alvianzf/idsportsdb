@@ -57,6 +57,7 @@ export function AtletListPage() {
   const [cabors, setCabors] = useState<CaborOption[]>([]);
   const [error, setError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [dlState, setDlState] = useState<{ count: number; bytes: number } | null>(null);
 
   const pageSize = 20;
 
@@ -111,18 +112,23 @@ export function AtletListPage() {
   }
 
   async function handleBulkDownloadKartu(ids: string[]) {
-    const toastId = toast.loading(`Menyiapkan ${ids.length} kartu...`);
+    setDlState({ count: ids.length, bytes: 0 });
     try {
-      const res = await api.post("/cards/bulk-download", { ids }, { responseType: "blob" });
+      const res = await api.post("/cards/bulk-download", { ids }, {
+        responseType: "blob",
+        onDownloadProgress: (e) => setDlState({ count: ids.length, bytes: e.loaded }),
+      });
       const url = URL.createObjectURL(res.data as Blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = "kartu-atlet-bulk.zip";
       link.click();
       URL.revokeObjectURL(url);
-      toast.success(`${ids.length} kartu berhasil diunduh.`, { id: toastId });
+      toast.success(`${ids.length} kartu berhasil diunduh.`);
     } catch {
-      toast.error("Gagal mengunduh kartu. Pastikan atlet yang dipilih memiliki kartu aktif.", { id: toastId });
+      toast.error("Gagal mengunduh kartu. Pastikan atlet yang dipilih memiliki kartu aktif.");
+    } finally {
+      setDlState(null);
     }
   }
 
@@ -273,6 +279,49 @@ export function AtletListPage() {
           </div>
         </>
       )}
+
+      {dlState && <BulkDownloadOverlay count={dlState.count} bytes={dlState.bytes} />}
     </div>
+  );
+}
+
+function BulkDownloadOverlay({ count, bytes }: { count: number; bytes: number }) {
+  const kb = (bytes / 1024).toFixed(0);
+  return (
+    <>
+      <style>{`
+        @keyframes koni-indeterminate {
+          0%   { transform: translateX(-100%); }
+          100% { transform: translateX(350%); }
+        }
+        .koni-indeterminate {
+          animation: koni-indeterminate 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+      `}</style>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mengunduh kartu"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      >
+        <div className="w-full max-w-xs rounded-xl bg-white p-6 shadow-xl">
+          <p className="mb-1 text-sm font-semibold text-neutral-900">
+            Menyiapkan {count} kartu...
+          </p>
+          <p className="mb-4 text-xs text-neutral-500">
+            {bytes > 0 ? `${kb} KB diunduh` : "Sedang diproses di server"}
+          </p>
+
+          {/* Indeterminate progress track */}
+          <div className="relative h-2 w-full overflow-hidden rounded-full bg-neutral-200">
+            <div className="koni-indeterminate absolute inset-y-0 w-1/3 rounded-full bg-primary" />
+          </div>
+
+          <p className="mt-4 text-center text-xs text-neutral-400">
+            Mohon jangan tutup halaman ini
+          </p>
+        </div>
+      </div>
+    </>
   );
 }
