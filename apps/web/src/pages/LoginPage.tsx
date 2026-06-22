@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuthStore } from "../store/authStore";
 import { Button } from "../components/ui";
@@ -8,6 +8,8 @@ export function LoginPage() {
   const user = useAuthStore((state) => state.user);
   const setSession = useAuthStore((state) => state.setSession);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const resetSuccess = searchParams.get("reset") === "1";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,6 +44,12 @@ export function LoginPage() {
           <p className="text-sm text-neutral-500">Sistem Informasi Manajemen Atlet</p>
         </div>
 
+        {resetSuccess && (
+          <p className="mb-4 rounded-md bg-success-light px-3 py-2 text-sm text-success">
+            Kata sandi berhasil diubah. Silakan masuk dengan kata sandi baru Anda.
+          </p>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="mb-1 block text-sm font-medium text-neutral-700">
@@ -74,9 +82,17 @@ export function LoginPage() {
 
           {error && <p className="text-sm text-danger">{error}</p>}
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Memproses..." : "Masuk"}
-          </Button>
+          <div className="flex items-center justify-between">
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Memproses..." : "Masuk"}
+            </Button>
+          </div>
+
+          <p className="text-center text-sm">
+            <Link to="/forgot-password" className="text-neutral-500 hover:text-primary hover:underline">
+              Lupa kata sandi?
+            </Link>
+          </p>
         </form>
       </div>
     </div>

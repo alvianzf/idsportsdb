@@ -15,6 +15,8 @@ function page<T extends Record<string, React.ComponentType>>(
 import { LandingPage } from "../pages/LandingPage";
 import { LoginPage } from "../pages/LoginPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
+import { ForgotPasswordPage } from "../pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "../pages/ResetPasswordPage";
 
 // Lazy pages — each becomes its own JS chunk
 const DashboardPage = page(() => import("../pages/DashboardPage"), "DashboardPage");
@@ -91,6 +93,8 @@ const router = createBrowserRouter([
     ),
   },
   { path: "/login", element: <LoginPage /> },
+  { path: "/forgot-password", element: <ForgotPasswordPage /> },
+  { path: "/reset-password", element: <ResetPasswordPage /> },
   {
     path: "/verify/:cardCode",
     element: (

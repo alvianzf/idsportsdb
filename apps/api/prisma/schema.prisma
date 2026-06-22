@@ -98,6 +98,10 @@ model User {
   athleteId        String?  @unique
   athlete          Atlet?   @relation(fields: [athleteId], references: [id])
 
+  // Password reset (specs/001-auth-rbac — forgot-password flow)
+  passwordResetToken  String?   @unique
+  passwordResetExpiry DateTime?
+
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

@@ -1,11 +1,13 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "node:crypto";
 import { prisma } from "../../lib/prisma.js";
 import { authenticate } from "../../middleware/auth.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { loginSchema, refreshSchema, updateUserSchema } from "./auth.schema.js";
 import * as authService from "./auth.service.js";
 import { toSafeUser } from "../users/users.service.js";
+import { sendPasswordResetEmail } from "../../lib/email.js";
 
 export const authRouter = Router();
 
@@ -65,6 +67,69 @@ authRouter.get(
     }
 
     res.json({ user });
+  }),
+);
+
+// ── Forgot / reset password ───────────────────────────────────────────────
+
+authRouter.post(
+  "/forgot-password",
+  asyncHandler(async (req, res) => {
+    const { email } = req.body as { email?: string };
+    // Always return 204 regardless of whether the email exists (anti-enumeration)
+    if (!email || typeof email !== "string") { res.status(204).send(); return; }
+
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    if (user && user.isActive) {
+      const token = randomBytes(32).toString("hex");
+      const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { passwordResetToken: token, passwordResetExpiry: expiry },
+      });
+
+      sendPasswordResetEmail({ to: user.email, fullName: user.fullName, resetToken: token }).catch(
+        (err) => console.error("[email] reset send failed:", err),
+      );
+    }
+
+    res.status(204).send();
+  }),
+);
+
+authRouter.post(
+  "/reset-password",
+  asyncHandler(async (req, res) => {
+    const { token, password } = req.body as { token?: string; password?: string };
+
+    if (!token || !password || typeof token !== "string" || typeof password !== "string") {
+      res.status(400).json({ error: "Token dan kata sandi baru diperlukan." });
+      return;
+    }
+
+    if (password.length < 8) {
+      res.status(400).json({ error: "Kata sandi minimal 8 karakter." });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { passwordResetToken: token } });
+
+    if (!user || !user.passwordResetExpiry || user.passwordResetExpiry < new Date()) {
+      res.status(400).json({ error: "Tautan reset tidak valid atau sudah kedaluwarsa." });
+      return;
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: await bcrypt.hash(password, 10),
+        passwordResetToken: null,
+        passwordResetExpiry: null,
+      },
+    });
+
+    res.status(204).send();
   }),
 );
 
