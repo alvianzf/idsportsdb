@@ -40,6 +40,7 @@ export function Combobox({
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const selected = options.find((o) => o.value === value);
@@ -49,7 +50,6 @@ export function Combobox({
 
   useEffect(() => { setHighlighted(0); }, [query]);
 
-  // Close on outside click or scroll
   useEffect(() => {
     if (!open) return;
 
@@ -58,22 +58,33 @@ export function Combobox({
       setQuery("");
     }
 
+    // Outside-click: ignore clicks on the trigger container or inside the portal dropdown.
     function handleMouseDown(e: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node) &&
-        !(e.target as Element).closest("[data-combobox-dropdown]")
-      ) {
-        close();
-      }
+      const target = e.target as Node;
+      if (containerRef.current?.contains(target)) return;
+      if (dropdownRef.current?.contains(target)) return;
+      close();
+    }
+
+    // Scroll: only close when the page scrolls (not when the dropdown list itself scrolls).
+    function handleScroll(e: Event) {
+      if (dropdownRef.current?.contains(e.target as Node)) return;
+      close();
     }
 
     document.addEventListener("mousedown", handleMouseDown);
-    window.addEventListener("scroll", close, true);
-    window.addEventListener("resize", close);
+
+    // Delay attaching the scroll listener so it doesn't fire on the browser's
+    // auto-scroll-to-focus that happens when the search input is focused.
+    const timer = setTimeout(() => {
+      window.addEventListener("scroll", handleScroll, true);
+      window.addEventListener("resize", close);
+    }, 100);
+
     return () => {
+      clearTimeout(timer);
       document.removeEventListener("mousedown", handleMouseDown);
-      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("scroll", handleScroll, true);
       window.removeEventListener("resize", close);
     };
   }, [open]);
@@ -81,16 +92,12 @@ export function Combobox({
   function openDropdown() {
     if (disabled) return;
 
-    // Calculate fixed position from trigger's bounding rect so the dropdown
-    // always appears directly below the trigger — immune to parent overflow,
-    // stacking contexts, and table z-index issues.
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
-      const dropdownHeight = 280; // max-h-52 (208px) + search row (~48px)
+      const dropdownMaxHeight = 280;
 
-      if (spaceBelow >= dropdownHeight || spaceBelow > rect.top) {
-        // Open downward
+      if (spaceBelow >= dropdownMaxHeight || spaceBelow >= rect.top) {
         setDropdownStyle({
           position: "fixed",
           top: rect.bottom + 4,
@@ -99,7 +106,6 @@ export function Combobox({
           zIndex: 9999,
         });
       } else {
-        // Flip upward
         setDropdownStyle({
           position: "fixed",
           bottom: window.innerHeight - rect.top + 4,
@@ -141,7 +147,7 @@ export function Combobox({
 
   const dropdown = open ? (
     <div
-      data-combobox-dropdown
+      ref={dropdownRef}
       style={dropdownStyle}
       className="overflow-hidden rounded-2xl border border-white/50 bg-white/90 shadow-xl backdrop-blur-xl"
     >
@@ -187,7 +193,6 @@ export function Combobox({
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
-      {/* Hidden native input for form validation */}
       {required && (
         <input
           type="text"
