@@ -58,24 +58,24 @@ export function Combobox({
       setQuery("");
     }
 
-    // Outside-click: ignore clicks on the trigger container or inside the portal dropdown.
     function handleMouseDown(e: MouseEvent) {
       const target = e.target as Node;
+      // Ignore clicks on the trigger (handled by onClick toggle) or inside dropdown
       if (containerRef.current?.contains(target)) return;
       if (dropdownRef.current?.contains(target)) return;
       close();
     }
 
-    // Scroll: only close when the page scrolls (not when the dropdown list itself scrolls).
     function handleScroll(e: Event) {
+      // Don't close when scrolling inside the dropdown list itself
       if (dropdownRef.current?.contains(e.target as Node)) return;
       close();
     }
 
     document.addEventListener("mousedown", handleMouseDown);
 
-    // Delay attaching the scroll listener so it doesn't fire on the browser's
-    // auto-scroll-to-focus that happens when the search input is focused.
+    // Delay scroll/resize listeners to avoid catching browser scroll-to-focus
+    // that fires when the search input is focused on open.
     const timer = setTimeout(() => {
       window.addEventListener("scroll", handleScroll, true);
       window.addEventListener("resize", close);
@@ -89,38 +89,39 @@ export function Combobox({
     };
   }, [open]);
 
+  function computeStyle(): CSSProperties {
+    if (!triggerRef.current) return {};
+    const rect = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const dropdownMaxHeight = 280;
+
+    // The dropdown portal is a direct child of <body> (no ancestor transforms).
+    // position:fixed here is relative to the true viewport, matching
+    // getBoundingClientRect() coords directly — no scroll offset needed.
+    const base: CSSProperties = {
+      position: "fixed",
+      left: rect.left,
+      width: rect.width,
+      zIndex: 9999,
+    };
+
+    if (spaceBelow >= dropdownMaxHeight || spaceBelow >= rect.top) {
+      return { ...base, top: rect.bottom + 4 };
+    }
+    return { ...base, top: rect.top - dropdownMaxHeight - 4 };
+  }
+
   function openDropdown() {
     if (disabled) return;
 
-    if (triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const dropdownMaxHeight = 280;
-
-      // Use position:absolute in the body portal with scroll offsets added to
-      // convert viewport coords → document coords. This is immune to ancestor
-      // transforms (e.g. framer-motion leaves transform:translateY(0) on page
-      // wrappers, which makes position:fixed use that wrapper as its containing
-      // block instead of the viewport, shifting the dropdown).
-      if (spaceBelow >= dropdownMaxHeight || spaceBelow >= rect.top) {
-        setDropdownStyle({
-          position: "absolute",
-          top: window.scrollY + rect.bottom + 4,
-          left: window.scrollX + rect.left,
-          width: rect.width,
-          zIndex: 9999,
-        });
-      } else {
-        setDropdownStyle({
-          position: "absolute",
-          top: window.scrollY + rect.top - dropdownMaxHeight - 4,
-          left: window.scrollX + rect.left,
-          width: rect.width,
-          zIndex: 9999,
-        });
-      }
+    // Toggle: clicking the trigger while open closes the dropdown
+    if (open) {
+      setOpen(false);
+      setQuery("");
+      return;
     }
 
+    setDropdownStyle(computeStyle());
     setOpen(true);
     setQuery("");
     setHighlighted(0);
