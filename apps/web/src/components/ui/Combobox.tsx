@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Search } from "lucide-react";
 
 export interface ComboboxOption {
@@ -31,9 +32,13 @@ export function Combobox({
   disabled,
 }: ComboboxProps) {
   options = options ?? [];
+
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [highlighted, setHighlighted] = useState(0);
+  const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({});
+
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -42,23 +47,69 @@ export function Combobox({
     ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
     : options;
 
-  useEffect(() => {
-    setHighlighted(0);
-  }, [query]);
+  useEffect(() => { setHighlighted(0); }, [query]);
 
+  // Close on outside click or scroll
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setQuery("");
+    if (!open) return;
+
+    function close() {
+      setOpen(false);
+      setQuery("");
+    }
+
+    function handleMouseDown(e: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node) &&
+        !(e.target as Element).closest("[data-combobox-dropdown]")
+      ) {
+        close();
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+
+    document.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
 
   function openDropdown() {
     if (disabled) return;
+
+    // Calculate fixed position from trigger's bounding rect so the dropdown
+    // always appears directly below the trigger — immune to parent overflow,
+    // stacking contexts, and table z-index issues.
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const dropdownHeight = 280; // max-h-52 (208px) + search row (~48px)
+
+      if (spaceBelow >= dropdownHeight || spaceBelow > rect.top) {
+        // Open downward
+        setDropdownStyle({
+          position: "fixed",
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width,
+          zIndex: 9999,
+        });
+      } else {
+        // Flip upward
+        setDropdownStyle({
+          position: "fixed",
+          bottom: window.innerHeight - rect.top + 4,
+          left: rect.left,
+          width: rect.width,
+          zIndex: 9999,
+        });
+      }
+    }
+
     setOpen(true);
     setQuery("");
     setHighlighted(0);
@@ -88,6 +139,52 @@ export function Combobox({
     }
   }
 
+  const dropdown = open ? (
+    <div
+      data-combobox-dropdown
+      style={dropdownStyle}
+      className="overflow-hidden rounded-2xl border border-white/50 bg-white/90 shadow-xl backdrop-blur-xl"
+    >
+      <div className="flex items-center gap-2 border-b border-outline-variant/40 px-3 py-2.5">
+        <Search size={14} className="shrink-0 text-on-surface-variant" />
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Cari..."
+          className="flex-1 bg-transparent text-sm text-on-surface outline-none placeholder:text-on-surface-variant/60"
+        />
+      </div>
+      <ul role="listbox" className="max-h-52 overflow-y-auto py-1.5">
+        {filtered.length === 0 ? (
+          <li className="px-3 py-2 text-sm text-on-surface-variant">Tidak ada pilihan</li>
+        ) : (
+          filtered.map((opt, i) => (
+            <li
+              key={opt.value}
+              role="option"
+              aria-selected={opt.value === value}
+              onMouseEnter={() => setHighlighted(i)}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                select(opt);
+              }}
+              className={`mx-1.5 cursor-pointer rounded-xl px-3 py-2 text-sm transition-colors ${
+                i === highlighted
+                  ? "bg-primary-50/80 text-primary"
+                  : "text-on-surface hover:bg-surface-container"
+              } ${opt.value === value ? "font-medium" : ""}`}
+            >
+              {opt.label}
+            </li>
+          ))
+        )}
+      </ul>
+    </div>
+  ) : null;
+
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       {/* Hidden native input for form validation */}
@@ -105,61 +202,26 @@ export function Combobox({
       )}
 
       <button
+        ref={triggerRef}
         type="button"
         disabled={disabled}
         onClick={openDropdown}
-        className={`${triggerBase} flex items-center justify-between gap-2 text-left ${!selected ? "text-on-surface-variant" : "text-on-surface"}`}
+        className={`${triggerBase} flex items-center justify-between gap-2 text-left ${
+          !selected ? "text-on-surface-variant" : "text-on-surface"
+        }`}
         aria-haspopup="listbox"
         aria-expanded={open}
       >
         <span className="flex-1 truncate">{selected ? selected.label : placeholder}</span>
         <ChevronDown
           size={15}
-          className={`shrink-0 text-on-surface-variant transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          className={`shrink-0 text-on-surface-variant transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
         />
       </button>
 
-      {open && (
-        <div className="absolute z-50 mt-1.5 w-full overflow-hidden rounded-2xl border border-white/50 bg-white/85 shadow-xl backdrop-blur-xl">
-          <div className="flex items-center gap-2 border-b border-outline-variant/40 px-3 py-2.5">
-            <Search size={14} className="shrink-0 text-on-surface-variant" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Cari..."
-              className="flex-1 bg-transparent text-sm text-on-surface outline-none placeholder:text-on-surface-variant/60"
-            />
-          </div>
-          <ul role="listbox" className="max-h-52 overflow-y-auto py-1.5">
-            {filtered.length === 0 ? (
-              <li className="px-3 py-2 text-sm text-on-surface-variant">Tidak ada pilihan</li>
-            ) : (
-              filtered.map((opt, i) => (
-                <li
-                  key={opt.value}
-                  role="option"
-                  aria-selected={opt.value === value}
-                  onMouseEnter={() => setHighlighted(i)}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    select(opt);
-                  }}
-                  className={`mx-1.5 cursor-pointer rounded-xl px-3 py-2 text-sm transition-colors ${
-                    i === highlighted
-                      ? "bg-primary-50/80 text-primary"
-                      : "text-on-surface hover:bg-surface-container"
-                  } ${opt.value === value ? "font-medium" : ""}`}
-                >
-                  {opt.label}
-                </li>
-              ))
-            )}
-          </ul>
-        </div>
-      )}
+      {createPortal(dropdown, document.body)}
     </div>
   );
 }
