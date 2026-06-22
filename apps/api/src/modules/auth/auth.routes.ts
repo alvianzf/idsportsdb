@@ -89,9 +89,9 @@ authRouter.post(
         data: { passwordResetToken: token, passwordResetExpiry: expiry },
       });
 
-      sendPasswordResetEmail({ to: user.email, fullName: user.fullName, resetToken: token }).catch(
-        (err) => console.error("[email] reset send failed:", err),
-      );
+      sendPasswordResetEmail({ to: user.email, fullName: user.fullName, resetToken: token })
+        .then(() => console.log(`[email] reset sent → ${user.email}`))
+        .catch((err) => console.error(`[email] reset FAILED → ${user.email}:`, err?.message ?? err));
     }
 
     res.status(204).send();

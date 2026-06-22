@@ -59,9 +59,9 @@ usersRouter.post(
       });
 
       // Send welcome email with credentials — fire-and-forget (don't block response)
-      sendWelcomeEmail({ to: user.email, fullName: user.fullName, password }).catch(
-        (err) => console.error("[email] welcome send failed:", err),
-      );
+      sendWelcomeEmail({ to: user.email, fullName: user.fullName, password })
+        .then(() => console.log(`[email] welcome sent → ${user.email}`))
+        .catch((err) => console.error(`[email] welcome FAILED → ${user.email}:`, err?.message ?? err));
 
       res.status(201).json(toSafeUser(user));
     } catch (err) {
