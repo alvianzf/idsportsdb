@@ -140,29 +140,33 @@ export function UsersListPage() {
       label: "Aksi",
       render: (user) => (
         <div className="flex flex-wrap gap-2">
+          {/* Edit — neutral outline */}
           <Link to={`/users/${user.id}/edit`}>
             <Button variant="outline">Edit</Button>
           </Link>
+          {/* Reset Password — blue/info */}
           <Button
             variant="outline"
             onClick={() => handleResetPassword(user)}
             title="Reset kata sandi — kirim ulang email dengan kata sandi baru"
+            className="border-info/40 text-info hover:bg-info/10"
           >
             <RotateCcw size={14} /> Reset Password
           </Button>
+          {/* Deactivate — amber/warning */}
           {user.isActive && (
             <Button
               variant="outline"
               onClick={() => handleDeactivate(user)}
-              className="border-danger/30 text-danger hover:bg-danger-light"
+              className="border-warning/40 text-warning hover:bg-warning/10"
             >
               Nonaktifkan
             </Button>
           )}
+          {/* Hard delete — red/danger */}
           <Button
-            variant="outline"
+            variant="danger"
             onClick={() => handleDelete(user)}
-            className="border-danger/30 text-danger hover:bg-danger-light"
           >
             <Trash2 size={14} /> Hapus
           </Button>
