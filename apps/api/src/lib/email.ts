@@ -36,6 +36,30 @@ export async function sendWelcomeEmail(opts: {
   );
 }
 
+export async function sendPasswordResetByAdminEmail(opts: {
+  to: string;
+  fullName: string;
+  password: string;
+}) {
+  await send(
+    opts.to,
+    "Kata sandi Anda telah direset — KONI Batam",
+    `
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+      <img src="https://batam.koni.go.id/logo-koni-batam.png" alt="KONI Batam" style="height:56px;margin-bottom:16px" />
+      <h2 style="color:#c8102e;margin:0 0 8px">Reset Kata Sandi</h2>
+      <p style="color:#374151">Halo, ${opts.fullName}. Kata sandi akun Anda telah direset oleh administrator. Berikut adalah kredensial masuk baru Anda:</p>
+      <table style="background:#f9fafb;border-radius:8px;padding:16px;width:100%;border-collapse:collapse;margin:16px 0">
+        <tr><td style="color:#6b7280;padding:4px 0;width:120px">Email</td><td style="color:#111827;font-weight:600">${opts.to}</td></tr>
+        <tr><td style="color:#6b7280;padding:4px 0">Kata Sandi Baru</td><td style="color:#111827;font-weight:600;font-family:monospace">${opts.password}</td></tr>
+      </table>
+      <p style="color:#374151">Silakan masuk di <a href="${env.appBaseUrl}/login" style="color:#c8102e">${env.appBaseUrl}/login</a> dan segera ganti kata sandi Anda.</p>
+      <p style="color:#9ca3af;font-size:12px;margin-top:24px">Email ini dikirim secara otomatis. Jangan balas email ini.</p>
+    </div>
+    `,
+  );
+}
+
 export async function sendPasswordResetEmail(opts: {
   to: string;
   fullName: string;

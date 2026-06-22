@@ -11,7 +11,6 @@ interface AtletOption { id: string; namaLengkap: string; nomorIndukAtlet: string
 interface UserForm {
   email: string;
   fullName: string;
-  password: string;
   role: Role;
   cabangOlahragaId: string;
   athleteId: string;
@@ -20,7 +19,6 @@ interface UserForm {
 const empty: UserForm = {
   email: "",
   fullName: "",
-  password: "",
   role: "ADMIN_KONI",
   cabangOlahragaId: "",
   athleteId: "",
@@ -61,7 +59,6 @@ export function UsersFormPage() {
         setForm({
           email: u.email ?? "",
           fullName: u.fullName ?? "",
-          password: "",
           role: u.role ?? "ADMIN_KONI",
           cabangOlahragaId: u.cabangOlahragaId ?? "",
           athleteId: u.athleteId ?? "",
@@ -77,13 +74,7 @@ export function UsersFormPage() {
     setSaving(true);
     try {
       if (isEdit) {
-        // Update basic info
-        await api.patch(`/users/${id}`, {
-          fullName: form.fullName,
-          email: form.email,
-          ...(form.password ? { password: form.password } : {}),
-        });
-        // Update role + scoping fields
+        await api.patch(`/users/${id}`, { fullName: form.fullName, email: form.email });
         await api.patch(`/users/${id}/role`, {
           role: form.role,
           cabangOlahragaId: form.role === "ADMIN_CABOR" ? form.cabangOlahragaId || null : null,
@@ -94,12 +85,11 @@ export function UsersFormPage() {
         await api.post("/users", {
           email: form.email,
           fullName: form.fullName,
-          password: form.password,
           role: form.role,
           cabangOlahragaId: form.role === "ADMIN_CABOR" ? form.cabangOlahragaId || undefined : undefined,
           athleteId: form.role === "ATLET" ? form.athleteId || undefined : undefined,
         });
-        toast.success("Pengguna berhasil ditambahkan.");
+        toast.success("Pengguna berhasil ditambahkan. Email dengan kata sandi dikirim otomatis.");
       }
       navigate("/users");
     } catch (err) {
@@ -134,21 +124,6 @@ export function UsersFormPage() {
                 required
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              />
-            </Field>
-            <Field
-              label={isEdit ? "Password Baru (kosongkan jika tidak diubah)" : "Password"}
-              required={!isEdit}
-              htmlFor="password"
-            >
-              <Input
-                id="password"
-                type="password"
-                required={!isEdit}
-                minLength={8}
-                value={form.password}
-                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                placeholder={isEdit ? "Minimal 8 karakter" : ""}
               />
             </Field>
             <Field label="Role" required htmlFor="role">

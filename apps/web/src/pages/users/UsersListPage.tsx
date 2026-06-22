@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Plus, RotateCcw, Trash2 } from "lucide-react";
 import { ROLES, ROLE_LABELS, type Role } from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Badge, Select, DataTable, type Column, type BulkAction } from "../../components/ui";
 import { api } from "../../lib/api";
@@ -40,6 +40,20 @@ export function UsersListPage() {
 
   useEffect(load, [roleFilter]);
 
+  async function handleResetPassword(user: UserRow) {
+    const confirmed = await confirmAction({
+      text: `Reset kata sandi ${user.fullName}? Kata sandi baru akan dikirim ke ${user.email}.`,
+      confirmText: "Reset",
+    });
+    if (!confirmed) return;
+    try {
+      await api.post(`/users/${user.id}/reset-password`);
+      toast.success(`Kata sandi direset. Email dikirim ke ${user.email}.`);
+    } catch {
+      toast.error("Gagal mereset kata sandi.");
+    }
+  }
+
   async function handleDeactivate(user: UserRow) {
     const confirmed = await confirmAction({
       text: `Nonaktifkan akun ${user.fullName}? Pengguna tidak akan bisa login lagi.`,
@@ -53,6 +67,22 @@ export function UsersListPage() {
       load();
     } catch {
       toast.error("Gagal menonaktifkan akun.");
+    }
+  }
+
+  async function handleDelete(user: UserRow) {
+    const confirmed = await confirmAction({
+      text: `Hapus permanen akun ${user.fullName}? Tindakan ini tidak dapat dibatalkan.`,
+      danger: true,
+      confirmText: "Hapus Permanen",
+    });
+    if (!confirmed) return;
+    try {
+      await api.delete(`/users/${user.id}/permanent`);
+      toast.success("Akun berhasil dihapus permanen.");
+      load();
+    } catch {
+      toast.error("Gagal menghapus akun.");
     }
   }
 
@@ -109,10 +139,17 @@ export function UsersListPage() {
       key: "aksi",
       label: "Aksi",
       render: (user) => (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link to={`/users/${user.id}/edit`}>
             <Button variant="outline">Edit</Button>
           </Link>
+          <Button
+            variant="outline"
+            onClick={() => handleResetPassword(user)}
+            title="Reset kata sandi — kirim ulang email dengan kata sandi baru"
+          >
+            <RotateCcw size={14} /> Reset Password
+          </Button>
           {user.isActive && (
             <Button
               variant="outline"
@@ -122,6 +159,13 @@ export function UsersListPage() {
               Nonaktifkan
             </Button>
           )}
+          <Button
+            variant="outline"
+            onClick={() => handleDelete(user)}
+            className="border-danger/30 text-danger hover:bg-danger-light"
+          >
+            <Trash2 size={14} /> Hapus
+          </Button>
         </div>
       ),
     },

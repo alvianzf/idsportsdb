@@ -1,10 +1,16 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "node:crypto";
 import { prisma } from "../../lib/prisma.js";
 import { authenticate, requireRole } from "../../middleware/auth.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { isNotFoundError, isUniqueConstraintError } from "../../lib/prismaErrors.js";
-import { sendWelcomeEmail } from "../../lib/email.js";
+import { sendWelcomeEmail, sendPasswordResetByAdminEmail } from "../../lib/email.js";
+
+function generatePassword(): string {
+  // 12 printable characters — URL-safe base64 subset
+  return randomBytes(16).toString("base64url").slice(0, 12);
+}
 import {
   createUserSchema,
   updateUserRoleSchema,
@@ -44,7 +50,8 @@ usersRouter.post(
       return;
     }
 
-    const { password, role, cabangOlahragaId, athleteId, ...rest } = parsed.data;
+    const { role, cabangOlahragaId, athleteId, ...rest } = parsed.data;
+    const password = generatePassword();
     const passwordHash = await bcrypt.hash(password, 10);
 
     try {
@@ -157,12 +164,65 @@ usersRouter.patch(
   }),
 );
 
-// Soft delete (specs/001-auth-rbac/spec.md §3).
+// Soft delete — deactivates the account (user can no longer log in).
 usersRouter.delete(
   "/:id",
   asyncHandler(async (req, res) => {
     try {
       await prisma.user.update({ where: { id: req.params.id }, data: { isActive: false } });
+      res.status(204).send();
+    } catch (err) {
+      if (isNotFoundError(err)) {
+        res.status(404).json({ error: "Not found" });
+        return;
+      }
+      throw err;
+    }
+  }),
+);
+
+// Hard delete — permanently removes the user record.
+usersRouter.delete(
+  "/:id/permanent",
+  asyncHandler(async (req, res) => {
+    try {
+      await prisma.user.delete({ where: { id: req.params.id } });
+      res.status(204).send();
+    } catch (err) {
+      if (isNotFoundError(err)) {
+        res.status(404).json({ error: "Not found" });
+        return;
+      }
+      throw err;
+    }
+  }),
+);
+
+// Reset password — generate a new random password, update the hash, email credentials.
+usersRouter.post(
+  "/:id/reset-password",
+  asyncHandler(async (req, res) => {
+    try {
+      const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+      if (!user) {
+        res.status(404).json({ error: "Not found" });
+        return;
+      }
+
+      const newPassword = generatePassword();
+      await prisma.user.update({
+        where: { id: req.params.id },
+        data: {
+          passwordHash: await bcrypt.hash(newPassword, 10),
+          passwordResetToken: null,
+          passwordResetExpiry: null,
+        },
+      });
+
+      sendPasswordResetByAdminEmail({ to: user.email, fullName: user.fullName, password: newPassword })
+        .then(() => console.log(`[email] admin-reset sent → ${user.email}`))
+        .catch((err) => console.error(`[email] admin-reset FAILED → ${user.email}:`, err?.message ?? err));
+
       res.status(204).send();
     } catch (err) {
       if (isNotFoundError(err)) {

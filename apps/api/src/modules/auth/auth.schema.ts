@@ -37,7 +37,8 @@ export const createUserSchema = z
   .object({
     email: z.string().email(),
     fullName: z.string().min(1),
-    password: z.string().min(8),
+    // Password is now auto-generated on the server; field accepted but ignored if sent
+    password: z.string().min(8).optional(),
     role: z.enum(ROLES),
     cabangOlahragaId: z.string().uuid().optional(),
     athleteId: z.string().uuid().optional(),
