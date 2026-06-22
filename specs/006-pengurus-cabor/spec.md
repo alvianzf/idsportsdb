@@ -67,11 +67,20 @@ tab/segmented-control switcher:
 - **Kartu** — cards nested/indented per hierarchy depth (recursive tree of
   cards), each showing nama, jabatan, masa bakti, kontak, status badge.
 - **Struktur** (org chart) — top-down tree diagram of boxes connected by
-  lines. For SUPER_ADMIN_KONI/ADMIN_KONI, each box is **draggable**; dropping
-  one box onto another sends `PATCH /pengurus/:id { reportsToId: <target.id> }`
-  to reassign its parent, or dropping onto the "Lepaskan di sini..." zone below
-  the chart sets `reportsToId: null` (top-level). Read-only for other roles
-  (no drag handles).
+  lines. For SUPER_ADMIN_KONI/ADMIN_KONI, each box is **draggable** (HTML5
+  drag-and-drop). Each target box shows a **split drop overlay** when a drag
+  is in progress:
+  - **Top half** ("Tukar posisi") — drops here **swap positions** between the
+    dragged node and the target: jabatan and reportsToId are exchanged and
+    direct reports are redirected so the org hierarchy is preserved. For a
+    direct parent↔child pair, the child moves into the parent's slot and the
+    parent into the child's slot (no cycle created). Deep ancestor/descendant
+    swaps are blocked (toast error).
+  - **Bottom half** ("Jadikan bawahan") — drops here **reparents** the dragged
+    node: sends `PATCH /pengurus/:id { reportsToId: <target.id> }`.
+  - **"Lepaskan di sini..."** zone below the chart sets `reportsToId: null`
+    (promotes to top-level).
+  - Read-only for other roles (no drag handles).
 
 ## 5. Role-Based Behavior
 

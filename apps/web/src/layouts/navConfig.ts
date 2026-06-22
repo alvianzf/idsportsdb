@@ -17,8 +17,10 @@ export interface NavItem {
   to: string;
   label: string;
   icon: LucideIcon;
-  /** Shown in the mobile bottom nav (max 4 items, keep this list short). */
+  /** Shown in the mobile bottom nav. */
   mobile?: boolean;
+  /** Renders as the center FAB button in the mobile bottom nav. */
+  center?: boolean;
   roles: Role[];
 }
 
@@ -27,12 +29,12 @@ const ADMIN_ROLES: Role[] = ["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"];
 export const ADMIN_NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, mobile: true, roles: ADMIN_ROLES },
   { to: "/atlet", label: "Atlet", icon: Users, mobile: true, roles: ADMIN_ROLES },
-  { to: "/scan", label: "Scan Kartu", icon: ScanLine, mobile: true, roles: ADMIN_ROLES },
+  { to: "/scan", label: "Scan", icon: ScanLine, mobile: true, center: true, roles: ADMIN_ROLES },
+  { to: "/monitoring", label: "Monitoring", icon: Activity, mobile: true, roles: ADMIN_ROLES },
   { to: "/reports", label: "Pelaporan", icon: FileBarChart, mobile: true, roles: ADMIN_ROLES },
   { to: "/prestasi", label: "Prestasi", icon: Trophy, roles: ADMIN_ROLES },
   { to: "/pelatih", label: "Pelatih", icon: UserCog, roles: ADMIN_ROLES },
   { to: "/cabor", label: "Cabang Olahraga", icon: Building2, roles: ADMIN_ROLES },
-  { to: "/monitoring", label: "Monitoring", icon: Activity, roles: ADMIN_ROLES },
   { to: "/artikel", label: "Pengumuman", icon: Newspaper, roles: ["SUPER_ADMIN_KONI", "ADMIN_KONI"] },
   { to: "/users", label: "Pengguna", icon: ShieldCheck, roles: ["SUPER_ADMIN_KONI"] },
 ];

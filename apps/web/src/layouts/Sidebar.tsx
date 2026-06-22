@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
 import type { NavItem } from "./navConfig";
 
-// Navbar and sidebar brand header use the same red; nav body is slightly lighter
 const NAVBAR_RED = "#990000";
-const SIDEBAR_NAV_BG = "#b01020"; // lighter than navbar
+const SIDEBAR_NAV_BG = "#b01020";
 const SIDEBAR_ACTIVE = "rgba(255,255,255,0.18)";
 const SIDEBAR_HOVER = "rgba(255,255,255,0.10)";
 
@@ -17,13 +17,10 @@ export function Sidebar({ items }: { items: NavItem[] }) {
       className="flex h-full flex-col transition-all duration-200"
       style={{ width: collapsed ? 56 : 240, background: SIDEBAR_NAV_BG }}
     >
-      {/* Brand header — same colour as top navbar */}
+      {/* Brand header */}
       <div
         className="flex h-16 items-center gap-2 px-3"
-        style={{
-          background: NAVBAR_RED,
-          borderBottom: "1px solid rgba(255,255,255,0.12)",
-        }}
+        style={{ background: NAVBAR_RED, borderBottom: "1px solid rgba(255,255,255,0.12)" }}
       >
         <img src="/logo-koni-batam.png" alt="KONI Batam" className="h-8 w-8 shrink-0 object-contain" />
         {!collapsed && (
@@ -43,43 +40,41 @@ export function Sidebar({ items }: { items: NavItem[] }) {
             key={to}
             to={to}
             title={collapsed ? label : undefined}
-            className={() =>
-              `flex items-center rounded-md transition-colors ${collapsed ? "justify-center px-0 py-2" : "gap-3 px-3 py-2"}`
-            }
+            className={`block rounded-md`}
             style={({ isActive }) => ({
               background: isActive ? SIDEBAR_ACTIVE : "transparent",
               color: isActive ? "#ffffff" : "rgba(255,255,255,0.75)",
             })}
-            onMouseEnter={(e) => {
-              const el = e.currentTarget;
-              if (!(el as HTMLElement).getAttribute("data-active"))
-                (el as HTMLElement).style.background = SIDEBAR_HOVER;
-            }}
-            onMouseLeave={(e) => {
-              const el = e.currentTarget;
-              if (!(el as HTMLElement).getAttribute("data-active"))
-                (el as HTMLElement).style.background = "transparent";
-            }}
           >
-            <Icon size={18} />
-            {!collapsed && <span className="text-sm font-medium">{label}</span>}
+            {({ isActive }) => (
+              <motion.span
+                className={`flex items-center rounded-md ${collapsed ? "justify-center px-0 py-2" : "gap-3 px-3 py-2"}`}
+                whileHover={{
+                  x: 4,
+                  backgroundColor: isActive ? SIDEBAR_ACTIVE : SIDEBAR_HOVER,
+                }}
+                transition={{ type: "spring", stiffness: 500, damping: 35 }}
+              >
+                <Icon size={18} />
+                {!collapsed && <span className="text-sm font-medium">{label}</span>}
+              </motion.span>
+            )}
           </NavLink>
         ))}
       </nav>
 
       {/* Collapse toggle */}
-      <button
+      <motion.button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
-        className="flex items-center justify-center py-3 transition-colors"
-        style={{
-          borderTop: "1px solid rgba(255,255,255,0.12)",
-          color: "rgba(255,255,255,0.6)",
-        }}
+        className="flex items-center justify-center py-3"
+        style={{ borderTop: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }}
+        whileHover={{ color: "#ffffff" }}
+        transition={{ duration: 0.15 }}
         title={collapsed ? "Perluas sidebar" : "Perkecil sidebar"}
       >
         {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-      </button>
+      </motion.button>
     </aside>
   );
 }

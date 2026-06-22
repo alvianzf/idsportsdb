@@ -57,8 +57,9 @@ const UsersFormPage = page(() => import("../pages/users/UsersFormPage"), "UsersF
 
 function PageLoader() {
   return (
-    <div className="flex min-h-32 items-center justify-center text-sm text-neutral-400">
-      Memuat...
+    <div className="flex min-h-64 flex-col items-center justify-center gap-3">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-200 border-t-primary" />
+      <p className="animate-pulse text-sm text-neutral-400">Memuat...</p>
     </div>
   );
 }

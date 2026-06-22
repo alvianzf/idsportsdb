@@ -18,12 +18,23 @@
   - `nama: String @unique` — e.g. "Atletik", "Bulu Tangkis"
   - `ketuaCabor: String?`
   - `sekretariat: String?`
+  - `organisasiNasional: String?` — name of the national federation (e.g. "PBSI")
+  - `logoOrganisasiUrl: String?` — uploaded logo file path for the national org
   - `createdAt`, `updatedAt`
 - **Derived fields** (not stored, computed via `_count`):
   - `jumlahAtlet` — `Atlet` rows where `cabangOlahragaId = this.id`
   - `jumlahPelatih` — `Pelatih` rows where `cabangOlahragaId = this.id`
-- **Relationships**: one-to-many → `Atlet`, `Pelatih`, `PengurusCabor`, `User`
-  (for `ADMIN_CABOR` scoping)
+- **Entity**: `CaborDokumen`
+  - `id: String (uuid)`
+  - `cabangOlahragaId: String` (FK → `CabangOlahraga`)
+  - `jenis: String` — document type, free text with suggestions (e.g. "SK Pengurus", "SK Pembentukan", "Sertifikat Afiliasi")
+  - `nomorDokumen: String?` — official document number
+  - `tanggalDokumen: DateTime?` — date on the document
+  - `deskripsi: String?`
+  - `fileUrl: String` — stored file path
+  - `uploadedAt: DateTime`
+- **Relationships**: one-to-many → `Atlet`, `Pelatih`, `PengurusCabor`, `User`,
+  `CaborDokumen` (for `ADMIN_CABOR` scoping)
 
 ## 3. API Contract
 
@@ -31,9 +42,12 @@
 |---|---|---|---|---|---|
 | GET | `/api/v1/cabor` | all authenticated | `?search=` | `CabangOlahraga[]` with `jumlahAtlet`/`jumlahPelatih` | `ADMIN_CABOR` sees all cabor (read-only) for context, but can only edit own |
 | GET | `/api/v1/cabor/:id` | all authenticated | - | `CabangOlahraga` + counts + `pengurus[]` (from `006-pengurus-cabor`) | |
-| POST | `/api/v1/cabor` | SUPER_ADMIN_KONI, ADMIN_KONI | `{ nama, ketuaCabor?, sekretariat? }` | `CabangOlahraga` | `nama` must be unique |
-| PATCH | `/api/v1/cabor/:id` | SUPER_ADMIN_KONI, ADMIN_KONI | partial fields | `CabangOlahraga` | |
+| POST | `/api/v1/cabor` | SUPER_ADMIN_KONI, ADMIN_KONI | `{ nama, ketuaCabor?, sekretariat?, organisasiNasional? }` (multipart with optional `logo` file) | `CabangOlahraga` | `nama` must be unique |
+| PATCH | `/api/v1/cabor/:id` | SUPER_ADMIN_KONI, ADMIN_KONI | partial fields (multipart with optional `logo` file) | `CabangOlahraga` | |
 | DELETE | `/api/v1/cabor/:id` | SUPER_ADMIN_KONI | - | `204` | blocked (409) if `jumlahAtlet > 0` or `jumlahPelatih > 0` |
+| GET | `/api/v1/cabor/:id/documents` | all authenticated | - | `CaborDokumen[]` | |
+| POST | `/api/v1/cabor/:id/documents` | SUPER_ADMIN_KONI, ADMIN_KONI | multipart: `file` + `jenis` + `nomorDokumen?` + `tanggalDokumen?` + `deskripsi?` | `CaborDokumen` | |
+| DELETE | `/api/v1/cabor/:caborId/documents/:docId` | SUPER_ADMIN_KONI, ADMIN_KONI | - | `204` | deletes the stored file too |
 
 - **Validation**: `apps/api/src/modules/cabor/cabor.schema.ts` (`createCaborSchema`,
   `updateCaborSchema`)
@@ -42,10 +56,15 @@
 
 - **`/cabor`** — list/table: Nama, Ketua Cabor, Jumlah Atlet, Jumlah Pelatih,
   actions. Search box. "Tambah Cabor" button (SUPER_ADMIN_KONI/ADMIN_KONI only).
-- **`/cabor/new`, `/cabor/:id/edit`** — form: Nama, Ketua Cabor, Sekretariat.
-- **`/cabor/:id`** — detail: header card (nama, ketua, sekretariat, counts),
-  tab/section listing `PengurusCabor` entries (from `006-pengurus-cabor`), and a
-  link to filtered `/atlet?cabor=:id` / `/pelatih?cabor=:id`.
+- **`/cabor/new`, `/cabor/:id/edit`** — form: Nama, Ketua Cabor, Sekretariat,
+  Organisasi Nasional, Logo Organisasi (file upload via `DropZone`).
+- **`/cabor/:id`** — detail sections:
+  1. **Header card** — logo thumbnail (if present), nama, ketua, sekretariat,
+     organisasi nasional, jumlah atlet, jumlah pelatih.
+  2. **Pengurus Cabor** — org structure managed via `006-pengurus-cabor`.
+  3. **SK & Dokumen Resmi** — list of uploaded `CaborDokumen` records (jenis,
+     nomorDokumen, tanggalDokumen, deskripsi, file link). Admins can upload
+     new documents (multipart form with `DropZone`) and delete existing ones.
 - **Mobile**: list renders as stacked cards (nama + counts + chevron) instead of
   a wide table; detail page sections stack vertically.
 - **Components**: `Card`, `Badge` (not heavily used here), standard table/form.

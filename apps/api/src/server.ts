@@ -2,6 +2,8 @@ import { createServer } from "node:http";
 import path from "node:path";
 import express from "express";
 import cors from "cors";
+import compression from "compression";
+import helmet from "helmet";
 import { env } from "./config/env.js";
 import { initSocket } from "./lib/socket.js";
 import { uploadRoot } from "./lib/storage.js";
@@ -23,7 +25,9 @@ import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
 
-app.use(cors());
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+app.use(compression());
+app.use(cors({ origin: process.env.CLIENT_URL ?? true, credentials: true }));
 app.use(express.json());
 
 // Sensitive atlet documents require authentication.
@@ -33,7 +37,7 @@ app.use("/uploads/atlet-documents", authenticate, (req, res) => {
 });
 
 // All other uploads (article images, certificates, etc.) are public.
-app.use("/uploads", express.static(uploadRoot));
+app.use("/uploads", express.static(uploadRoot, { maxAge: "7d", immutable: false }));
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });

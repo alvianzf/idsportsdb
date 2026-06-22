@@ -21,7 +21,7 @@ No new entities. Aggregates over `Atlet`, `Pelatih`, `CabangOlahraga`, `Prestasi
 
 | Method | Path | Roles Allowed | Request Body | Response | Notes |
 |---|---|---|---|---|---|
-| GET | `/api/v1/dashboard/summary` | SUPER_ADMIN_KONI, ADMIN_KONI, ADMIN_CABOR | - | `{ activeAtletCount, pelatihCount, caborCount, prestasiCount }` | `ADMIN_CABOR`: all counts scoped to `req.scopedCaborId`; `caborCount` for that role is always `1` (own cabor) |
+| GET | `/api/v1/dashboard/summary` | SUPER_ADMIN_KONI, ADMIN_KONI, ADMIN_CABOR | `?tahun=<year>` | `{ activeAtletCount, pelatihCount, caborCount, prestasiCount, prestasiCountAll, tahun }` | `ADMIN_CABOR`: all counts scoped to `req.scopedCaborId`; `caborCount` for that role is always `1` (own cabor); `prestasiCount` = prestasi in the given `tahun`; `prestasiCountAll` = prestasi across all years |
 | GET | `/api/v1/dashboard/stats/per-cabor` | SUPER_ADMIN_KONI, ADMIN_KONI | - | `[{ cabangOlahragaId, nama, atletCount, pelatihCount }]` | Not shown to `ADMIN_CABOR` (single-cabor view makes this redundant) |
 | GET | `/api/v1/dashboard/stats/prestasi` | SUPER_ADMIN_KONI, ADMIN_KONI, ADMIN_CABOR | `?groupBy=medali\|tahun\|tingkatKejuaraan` | `[{ key, count }]` | scoped for `ADMIN_CABOR` via athlete's cabor |
 
@@ -30,16 +30,22 @@ No new entities. Aggregates over `Atlet`, `Pelatih`, `CabangOlahraga`, `Prestasi
 
 ## 4. UI / Pages
 
-- **Route**: `/dashboard` (`apps/web/src/pages/DashboardPage.tsx` — already
-  scaffolded with placeholder `StatCard`s and `Card` sections)
+- **Route**: `/dashboard` (`apps/web/src/pages/DashboardPage.tsx`)
 - **Mobile**: stat cards in a `grid-cols-2` grid; "Statistik per Cabor" and
   "Statistik Prestasi" cards stack vertically below.
 - **Desktop**: stat cards in `grid-cols-4`; stats cards in `md:grid-cols-2`.
-- **Components**: `StatCard` (icon + label + value, already in
-  `DashboardPage.tsx`), `Card`.
-- **Empty/loading/error**: while `GET /dashboard/summary` is pending, show `—`
-  placeholders (current default); on error, show inline message in place of
-  the stats grid.
+- **Components**: `StatCard` (icon + label + value), `Card`, `Badge`.
+- **Year filter**: A `<select>` above the stat grid lets the user pick a
+  `tahun` (year) from the current year back to 2020. Changing the year
+  re-fetches `GET /dashboard/summary?tahun=<year>` and updates `prestasiCount`
+  (the "Prestasi `<year>`" stat card). `prestasiCountAll` (total all-time) is
+  displayed as a small annotation below the grid and is unaffected by the year
+  filter.
+- **Prestasi stats**: `GET /dashboard/stats/prestasi?groupBy=medali` — results
+  are rendered as `Badge` chips (Emas / Perak / Perunggu); `NONE` entries are
+  filtered out of the display.
+- **Empty/loading/error**: while fetching, show `—` placeholders; on error,
+  show inline `Card` with danger text.
 
 ## 5. Role-Based Behavior
 
@@ -64,8 +70,8 @@ No new entities. Aggregates over `Atlet`, `Pelatih`, `CabangOlahraga`, `Prestasi
 
 - "Statistik prestasi" grouping dimension not specified by PDF beyond "statistik
   prestasi" — defaulting to medal-type breakdown (`groupBy=medali`) as the
-  primary dashboard chart, with year/level available as query params for future
-  chart toggles.
+  primary dashboard chart. `groupBy=tahun` and `groupBy=tingkatKejuaraan` are
+  available via the API but not yet exposed in the UI.
 
 ## 8. Dependencies
 
