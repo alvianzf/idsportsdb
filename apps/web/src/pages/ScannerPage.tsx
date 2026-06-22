@@ -134,6 +134,10 @@ export function ScannerPage() {
   // ── Render ────────────────────────────────────────────────────────────────
   const showViewfinder = state === "scanning";
 
+  // Viewfinder size: 60% of the shorter viewport dimension, clamped 240–420px
+  const BOX = Math.max(240, Math.min(Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.6), 420));
+  const HALF = Math.round(BOX / 2);
+
   const scanKeyframe = `@keyframes scan-line { 0% { top: 0 } 100% { top: 100% } }`;
   const scanLineStyle: CSSProperties = {
     position: "absolute", top: 0, left: 0, right: 0, height: 2,
@@ -188,18 +192,18 @@ export function ScannerPage() {
 
         {showViewfinder && (
           <div style={{ position: "absolute", inset: 0, zIndex: 10, pointerEvents: "none" }}>
-            {/* 4 dark rects leaving a transparent 240×240 hole in the centre */}
-            <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: "calc(50% + 120px)", background: "rgba(0,0,0,0.6)" }} />
-            <div style={{ position: "absolute", top: "calc(50% + 120px)", left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.6)" }} />
-            <div style={{ position: "absolute", top: "calc(50% - 120px)", bottom: "calc(50% - 120px)", left: 0, right: "calc(50% + 120px)", background: "rgba(0,0,0,0.6)" }} />
-            <div style={{ position: "absolute", top: "calc(50% - 120px)", bottom: "calc(50% - 120px)", left: "calc(50% + 120px)", right: 0, background: "rgba(0,0,0,0.6)" }} />
+            {/* 4 dark rects leaving a transparent BOX×BOX hole in the centre */}
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: `calc(50% + ${HALF}px)`, background: "rgba(0,0,0,0.6)" }} />
+            <div style={{ position: "absolute", top: `calc(50% + ${HALF}px)`, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.6)" }} />
+            <div style={{ position: "absolute", top: `calc(50% - ${HALF}px)`, bottom: `calc(50% - ${HALF}px)`, left: 0, right: `calc(50% + ${HALF}px)`, background: "rgba(0,0,0,0.6)" }} />
+            <div style={{ position: "absolute", top: `calc(50% - ${HALF}px)`, bottom: `calc(50% - ${HALF}px)`, left: `calc(50% + ${HALF}px)`, right: 0, background: "rgba(0,0,0,0.6)" }} />
 
             {/* Corner brackets + scan line */}
-            <div style={{ position: "absolute", top: "calc(50% - 120px)", left: "calc(50% - 120px)", width: 240, height: 240 }}>
-              <span style={{ position: "absolute", top: 0, left: 0, width: 32, height: 32, borderTop: "4px solid #fff", borderLeft: "4px solid #fff", borderRadius: "6px 0 0 0" }} />
-              <span style={{ position: "absolute", top: 0, right: 0, width: 32, height: 32, borderTop: "4px solid #fff", borderRight: "4px solid #fff", borderRadius: "0 6px 0 0" }} />
-              <span style={{ position: "absolute", bottom: 0, left: 0, width: 32, height: 32, borderBottom: "4px solid #fff", borderLeft: "4px solid #fff", borderRadius: "0 0 0 6px" }} />
-              <span style={{ position: "absolute", bottom: 0, right: 0, width: 32, height: 32, borderBottom: "4px solid #fff", borderRight: "4px solid #fff", borderRadius: "0 0 6px 0" }} />
+            <div style={{ position: "absolute", top: `calc(50% - ${HALF}px)`, left: `calc(50% - ${HALF}px)`, width: BOX, height: BOX }}>
+              <span style={{ position: "absolute", top: 0, left: 0, width: 36, height: 36, borderTop: "4px solid #fff", borderLeft: "4px solid #fff", borderRadius: "6px 0 0 0" }} />
+              <span style={{ position: "absolute", top: 0, right: 0, width: 36, height: 36, borderTop: "4px solid #fff", borderRight: "4px solid #fff", borderRadius: "0 6px 0 0" }} />
+              <span style={{ position: "absolute", bottom: 0, left: 0, width: 36, height: 36, borderBottom: "4px solid #fff", borderLeft: "4px solid #fff", borderRadius: "0 0 0 6px" }} />
+              <span style={{ position: "absolute", bottom: 0, right: 0, width: 36, height: 36, borderBottom: "4px solid #fff", borderRight: "4px solid #fff", borderRadius: "0 0 6px 0" }} />
               <div style={scanLineStyle} />
             </div>
           </div>
