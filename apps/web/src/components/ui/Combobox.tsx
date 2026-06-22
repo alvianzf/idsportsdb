@@ -97,19 +97,24 @@ export function Combobox({
       const spaceBelow = window.innerHeight - rect.bottom;
       const dropdownMaxHeight = 280;
 
+      // Use position:absolute in the body portal with scroll offsets added to
+      // convert viewport coords → document coords. This is immune to ancestor
+      // transforms (e.g. framer-motion leaves transform:translateY(0) on page
+      // wrappers, which makes position:fixed use that wrapper as its containing
+      // block instead of the viewport, shifting the dropdown).
       if (spaceBelow >= dropdownMaxHeight || spaceBelow >= rect.top) {
         setDropdownStyle({
-          position: "fixed",
-          top: rect.bottom + 4,
-          left: rect.left,
+          position: "absolute",
+          top: window.scrollY + rect.bottom + 4,
+          left: window.scrollX + rect.left,
           width: rect.width,
           zIndex: 9999,
         });
       } else {
         setDropdownStyle({
-          position: "fixed",
-          bottom: window.innerHeight - rect.top + 4,
-          left: rect.left,
+          position: "absolute",
+          top: window.scrollY + rect.top - dropdownMaxHeight - 4,
+          left: window.scrollX + rect.left,
           width: rect.width,
           zIndex: 9999,
         });
