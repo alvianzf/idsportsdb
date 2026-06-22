@@ -77,6 +77,7 @@ export function UsersListPage() {
     {
       key: "fullName",
       label: "Nama",
+      mobile: true,
       sortable: true,
       getValue: (r) => r.fullName,
       render: (r) => <span className="font-medium text-neutral-900">{r.fullName}</span>,
@@ -91,6 +92,7 @@ export function UsersListPage() {
     {
       key: "role",
       label: "Role",
+      mobile: true,
       sortable: true,
       getValue: (r) => r.role,
       render: (r) => <Badge tone={ROLE_BADGE_TONE[r.role]}>{ROLE_LABELS[r.role]}</Badge>,

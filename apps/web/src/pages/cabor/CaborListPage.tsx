@@ -114,6 +114,7 @@ export function CaborListPage() {
     {
       key: "jumlahPelatih",
       label: "Pelatih",
+      mobile: true,
       sortable: true,
       getValue: (c) => c.jumlahPelatih,
       render: (c) => <span className="text-neutral-600">{c.jumlahPelatih} pelatih</span>,

@@ -116,6 +116,7 @@ export function PrestasiListPage() {
     {
       key: "atlet",
       label: "Atlet",
+      mobile: true,
       sortable: true,
       getValue: (p) => p.atlet.namaLengkap,
       render: (p) => (
@@ -127,10 +128,25 @@ export function PrestasiListPage() {
     {
       key: "cabor",
       label: "Cabor",
+      mobile: true,
       sortable: true,
       getValue: (p) => p.atlet.cabangOlahraga.nama,
       render: (p) => <span className="text-neutral-600">{p.atlet.cabangOlahraga.nama}</span>,
     },
+    {
+      key: "medali",
+      label: "Hasil",
+      mobile: true,
+      sortable: true,
+      getValue: (p) => p.medali,
+      render: (p) => (
+        <div className="flex items-center gap-2">
+          <Badge tone={MEDAL_TONE[p.medali]}>{MEDAL_LABELS[p.medali]}</Badge>
+          {p.peringkat && <span className="text-neutral-500">#{p.peringkat}</span>}
+        </div>
+      ),
+    },
+    // Desktop-only columns (collapse to expand row on mobile)
     {
       key: "namaKejuaraan",
       label: "Kejuaraan",
@@ -151,18 +167,6 @@ export function PrestasiListPage() {
       sortable: true,
       getValue: (p) => p.tahun,
       render: (p) => <span className="text-neutral-600">{p.tahun}</span>,
-    },
-    {
-      key: "medali",
-      label: "Hasil",
-      sortable: true,
-      getValue: (p) => p.medali,
-      render: (p) => (
-        <div className="flex items-center gap-2">
-          <Badge tone={MEDAL_TONE[p.medali]}>{MEDAL_LABELS[p.medali]}</Badge>
-          {p.peringkat && <span className="text-neutral-500">Peringkat {p.peringkat}</span>}
-        </div>
-      ),
     },
   ];
 

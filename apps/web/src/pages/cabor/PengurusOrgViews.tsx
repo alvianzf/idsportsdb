@@ -1,6 +1,7 @@
 import { useState, type DragEvent, type RefObject, useRef } from "react";
 import { LayoutGrid, GitBranch, Table as TableIcon, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "../../components/ui";
+import { DataTable, type Column } from "../../components/ui/DataTable";
 
 export interface Pengurus {
   id: string;
@@ -124,43 +125,77 @@ function TableView({
   onEdit: (p: Pengurus) => void;
   onDelete: (p: Pengurus) => void;
 }) {
+  const columns: Column<Pengurus>[] = [
+    {
+      key: "namaPengurus",
+      label: "Nama",
+      mobile: true,
+      sortable: true,
+      getValue: (p) => p.namaPengurus,
+      render: (p) => <span className="font-medium text-neutral-900">{p.namaPengurus}</span>,
+    },
+    {
+      key: "jabatan",
+      label: "Jabatan",
+      mobile: true,
+      sortable: true,
+      getValue: (p) => p.jabatan,
+      render: (p) => <span className="text-neutral-600">{p.jabatan}</span>,
+    },
+    {
+      key: "status",
+      label: "Status",
+      mobile: true,
+      render: (p) => (
+        <Badge tone={isActive(p) ? "success" : "neutral"}>{isActive(p) ? "Aktif" : "Selesai"}</Badge>
+      ),
+    },
+    // Desktop-only (collapse on mobile)
+    {
+      key: "reportsTo",
+      label: "Melapor Kepada",
+      getValue: (p) => (p.reportsToId ? nameById.get(p.reportsToId) ?? "" : ""),
+      render: (p) => (
+        <span className="text-neutral-600">
+          {p.reportsToId ? nameById.get(p.reportsToId) ?? "-" : "-"}
+        </span>
+      ),
+    },
+    {
+      key: "masaBakti",
+      label: "Masa Bakti",
+      sortable: true,
+      getValue: (p) => p.masaBaktiMulai,
+      render: (p) => (
+        <span className="whitespace-nowrap text-xs text-neutral-500">
+          {formatDate(p.masaBaktiMulai)} – {formatDate(p.masaBaktiAkhir)}
+        </span>
+      ),
+    },
+    {
+      key: "kontak",
+      label: "Kontak",
+      render: (p) => <span className="text-neutral-600">{p.kontak ?? "-"}</span>,
+    },
+    ...(canManage
+      ? [
+          {
+            key: "aksi",
+            label: "Aksi",
+            render: (p: Pengurus) => (
+              <ActionButtons p={p} canManage={canManage} onEdit={onEdit} onDelete={onDelete} />
+            ),
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="border-b border-neutral-200 text-left text-neutral-500">
-          <tr>
-            <th className="px-2 py-2 font-medium">Nama</th>
-            <th className="px-2 py-2 font-medium">Jabatan</th>
-            <th className="px-2 py-2 font-medium">Melapor Kepada</th>
-            <th className="px-2 py-2 font-medium">Masa Bakti</th>
-            <th className="px-2 py-2 font-medium">Status</th>
-            {canManage && <th className="px-2 py-2 font-medium">Aksi</th>}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-neutral-100">
-          {pengurus.map((p) => (
-            <tr key={p.id}>
-              <td className="px-2 py-2 font-medium text-neutral-900">{p.namaPengurus}</td>
-              <td className="px-2 py-2 text-neutral-600">{p.jabatan}</td>
-              <td className="px-2 py-2 text-neutral-600">
-                {p.reportsToId ? nameById.get(p.reportsToId) ?? "-" : "-"}
-              </td>
-              <td className="px-2 py-2 text-xs text-neutral-500">
-                {formatDate(p.masaBaktiMulai)} - {formatDate(p.masaBaktiAkhir)}
-              </td>
-              <td className="px-2 py-2">
-                <Badge tone={isActive(p) ? "success" : "neutral"}>{isActive(p) ? "Aktif" : "Selesai"}</Badge>
-              </td>
-              {canManage && (
-                <td className="px-2 py-2">
-                  <ActionButtons p={p} canManage={canManage} onEdit={onEdit} onDelete={onDelete} />
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      columns={columns}
+      rows={pengurus}
+      emptyMessage="Belum ada data pengurus."
+    />
   );
 }
 

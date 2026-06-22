@@ -126,6 +126,7 @@ export function AtletListPage() {
     {
       key: "cabor",
       label: "Cabor",
+      mobile: true,
       sortable: true,
       getValue: (a) => a.cabangOlahraga.nama,
       render: (a) => (

@@ -99,6 +99,7 @@ export function PelatihListPage() {
     {
       key: "namaPelatih",
       label: "Nama",
+      mobile: true,
       sortable: true,
       getValue: (p) => p.namaPelatih,
       render: (p) => (
@@ -110,6 +111,7 @@ export function PelatihListPage() {
     {
       key: "cabor",
       label: "Cabor",
+      mobile: true,
       sortable: true,
       getValue: (p) => p.cabangOlahraga.nama,
       render: (p) => <span className="text-neutral-600">{p.cabangOlahraga.nama}</span>,
@@ -131,6 +133,7 @@ export function PelatihListPage() {
     {
       key: "masaBerlakuAkhir",
       label: "Masa Berlaku",
+      mobile: true,
       sortable: true,
       getValue: (p) => p.masaBerlakuAkhir ?? "",
       render: (p) =>
