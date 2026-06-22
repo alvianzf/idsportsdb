@@ -95,20 +95,22 @@ export function Combobox({
     const spaceBelow = window.innerHeight - rect.bottom;
     const dropdownMaxHeight = 280;
 
-    // The dropdown portal is a direct child of <body> (no ancestor transforms).
-    // position:fixed here is relative to the true viewport, matching
-    // getBoundingClientRect() coords directly — no scroll offset needed.
-    const base: CSSProperties = {
+    // Use position:fixed top:0 left:0 + transform:translate so the browser
+    // handles sub-pixel rounding via GPU compositing instead of CSS layout.
+    // Math.round prevents fractional-pixel drift on high-DPI screens.
+    const x = Math.round(rect.left);
+    const y = spaceBelow >= dropdownMaxHeight || spaceBelow >= rect.top
+      ? Math.round(rect.bottom) + 4
+      : Math.round(rect.top) - dropdownMaxHeight - 4;
+
+    return {
       position: "fixed",
-      left: rect.left,
-      width: rect.width,
+      top: 0,
+      left: 0,
+      transform: `translate(${x}px, ${y}px)`,
+      width: Math.round(rect.width),
       zIndex: 9999,
     };
-
-    if (spaceBelow >= dropdownMaxHeight || spaceBelow >= rect.top) {
-      return { ...base, top: rect.bottom + 4 };
-    }
-    return { ...base, top: rect.top - dropdownMaxHeight - 4 };
   }
 
   function openDropdown() {
