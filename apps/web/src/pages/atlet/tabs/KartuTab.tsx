@@ -30,9 +30,15 @@ export function KartuTab({ atletId, canManage, self = false }: KartuTabProps) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [expiresAt, setExpiresAt] = useState("");
 
   const getPath = self ? "/atlet/me/card" : `/atlet/${atletId}/card`;
   const canIssue = canManage || self;
+
+  // Minimum selectable date is tomorrow
+  const minDate = new Date();
+  minDate.setDate(minDate.getDate() + 1);
+  const minDateStr = minDate.toISOString().split("T")[0];
 
   function load() {
     api
@@ -47,8 +53,9 @@ export function KartuTab({ atletId, canManage, self = false }: KartuTabProps) {
     setError(null);
     setBusy(true);
     try {
-      await api.post(getPath, {});
+      await api.post(getPath, expiresAt ? { expiresAt: new Date(expiresAt).toISOString() } : {});
       toast.success("Kartu berhasil dibuat.");
+      setExpiresAt("");
       load();
     } catch {
       setError("Gagal membuat kartu.");
@@ -105,9 +112,21 @@ export function KartuTab({ atletId, canManage, self = false }: KartuTabProps) {
         <div className="flex flex-col items-start gap-3">
           <p className="text-sm text-neutral-500">Atlet belum memiliki kartu digital.</p>
           {canIssue && (
-            <Button onClick={handleIssue} disabled={busy}>
-              <CreditCard size={16} /> {busy ? "Memproses..." : "Buat Kartu"}
-            </Button>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-neutral-500">Berlaku hingga (opsional)</label>
+                <input
+                  type="date"
+                  min={minDateStr}
+                  value={expiresAt}
+                  onChange={(e) => setExpiresAt(e.target.value)}
+                  className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <Button onClick={handleIssue} disabled={busy}>
+                <CreditCard size={16} /> {busy ? "Memproses..." : "Buat Kartu"}
+              </Button>
+            </div>
           )}
         </div>
       ) : (
@@ -163,9 +182,21 @@ export function KartuTab({ atletId, canManage, self = false }: KartuTabProps) {
           )}
 
           {card.isRevoked && canIssue && (
-            <Button onClick={handleIssue} disabled={busy}>
-              <CreditCard size={16} /> {busy ? "Memproses..." : "Terbitkan Kartu Baru"}
-            </Button>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-neutral-500">Berlaku hingga (opsional)</label>
+                <input
+                  type="date"
+                  min={minDateStr}
+                  value={expiresAt}
+                  onChange={(e) => setExpiresAt(e.target.value)}
+                  className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <Button onClick={handleIssue} disabled={busy}>
+                <CreditCard size={16} /> {busy ? "Memproses..." : "Terbitkan Kartu Baru"}
+              </Button>
+            </div>
           )}
         </div>
       )}

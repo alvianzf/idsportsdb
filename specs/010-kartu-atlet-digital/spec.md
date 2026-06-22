@@ -117,10 +117,9 @@
   `atletId`); "current card" = latest non-revoked. Re-issuing does not
   auto-revoke the previous one — admins should explicitly revoke if needed.
   Revisit if the PDF implies "one card per athlete" strictly.
-- **Expiry UI gap**: the API accepts `expiresAt` on `POST …/card` but the
-  frontend always sends `{}` (no expiry picker in the issue form). To set
-  an expiry today, use the API directly. A date picker on the issue/re-issue
-  form is a future improvement.
+- **Expiry picker**: both issue forms ("Buat Kartu" and "Terbitkan Kartu Baru")
+  include an optional "Berlaku hingga" date input. If left blank, the card is
+  issued with no expiry. The minimum selectable date is tomorrow.
 - **Expiry default**: `expiresAt` is optional/nullable — no default
   expiration period specified by the PDF; left to admin discretion per
   issuance.
