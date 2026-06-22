@@ -77,24 +77,16 @@ export function DashboardPage() {
 
     async function load() {
       try {
-        const requests: [
-          Promise<{ data: DashboardSummary }>,
-          Promise<{ data: PerCaborStat[] }> | Promise<null>,
-          Promise<{ data: PrestasiStat[] }>,
-        ] = [
-          api.get<DashboardSummary>("/dashboard/summary", { params: { tahun: selectedYear } }),
-          isUnscopedAdmin
-            ? api.get<PerCaborStat[]>("/dashboard/stats/per-cabor")
-            : Promise.resolve(null),
-          api.get<PrestasiStat[]>("/dashboard/stats/prestasi", { params: { groupBy: "medali" } }),
-        ];
-
-        const [summaryRes, perCaborRes, prestasiRes] = await Promise.all(requests);
+        const { data } = await api.get<{
+          summary: DashboardSummary;
+          perCabor: PerCaborStat[] | null;
+          prestasiStats: PrestasiStat[];
+        }>("/dashboard/all", { params: { tahun: selectedYear } });
         if (cancelled) return;
 
-        setSummary(summaryRes.data);
-        setPerCabor(perCaborRes?.data ?? null);
-        setPrestasiStats(prestasiRes.data);
+        setSummary(data.summary);
+        setPerCabor(data.perCabor);
+        setPrestasiStats(data.prestasiStats);
       } catch {
         if (!cancelled) setError(true);
       }
@@ -105,7 +97,7 @@ export function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [isUnscopedAdmin, selectedYear]);
+  }, [selectedYear]);
 
   useEffect(() => {
     const socket = getSocket();
