@@ -69,8 +69,12 @@
 
 - **`/atlet`** — list with filters (Cabor dropdown — hidden/locked for
   `ADMIN_CABOR`, Status, Kecamatan, search by name/NIK/nomor registrasi).
-  Columns: Foto (thumbnail), Nama, Cabor, Status (`Badge`), Tingkat, Nomor
-  Registrasi. "Tambah Atlet" button.
+  Columns: Nama, Cabor, No. Registrasi, Kecamatan, Status (`Badge`).
+  "Tambah Atlet" button (DATA_ADMIN_ROLES). Bulk actions via checkbox
+  selection: **Unduh Kartu** (all DATA_ADMIN_ROLES — downloads a ZIP of JPEG
+  cards for selected athletes; see `010-kartu-atlet-digital`), **Hapus**
+  (SUPER_ADMIN_KONI only). A non-dismissable overlay modal with an indeterminate
+  progress bar and live KB counter appears during ZIP generation/download.
 - **`/atlet/new`** — multi-step form: (1) Biodata (nama, NIK, tempat/tanggal
   lahir, jenis kelamin, alamat, kecamatan, kontak, pendidikan/pekerjaan), (2)
   Keanggotaan (cabor — locked for ADMIN_CABOR, nomor induk/registrasi, status,

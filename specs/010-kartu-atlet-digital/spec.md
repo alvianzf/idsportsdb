@@ -43,23 +43,31 @@
 | GET | `/api/v1/atlet/me/card` | ATLET | - | `AtletCard \| null` | self-service equivalent of the first endpoint, resolves `atletId` from `req.user.athleteId` |
 | POST | `/api/v1/atlet/me/card` | ATLET | `{}` | `AtletCard` | self-service issue (if the PDF intends athletes can generate their own card — see §7) |
 | GET | `/api/v1/cards/verify/:cardCode` | **public** (no auth) | - | `{ valid: boolean, athlete?: { atletId, namaLengkap, nomorIndukAtlet, cabangOlahraga, fotoUrl, statusAtlet }, reason?: "REVOKED" \| "EXPIRED" \| "NOT_FOUND" \| "INACTIVE" }` | `atletId` always included so authenticated admins can navigate to the record; no NIK/address/contact exposed |
+| POST | `/api/v1/cards/bulk-download` | SUPER_ADMIN_KONI, ADMIN_KONI, ADMIN_CABOR | `{ ids: string[] }` (1–200 athlete UUIDs) | `application/zip` — `kartu-atlet-bulk.zip` | generates JPEG card images for each athlete's active (non-revoked) card and streams them as a ZIP; athletes with no active card are silently skipped; `ADMIN_CABOR` scoped to own cabor |
 
 - **Card generation logic**: `apps/api/src/modules/cards/cards.service.ts` —
   `issueCard(atletId, expiresAt?)` creates the `AtletCard` row and builds
   `qrPayloadUrl = ${env.cardVerifyBaseUrl}/verify/${cardCode}`.
 - **QR rendering**: `apps/api/src/lib/qr.ts` wraps `qrcode` to produce a PNG
   buffer/data-URL from `qrPayloadUrl`.
+- **Bulk ZIP generation**: `archiver` (npm) streams the ZIP to the response without
+  buffering the full archive in memory; each card JPEG is appended as it is generated.
 
 ## 4. UI / Pages
 
 - **Kartu tab within `/atlet/:id`** (admin views) — shows active card status
   badge, "Berlaku hingga" badge if `expiresAt` is set, inline 120px QR,
   card metadata; actions: **Kartu** (download JPEG), **QR** (download PNG),
-  **Cabut** (revoke, admin only). If no card: "Buat Kartu" button.
-  If card is revoked: "Terbitkan Kartu Baru" button.
+  **Cabut** (revoke, admin only). If no card: "Buat Kartu" + optional expiry
+  date picker. If card is revoked: "Terbitkan Kartu Baru" + optional expiry
+  date picker. Minimum selectable expiry date is tomorrow.
 - **Re-issue workflow**: revoke current card → "Terbitkan Kartu Baru" appears
-  → issues a new card. The UI always issues with no expiry (`expiresAt`
-  omitted); setting a custom expiry requires a direct API call for now (see §7).
+  → optionally set expiry → issue new card.
+- **Bulk download** — "Unduh Kartu" bulk action on `/atlet` list page: select
+  athletes via checkboxes → click "Unduh Kartu" → non-dismissable overlay modal
+  appears with an indeterminate progress bar and live "X KB diunduh" counter
+  (via `axios` `onDownloadProgress`) → ZIP downloaded automatically on completion.
+  Athletes with no active card are silently skipped.
 - **`/me/card`** (ATLET) — same card view; ATLET cannot revoke but can issue
   if no card exists (§7 assumption).
 - **`/verify/:cardCode`** (public, already scaffolded as
@@ -77,13 +85,13 @@
 
 ## 5. Role-Based Behavior
 
-| Role | View | Issue | Revoke | Download |
-|---|---|---|---|---|
-| SUPER_ADMIN_KONI | ✅ any athlete | ✅ | ✅ | ✅ |
-| ADMIN_KONI | ✅ any athlete | ✅ | ✅ | ✅ |
-| ADMIN_CABOR | ✅ own cabor athletes | ✅ (own cabor) | ✅ (own cabor) | ✅ |
-| ATLET | ✅ own (`/me/card`) | ✅ (self, see §7) | ❌ | ✅ |
-| Public | ✅ `/verify/:cardCode` only | ❌ | ❌ | ❌ |
+| Role | View | Issue | Revoke | Download (single) | Bulk ZIP |
+|---|---|---|---|---|---|
+| SUPER_ADMIN_KONI | ✅ any athlete | ✅ | ✅ | ✅ | ✅ |
+| ADMIN_KONI | ✅ any athlete | ✅ | ✅ | ✅ | ✅ |
+| ADMIN_CABOR | ✅ own cabor athletes | ✅ (own cabor) | ✅ (own cabor) | ✅ | ✅ (own cabor only) |
+| ATLET | ✅ own (`/me/card`) | ✅ (self, see §7) | ❌ | ✅ | ❌ |
+| Public | ✅ `/verify/:cardCode` only | ❌ | ❌ | ❌ | ❌ |
 
 ## 6. Acceptance Criteria
 
@@ -101,6 +109,11 @@
   athlete in a different cabor, then `403`.
 - Given `?format=png` on the download endpoint, then response
   `Content-Type: image/png` containing the QR code.
+- Given 3 athletes are selected on the list page and 2 have active cards, when
+  "Unduh Kartu" is clicked, then a ZIP containing 2 JPEG files is downloaded
+  (the athlete with no active card is silently skipped).
+- Given `POST /cards/bulk-download` with `ids` containing athletes outside
+  ADMIN_CABOR's cabor, then those athletes are excluded from the ZIP.
 
 ## 7. Open Questions / Assumptions
 
@@ -127,8 +140,8 @@
 ## 8. Dependencies
 
 - Depends on: `001-auth-rbac`, `004-atlet`. Built in Phase 5, after core
-  athlete data exists. `qrcode` + `nanoid` packages already added to
-  `apps/api/package.json`.
+  athlete data exists. Packages in `apps/api/package.json`: `qrcode`,
+  `nanoid`, `archiver` (bulk ZIP streaming), `@types/archiver`.
 
 ---
 
