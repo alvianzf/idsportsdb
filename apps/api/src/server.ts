@@ -22,6 +22,7 @@ import { cardsRouter, atletCardRouter } from "./modules/cards/cards.routes.js";
 import { artikelRouter } from "./modules/artikel/artikel.routes.js";
 import { publicRouter } from "./modules/public/public.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { prisma } from "./lib/prisma.js";
 
 const app = express();
 
@@ -72,4 +73,6 @@ initSocket(httpServer);
 
 httpServer.listen(env.port, () => {
   console.log(`KONI Batam API listening on http://localhost:${env.port}`);
+  // Pre-warm the DB connection pool so the first dashboard request isn't slow.
+  prisma.$queryRaw`SELECT 1`.catch(() => undefined);
 });

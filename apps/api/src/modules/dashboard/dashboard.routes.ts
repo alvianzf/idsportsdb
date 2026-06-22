@@ -14,37 +14,62 @@ dashboardRouter.use(
   scopeToCabor,
 );
 
-type SummaryRow = {
+type DashboardRow = {
   active_atlet: bigint;
   pelatih: bigint;
   cabor: bigint;
   prestasi_tahun: bigint;
   prestasi_all: bigint;
+  per_cabor: Array<{ id: string; nama: string; atlet_count: string; pelatih_count: string }> | null;
+  prestasi_stats: Array<{ medali: string; cnt: string }> | null;
 };
 
-async function fetchSummary(caborId: string | null | undefined, tahun: number) {
-  // All 5 counts in a single round-trip to avoid repeated connection overhead
-  // on a remote DB (~20ms RTT). Promise.all with separate queries multiplied
-  // cold-connection cost by 5. See specs/016-indexing/spec.md §2.2.E.
-  const [row] = await prisma.$queryRaw<SummaryRow[]>`
+// All dashboard data in one SQL round-trip. Prisma groupBy and findMany+_count each
+// open new connections on a remote DB (~100–500ms cold overhead each). A single
+// $queryRaw with correlated subqueries and json_agg eliminates that entirely.
+// See specs/002-dashboard/spec.md §3.2 and specs/016-indexing/spec.md.
+async function fetchAll(caborId: string | null | undefined, tahun: number) {
+  const atletCaborFilter = caborId
+    ? Prisma.sql`AND "cabangOlahragaId" = ${caborId}`
+    : Prisma.empty;
+  const pelatihCaborFilter = caborId
+    ? Prisma.sql`WHERE "cabangOlahragaId" = ${caborId}`
+    : Prisma.empty;
+  const prestasiCaborFilter = caborId
+    ? Prisma.sql`AND "atletId" IN (SELECT id FROM "Atlet" WHERE "cabangOlahragaId" = ${caborId})`
+    : Prisma.empty;
+
+  const [row] = await prisma.$queryRaw<DashboardRow[]>`
     SELECT
       (SELECT COUNT(*) FROM "Atlet"
-        WHERE "statusAtlet" = 'ACTIVE'
-        ${caborId ? Prisma.sql`AND "cabangOlahragaId" = ${caborId}` : Prisma.empty}
+        WHERE "statusAtlet" = 'ACTIVE' ${atletCaborFilter}
       ) AS active_atlet,
-      (SELECT COUNT(*) FROM "Pelatih"
-        ${caborId ? Prisma.sql`WHERE "cabangOlahragaId" = ${caborId}` : Prisma.empty}
-      ) AS pelatih,
+      (SELECT COUNT(*) FROM "Pelatih" ${pelatihCaborFilter}) AS pelatih,
       (SELECT COUNT(*) FROM "CabangOlahraga") AS cabor,
       (SELECT COUNT(*) FROM "Prestasi"
-        WHERE tahun = ${tahun}
-        ${caborId ? Prisma.sql`AND "atletId" IN (SELECT id FROM "Atlet" WHERE "cabangOlahragaId" = ${caborId})` : Prisma.empty}
+        WHERE tahun = ${tahun} ${prestasiCaborFilter}
       ) AS prestasi_tahun,
-      (SELECT COUNT(*) FROM "Prestasi"
-        ${caborId ? Prisma.sql`WHERE "atletId" IN (SELECT id FROM "Atlet" WHERE "cabangOlahragaId" = ${caborId})` : Prisma.empty}
-      ) AS prestasi_all
+      (SELECT COUNT(*) FROM "Prestasi" WHERE TRUE ${prestasiCaborFilter}) AS prestasi_all,
+      ${
+        caborId
+          ? Prisma.sql`NULL`
+          : Prisma.sql`(
+              SELECT json_agg(r ORDER BY r.nama) FROM (
+                SELECT c.id, c.nama,
+                  (SELECT COUNT(*) FROM "Atlet"  a WHERE a."cabangOlahragaId" = c.id) AS atlet_count,
+                  (SELECT COUNT(*) FROM "Pelatih" p WHERE p."cabangOlahragaId" = c.id) AS pelatih_count
+                FROM "CabangOlahraga" c
+              ) r
+            )`
+      } AS per_cabor,
+      (SELECT json_agg(r) FROM (
+        SELECT medali, COUNT(*) AS cnt FROM "Prestasi"
+        WHERE TRUE ${prestasiCaborFilter}
+        GROUP BY medali
+      ) r) AS prestasi_stats
   `;
-  return {
+
+  const summary = {
     activeAtletCount: Number(row.active_atlet),
     pelatihCount: Number(row.pelatih),
     caborCount: caborId ? 1 : Number(row.cabor),
@@ -52,10 +77,24 @@ async function fetchSummary(caborId: string | null | undefined, tahun: number) {
     prestasiCountAll: Number(row.prestasi_all),
     tahun,
   };
+
+  const perCabor = row.per_cabor
+    ? row.per_cabor.map((c) => ({
+        cabangOlahragaId: c.id,
+        nama: c.nama,
+        atletCount: Number(c.atlet_count),
+        pelatihCount: Number(c.pelatih_count),
+      }))
+    : null;
+
+  const prestasiStats = row.prestasi_stats
+    ? row.prestasi_stats.map((s) => ({ key: s.medali, count: Number(s.cnt) }))
+    : [];
+
+  return { summary, perCabor, prestasiStats };
 }
 
-// specs/002-dashboard/spec.md §3 — merged endpoint: returns summary + perCabor + prestasiStats
-// in one request so the frontend avoids 3 separate cold-connection round-trips.
+// specs/002-dashboard/spec.md §3 — single HTTP request, single DB round-trip.
 dashboardRouter.get(
   "/all",
   asyncHandler(async (req, res) => {
@@ -64,33 +103,8 @@ dashboardRouter.get(
       res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
-
-    const caborId = req.scopedCaborId;
     const tahun = parsed.data.tahun ?? new Date().getFullYear();
-    const isUnscopedAdmin = !caborId;
-    const where = caborId ? { atlet: { cabangOlahragaId: caborId } } : undefined;
-
-    const summary = await fetchSummary(caborId, tahun);
-
-    const [perCabor, prestasiStats] = await Promise.all([
-      isUnscopedAdmin
-        ? prisma.cabangOlahraga.findMany({
-            select: { id: true, nama: true, _count: { select: { atlets: true, pelatihs: true } } },
-            orderBy: { nama: "asc" },
-          }).then((rows) =>
-            rows.map((c) => ({
-              cabangOlahragaId: c.id,
-              nama: c.nama,
-              atletCount: c._count.atlets,
-              pelatihCount: c._count.pelatihs,
-            }))
-          )
-        : Promise.resolve(null),
-      prisma.prestasi.groupBy({ by: ["medali"], where, _count: { _all: true } })
-        .then((groups) => groups.map((g) => ({ key: g.medali, count: g._count._all }))),
-    ]);
-
-    res.json({ summary, perCabor, prestasiStats });
+    res.json(await fetchAll(req.scopedCaborId, tahun));
   }),
 );
 
@@ -103,7 +117,8 @@ dashboardRouter.get(
       return;
     }
     const tahun = parsed.data.tahun ?? new Date().getFullYear();
-    res.json(await fetchSummary(req.scopedCaborId, tahun));
+    const { summary } = await fetchAll(req.scopedCaborId, tahun);
+    res.json(summary);
   }),
 );
 
@@ -142,35 +157,37 @@ dashboardRouter.get(
     }
 
     const caborId = req.scopedCaborId;
-    const where = caborId ? { atlet: { cabangOlahragaId: caborId } } : undefined;
+    const prestasiCaborFilter = caborId
+      ? Prisma.sql`AND "atletId" IN (SELECT id FROM "Atlet" WHERE "cabangOlahragaId" = ${caborId})`
+      : Prisma.empty;
 
     switch (parsed.data.groupBy) {
       case "tahun": {
-        const groups = await prisma.prestasi.groupBy({
-          by: ["tahun"],
-          where,
-          _count: { _all: true },
-        });
-        res.json(groups.map((g) => ({ key: g.tahun, count: g._count._all })));
+        const rows = await prisma.$queryRaw<{ key: number; count: bigint }[]>`
+          SELECT tahun AS key, COUNT(*) AS count FROM "Prestasi"
+          WHERE TRUE ${prestasiCaborFilter}
+          GROUP BY tahun ORDER BY tahun
+        `;
+        res.json(rows.map((r) => ({ key: r.key, count: Number(r.count) })));
         return;
       }
       case "tingkatKejuaraan": {
-        const groups = await prisma.prestasi.groupBy({
-          by: ["tingkatKejuaraan"],
-          where,
-          _count: { _all: true },
-        });
-        res.json(groups.map((g) => ({ key: g.tingkatKejuaraan, count: g._count._all })));
+        const rows = await prisma.$queryRaw<{ key: string; count: bigint }[]>`
+          SELECT "tingkatKejuaraan" AS key, COUNT(*) AS count FROM "Prestasi"
+          WHERE TRUE ${prestasiCaborFilter}
+          GROUP BY "tingkatKejuaraan"
+        `;
+        res.json(rows.map((r) => ({ key: r.key, count: Number(r.count) })));
         return;
       }
       case "medali":
       default: {
-        const groups = await prisma.prestasi.groupBy({
-          by: ["medali"],
-          where,
-          _count: { _all: true },
-        });
-        res.json(groups.map((g) => ({ key: g.medali, count: g._count._all })));
+        const rows = await prisma.$queryRaw<{ key: string; count: bigint }[]>`
+          SELECT medali AS key, COUNT(*) AS count FROM "Prestasi"
+          WHERE TRUE ${prestasiCaborFilter}
+          GROUP BY medali
+        `;
+        res.json(rows.map((r) => ({ key: r.key, count: Number(r.count) })));
         return;
       }
     }
