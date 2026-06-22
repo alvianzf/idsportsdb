@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, Fragment, type ReactNode } from "react";
 import { ChevronDown, ChevronUp, ChevronsUpDown, Trash2 } from "lucide-react";
 import { Button } from "./Button";
 
@@ -164,9 +164,8 @@ export function DataTable<T extends { id: string }>({
           </thead>
           <tbody className="divide-y divide-neutral-100 bg-white">
             {sorted.map((row) => (
-              <>
+              <Fragment key={row.id}>
                 <tr
-                  key={row.id}
                   onClick={hasExpand ? () => setExpandedRow((r) => r === row.id ? null : row.id) : undefined}
                   className={`transition-colors ${hasExpand ? "cursor-pointer" : ""} ${selected.has(row.id) ? "bg-primary-50" : "hover:bg-neutral-50"}`}
                 >
@@ -234,7 +233,7 @@ export function DataTable<T extends { id: string }>({
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>
