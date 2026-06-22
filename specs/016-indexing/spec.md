@@ -5,9 +5,11 @@
 - **Purpose & scope**: Define all database indexes beyond what Prisma auto-creates (PK and `@unique`
   constraints). Indexes are derived from observed query patterns across all API modules. This spec is
   the single source of truth for `@@index(...)` directives in `schema.prisma`.
-- **Related optimization**: The dashboard query pattern was also rewritten — 3 separate HTTP
-  requests each firing `Promise.all` counts were replaced by a single `/dashboard/all` endpoint
-  using a one-round-trip `$queryRaw`. See `specs/002-dashboard/spec.md §3.2`.
+- **Related optimization**: The dashboard query pattern was fully rewritten — 3 separate HTTP
+  requests each firing multiple `Promise.all` queries were replaced by a single `/dashboard/all`
+  endpoint backed by one `$queryRaw` that returns all counts + `json_agg` arrays in one round-trip
+  (22–46ms warm vs. 2–7s before). `Prisma.groupBy()` and `findMany({ _count })` are explicitly
+  avoided in this path. See `specs/002-dashboard/spec.md §3.2`.
 - **No PDF module** — this is a cross-cutting infrastructure concern.
 - **Glossary**:
   - `selective` — low cardinality relative to table size; index helps only when combined with other

@@ -50,15 +50,24 @@ No new entities. Aggregates over `Atlet`, `Pelatih`, `CabangOlahraga`, `Prestasi
 
 ### 3.2 Implementation notes
 
-- `summary` counts are fetched in **one `$queryRaw` round-trip** (5 correlated
-  sub-SELECTs in a single SQL statement) to avoid the cold-connection overhead
-  of 5 parallel `prisma.count()` calls against a remote PostgreSQL host.
-- `perCabor` and `prestasiStats` follow with a `Promise.all` on already-warm
-  connections.
-- Total DB time per `/dashboard/all` request: ~50–60ms (vs. 2–4s with the old
-  3-request / `Promise.all` pattern). See `specs/016-indexing/spec.md` for
-  index context.
+- **All data — summary counts, `perCabor`, and `prestasiStats` — are fetched in
+  a single `$queryRaw` round-trip** via `fetchAll()` in `dashboard.routes.ts`.
+  The query uses correlated sub-SELECTs for the five scalar counts plus
+  `json_agg` subqueries for the two array results.
+- `perCabor` is `NULL` in the SQL when `caborId` is set (ADMIN_CABOR); the JS
+  layer returns it as `null` to the client in that case.
+- `Prisma.groupBy()` and `findMany({ _count })` were intentionally avoided —
+  both open new DB connections on each call. Against a remote PostgreSQL host
+  (~20ms RTT) each cold connection costs 100–500ms, making them prohibitively
+  slow in any `Promise.all` pattern.
+- **Measured performance**: 22–46ms warm, ~100ms after a cold server start
+  (a `SELECT 1` warmup fires when the HTTP server starts to pre-establish the
+  pool). Previous baseline: 2–7s.
+- `/stats/prestasi` legacy endpoint also uses `$queryRaw` (not `groupBy`) for
+  the same reason.
 - No caching for v1 (city-level data volume stays small).
+- See `specs/016-indexing/spec.md` for the DB index strategy that underpins
+  these query plans.
 
 ## 4. UI / Pages
 

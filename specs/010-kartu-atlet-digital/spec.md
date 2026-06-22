@@ -52,12 +52,16 @@
 
 ## 4. UI / Pages
 
-- **Kartu tab within `/atlet/:id`** (admin views) — shows current card
-  (QR + details) or "Belum ada kartu" with an "Buat Kartu" button; "Cabut
-  Kartu" and "Unduh PDF"/"Unduh PNG" actions when a card exists.
-- **`/me/card`** (ATLET) — same card view, read-only except a "Buat Kartu"
-  button if none exists yet (per §7 assumption); prominent "Unduh" button
-  (useful for offline/mobile use in the webview).
+- **Kartu tab within `/atlet/:id`** (admin views) — shows active card status
+  badge, "Berlaku hingga" badge if `expiresAt` is set, inline 120px QR,
+  card metadata; actions: **Kartu** (download JPEG), **QR** (download PNG),
+  **Cabut** (revoke, admin only). If no card: "Buat Kartu" button.
+  If card is revoked: "Terbitkan Kartu Baru" button.
+- **Re-issue workflow**: revoke current card → "Terbitkan Kartu Baru" appears
+  → issues a new card. The UI always issues with no expiry (`expiresAt`
+  omitted); setting a custom expiry requires a direct API call for now (see §7).
+- **`/me/card`** (ATLET) — same card view; ATLET cannot revoke but can issue
+  if no card exists (§7 assumption).
 - **`/verify/:cardCode`** (public, already scaffolded as
   `VerifyCardPage.tsx`) — calls `GET /cards/verify/:cardCode` on mount;
   renders:
@@ -113,6 +117,10 @@
   `atletId`); "current card" = latest non-revoked. Re-issuing does not
   auto-revoke the previous one — admins should explicitly revoke if needed.
   Revisit if the PDF implies "one card per athlete" strictly.
+- **Expiry UI gap**: the API accepts `expiresAt` on `POST …/card` but the
+  frontend always sends `{}` (no expiry picker in the issue form). To set
+  an expiry today, use the API directly. A date picker on the issue/re-issue
+  form is a future improvement.
 - **Expiry default**: `expiresAt` is optional/nullable — no default
   expiration period specified by the PDF; left to admin discretion per
   issuance.

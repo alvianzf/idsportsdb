@@ -37,8 +37,9 @@
 |---|---|---|---|---|---|
 | GET | `/api/v1/atlet/:atletId/monitoring` | SUPER_ADMIN_KONI, ADMIN_KONI, ADMIN_CABOR (own cabor), ATLET (self) | `?type=` | `MonitoringEvent[]` | ordered by `eventDate desc`; powers Monitoring tab on `/atlet/:id` |
 | POST | `/api/v1/atlet/:atletId/monitoring` | SUPER_ADMIN_KONI, ADMIN_KONI, ADMIN_CABOR (own cabor) | `{ type, description?, fromValue?, toValue?, eventDate? }` | `MonitoringEvent` | for `type=STATUS_CHANGE`, also updates `Atlet.statusAtlet = toValue`; for `type=MUTATION`, creates with `mutationStatus=PENDING` and does **not** change `Atlet.cabangOlahragaId` yet |
+| GET | `/api/v1/monitoring` | SUPER_ADMIN_KONI, ADMIN_KONI, ADMIN_CABOR | `?type=` | `MonitoringEvent[]` (with `atlet` summary) | cross-athlete feed, max 200 rows newest-first; `ADMIN_CABOR` scoped to own cabor; powers the `/monitoring` global list page |
 | PATCH | `/api/v1/monitoring/:id` | SUPER_ADMIN_KONI, ADMIN_KONI, ADMIN_CABOR (own cabor, non-mutation only) | partial fields | `MonitoringEvent` | |
-| GET | `/api/v1/monitoring/mutasi` | SUPER_ADMIN_KONI, ADMIN_KONI | `?status=PENDING` | `MonitoringEvent[]` | approval queue, joins `atlet` for display |
+| GET | `/api/v1/monitoring/mutasi` | SUPER_ADMIN_KONI, ADMIN_KONI | `?status=PENDING\|APPROVED\|REJECTED` | `MonitoringEvent[]` (with `atlet` summary) | approval queue; default `status=PENDING` |
 | PATCH | `/api/v1/monitoring/:id/mutasi` | SUPER_ADMIN_KONI, ADMIN_KONI | `{ status: APPROVED \| REJECTED }` | `MonitoringEvent` | on `APPROVED`, updates `Atlet.cabangOlahragaId = toValue` and `Atlet.statusAtlet` back to `ACTIVE` if it was `TRANSFERRED` |
 
 - **Validation**: `apps/api/src/modules/monitoring/monitoring.schema.ts`
