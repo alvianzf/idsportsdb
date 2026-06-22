@@ -9,4 +9,9 @@ export const downloadCardQuerySchema = z.object({
   format: z.enum(["jpeg", "png"]).default("jpeg"),
 });
 
+export const bulkDownloadBodySchema = z.object({
+  ids: z.array(z.string().uuid()).min(1).max(200),
+});
+
 export type IssueCardInput = z.infer<typeof issueCardSchema>;
+export type BulkDownloadBody = z.infer<typeof bulkDownloadBodySchema>;

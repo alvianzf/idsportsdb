@@ -1,15 +1,19 @@
 import path from "node:path";
 import { Router } from "express";
+import { createRequire } from "node:module";
+// archiver v5 is a CJS default-export function; @types/archiver v8 doesn't match — cast via any.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const archiver = createRequire(import.meta.url)("archiver") as any;
+
 import type { Role } from "@inasportdb/shared-types";
 import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole, scopeToCabor } from "../../middleware/auth.js";
-import { caborTambahanInclude, canAccessAtlet } from "../atlet/atlet.service.js";
+import { atletInCaborFilter, caborTambahanInclude, canAccessAtlet } from "../atlet/atlet.service.js";
 import { generateQrPng } from "../../lib/qr.js";
 import { generateCardJpeg } from "../../lib/cardImage.js";
 import { uploadRoot } from "../../lib/storage.js";
-// streamPdf removed — card download now serves JPEG via generateCardJpeg
-import { issueCardSchema, downloadCardQuerySchema } from "./cards.schema.js";
+import { issueCardSchema, downloadCardQuerySchema, bulkDownloadBodySchema } from "./cards.schema.js";
 import { issueCard, getCurrentCard } from "./cards.service.js";
 
 const adminCaborRoles: Role[] = ["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"];
@@ -229,5 +233,91 @@ cardsRouter.get(
     }
 
     res.json({ valid: true, athlete: athletePayload });
+  }),
+);
+
+// POST /api/v1/cards/bulk-download — generate a ZIP of JPEG cards for selected athletes.
+// Requires authentication (admin roles). Athletes the caller cannot access are silently skipped.
+cardsRouter.post(
+  "/bulk-download",
+  authenticate,
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"]),
+  scopeToCabor,
+  asyncHandler(async (req, res) => {
+    const parsed = bulkDownloadBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+
+    const { ids } = parsed.data;
+    const caborId = req.scopedCaborId;
+
+    // Fetch all requested athletes in one query, scoped to caller's cabor.
+    const atlets = await prisma.atlet.findMany({
+      where: {
+        id: { in: ids },
+        ...(caborId ? atletInCaborFilter(caborId) : {}),
+      },
+      include: { cabangOlahraga: { select: { nama: true } } },
+    });
+
+    if (atlets.length === 0) {
+      res.status(404).json({ error: "No accessible athletes found for the given IDs." });
+      return;
+    }
+
+    // Fetch active cards for all athletes in one query.
+    const cards = await prisma.atletCard.findMany({
+      where: {
+        atletId: { in: atlets.map((a) => a.id) },
+        isRevoked: false,
+      },
+      orderBy: { issuedAt: "desc" },
+    });
+
+    // Keep only the latest non-revoked card per athlete.
+    const cardByAtletId = new Map(cards.map((c) => [c.atletId, c]));
+
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", `attachment; filename="kartu-atlet-bulk.zip"`);
+
+    const archive = archiver("zip", { zlib: { level: 6 } });
+    archive.on("error", (err: Error) => {
+      // Headers already sent; can only log.
+      console.error("[bulk-download] archiver error:", err);
+      res.end();
+    });
+    archive.pipe(res);
+
+    for (const atlet of atlets) {
+      const card = cardByAtletId.get(atlet.id);
+      if (!card) continue; // athlete has no active card — skip
+
+      try {
+        const qrPng = await generateQrPng(card.qrPayloadUrl);
+        const fotoPath = atlet.fotoUrl
+          ? path.join(uploadRoot, atlet.fotoUrl.replace("/uploads/", ""))
+          : null;
+
+        const jpeg = await generateCardJpeg({
+          namaLengkap: atlet.namaLengkap,
+          nomorIndukAtlet: atlet.nomorIndukAtlet,
+          nomorRegistrasi: atlet.nomorRegistrasi,
+          cabangOlahraga: atlet.cabangOlahraga.nama,
+          statusAtlet: atlet.statusAtlet,
+          fotoPath,
+          qrPngBuffer: qrPng,
+        });
+
+        const filename = `${atlet.nomorIndukAtlet}-${atlet.namaLengkap.replace(/[^a-zA-Z0-9]/g, "_")}.jpg`;
+        archive.append(jpeg, { name: filename });
+      } catch (err) {
+        console.error(`[bulk-download] failed to generate card for ${atlet.id}:`, err);
+        // Continue with remaining athletes.
+      }
+    }
+
+    await archive.finalize();
   }),
 );

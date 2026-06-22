@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Search, Trash2 } from "lucide-react";
+import { Download, Plus, Search, Trash2 } from "lucide-react";
 import {
   ATHLETE_STATUSES,
   ATHLETE_STATUS_LABELS,
@@ -110,6 +110,22 @@ export function AtletListPage() {
     setReloadKey((k) => k + 1);
   }
 
+  async function handleBulkDownloadKartu(ids: string[]) {
+    const toastId = toast.loading(`Menyiapkan ${ids.length} kartu...`);
+    try {
+      const res = await api.post("/cards/bulk-download", { ids }, { responseType: "blob" });
+      const url = URL.createObjectURL(res.data as Blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "kartu-atlet-bulk.zip";
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success(`${ids.length} kartu berhasil diunduh.`, { id: toastId });
+    } catch {
+      toast.error("Gagal mengunduh kartu. Pastikan atlet yang dipilih memiliki kartu aktif.", { id: toastId });
+    }
+  }
+
   const columns: Column<AtletRow>[] = [
     {
       key: "namaLengkap",
@@ -165,9 +181,10 @@ export function AtletListPage() {
     },
   ];
 
-  const bulkActions: BulkAction[] = canDelete
-    ? [{ label: "Hapus", icon: Trash2, variant: "danger", onClick: handleBulkDelete }]
-    : [];
+  const bulkActions: BulkAction[] = [
+    { label: "Unduh Kartu", icon: Download, variant: "outline", onClick: handleBulkDownloadKartu },
+    ...(canDelete ? [{ label: "Hapus", icon: Trash2, variant: "danger" as const, onClick: handleBulkDelete }] : []),
+  ];
 
   return (
     <div>
