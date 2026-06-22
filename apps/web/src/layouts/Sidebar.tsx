@@ -10,7 +10,7 @@ const SIDEBAR_ACTIVE = "rgba(255,255,255,0.18)";
 const SIDEBAR_HOVER = "rgba(255,255,255,0.10)";
 
 export function Sidebar({ items }: { items: NavItem[] }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => window.innerWidth < 1024);
 
   return (
     <aside
