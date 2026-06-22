@@ -26,6 +26,8 @@ interface DataTableProps<T extends { id: string }> {
   bulkActions?: BulkAction[];
   emptyMessage?: string;
   className?: string;
+  /** When provided, clicking any row toggles an expanded detail panel below it. */
+  expandContent?: (row: T) => React.ReactNode;
 }
 
 type SortDir = "asc" | "desc";
@@ -43,6 +45,7 @@ export function DataTable<T extends { id: string }>({
   bulkActions,
   emptyMessage = "Tidak ada data.",
   className,
+  expandContent,
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -50,6 +53,7 @@ export function DataTable<T extends { id: string }>({
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   const hasBulk = Boolean(bulkActions?.length);
+  const hasExpand = Boolean(expandContent);
   // Columns with mobile:true always show; others collapse on mobile
   const mobileHas = columns.some((c) => c.mobile);
   const collapsedCols = mobileHas ? columns.filter((c) => !c.mobile) : [];
@@ -152,8 +156,10 @@ export function DataTable<T extends { id: string }>({
                   </span>
                 </th>
               ))}
-              {/* Expand chevron column — mobile only */}
+              {/* Expand chevron column — mobile only (for collapsed cols) */}
               {hasCollapsed && <th className="w-8 px-2 py-3 md:hidden" />}
+              {/* Expand chevron column — all screens (for expandContent) */}
+              {hasExpand && <th className="w-8 px-2 py-3" />}
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100 bg-white">
@@ -161,7 +167,8 @@ export function DataTable<T extends { id: string }>({
               <>
                 <tr
                   key={row.id}
-                  className={`transition-colors ${selected.has(row.id) ? "bg-primary-50" : "hover:bg-neutral-50"}`}
+                  onClick={hasExpand ? () => setExpandedRow((r) => r === row.id ? null : row.id) : undefined}
+                  className={`transition-colors ${hasExpand ? "cursor-pointer" : ""} ${selected.has(row.id) ? "bg-primary-50" : "hover:bg-neutral-50"}`}
                 >
                   {hasBulk && (
                     <td className="w-10 px-3 py-3">
@@ -188,19 +195,22 @@ export function DataTable<T extends { id: string }>({
                   {hasCollapsed && (
                     <td className="w-8 px-2 py-3 md:hidden">
                       <button
-                        onClick={() => setExpandedRow((r) => r === row.id ? null : row.id)}
+                        onClick={(e) => { e.stopPropagation(); setExpandedRow((r) => r === row.id ? null : row.id); }}
                         className="rounded p-1 text-neutral-400 hover:text-neutral-700"
                         aria-label="Lihat detail"
                       >
-                        {expandedRow === row.id
-                          ? <ChevronUp size={16} />
-                          : <ChevronDown size={16} />}
+                        {expandedRow === row.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </button>
+                    </td>
+                  )}
+                  {hasExpand && (
+                    <td className="w-8 px-3 py-3 text-neutral-400">
+                      {expandedRow === row.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </td>
                   )}
                 </tr>
 
-                {/* Expanded detail row — mobile only */}
+                {/* Expanded detail row — mobile only (for collapsed columns) */}
                 {hasCollapsed && expandedRow === row.id && (
                   <tr key={`${row.id}-expanded`} className="md:hidden bg-neutral-50">
                     <td colSpan={columns.length + (hasBulk ? 2 : 1)} className="px-4 py-3">
@@ -212,6 +222,15 @@ export function DataTable<T extends { id: string }>({
                           </div>
                         ))}
                       </dl>
+                    </td>
+                  </tr>
+                )}
+
+                {/* Expanded content row — all screens (for expandContent prop) */}
+                {hasExpand && expandedRow === row.id && (
+                  <tr key={`${row.id}-expand`} className="bg-neutral-50">
+                    <td colSpan={columns.length + (hasBulk ? 2 : 1) + 1} className="px-4 pb-4 pt-0">
+                      {expandContent!(row)}
                     </td>
                   </tr>
                 )}

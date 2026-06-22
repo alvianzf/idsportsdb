@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Check, X } from "lucide-react";
 import toast from "react-hot-toast";
@@ -9,6 +9,7 @@ import {
   type MutationStatus,
 } from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Badge } from "../../components/ui";
+import { DataTable, type Column } from "../../components/ui/DataTable";
 import { api } from "../../lib/api";
 import { getSocket } from "../../lib/socket";
 import { useAuthStore } from "../../store/authStore";
@@ -47,7 +48,7 @@ const MUTATION_TONE: Record<MutationStatus, "warning" | "success" | "danger"> = 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString("id-ID", {
     year: "numeric",
-    month: "long",
+    month: "short",
     day: "numeric",
   });
 }
@@ -97,9 +98,7 @@ export function MonitoringPage() {
     const socket = getSocket();
     const refresh = () => loadRef.current();
     socket.on("monitoring:change", refresh);
-    return () => {
-      socket.off("monitoring:change", refresh);
-    };
+    return () => { socket.off("monitoring:change", refresh); };
   }, []);
 
   async function handleAction(id: string, action: "APPROVED" | "REJECTED") {
@@ -113,6 +112,109 @@ export function MonitoringPage() {
     } finally {
       setBusyId(null);
     }
+  }
+
+  // ── DataTable columns ──────────────────────────────────────────────────────
+  const columns = useMemo<Column<MonitoringEvent>[]>(() => {
+    const base: Column<MonitoringEvent>[] = [
+      {
+        key: "atlet",
+        label: "Atlet",
+        mobile: true,
+        render: (row) => (
+          <Link
+            to={`/atlet/${row.atlet.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="font-medium text-primary hover:underline"
+          >
+            {row.atlet.namaLengkap}
+          </Link>
+        ),
+      },
+      {
+        key: "cabor",
+        label: "Cabor",
+        mobile: true,
+        render: (row) => (
+          <span className="text-neutral-600">
+            {caborMap.get(row.atlet.cabangOlahragaId) ?? row.atlet.cabangOlahraga.nama}
+          </span>
+        ),
+      },
+      {
+        key: "tanggal",
+        label: "Tanggal",
+        mobile: true,
+        sortable: true,
+        getValue: (row) => new Date(row.eventDate),
+        render: (row) => (
+          <span className="whitespace-nowrap text-neutral-500">{formatDate(row.eventDate)}</span>
+        ),
+      },
+    ];
+
+    if (activeTab === "MUTATION") {
+      base.push({
+        key: "status",
+        label: "Status",
+        mobile: true,
+        render: (row) =>
+          row.mutationStatus ? (
+            <Badge tone={MUTATION_TONE[row.mutationStatus]}>
+              {MUTATION_STATUS_LABELS[row.mutationStatus]}
+            </Badge>
+          ) : null,
+      });
+    }
+
+    return base;
+  }, [activeTab, caborMap]);
+
+  // ── Expanded row content ───────────────────────────────────────────────────
+  function expandContent(row: MonitoringEvent) {
+    const caborNama = caborMap.get(row.atlet.cabangOlahragaId) ?? row.atlet.cabangOlahraga.nama;
+    const toNama = row.toValue ? (caborMap.get(row.toValue) ?? row.toValue) : null;
+
+    return (
+      <dl className="grid gap-3 pt-1 text-sm sm:grid-cols-2 md:grid-cols-3">
+        {row.description && (
+          <div className="sm:col-span-2 md:col-span-3">
+            <dt className="text-xs font-medium text-neutral-400">Keterangan</dt>
+            <dd className="mt-0.5 text-neutral-700">{row.description}</dd>
+          </div>
+        )}
+        {activeTab === "MUTATION" && toNama && (
+          <div>
+            <dt className="text-xs font-medium text-neutral-400">Pindah Ke</dt>
+            <dd className="mt-0.5 font-medium text-neutral-800">
+              <span className="text-neutral-400">{caborNama}</span>
+              <span className="mx-2 text-neutral-300">→</span>
+              {toNama}
+            </dd>
+          </div>
+        )}
+        {row.fromValue && activeTab !== "MUTATION" && (
+          <div>
+            <dt className="text-xs font-medium text-neutral-400">Dari</dt>
+            <dd className="mt-0.5 text-neutral-700">{row.fromValue}</dd>
+          </div>
+        )}
+        {row.toValue && activeTab !== "MUTATION" && (
+          <div>
+            <dt className="text-xs font-medium text-neutral-400">Ke</dt>
+            <dd className="mt-0.5 text-neutral-700">{row.toValue}</dd>
+          </div>
+        )}
+        <div>
+          <dt className="text-xs font-medium text-neutral-400">Tanggal Lengkap</dt>
+          <dd className="mt-0.5 text-neutral-700">
+            {new Date(row.eventDate).toLocaleDateString("id-ID", {
+              weekday: "long", year: "numeric", month: "long", day: "numeric",
+            })}
+          </dd>
+        </div>
+      </dl>
+    );
   }
 
   const activeTabDef = TABS.find((t) => t.type === activeTab)!;
@@ -169,7 +271,7 @@ export function MonitoringPage() {
           Belum ada data {activeTabDef.label.toLowerCase()}.
         </Card>
       ) : activeTab === "MUTATION" && isApprover ? (
-        // Mutation approval queue — card list with actions
+        // Mutation approval queue — card list with inline approve/reject actions
         <ul className="space-y-3">
           {events.map((event) => (
             <Card key={event.id} className="space-y-2">
@@ -220,52 +322,13 @@ export function MonitoringPage() {
           ))}
         </ul>
       ) : (
-        // General event list — table
-        <Card>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-neutral-100 text-left text-xs text-neutral-500">
-                  <th className="pb-2 font-medium">Atlet</th>
-                  <th className="pb-2 font-medium">Cabor</th>
-                  <th className="pb-2 font-medium">Tanggal</th>
-                  <th className="pb-2 font-medium">Deskripsi</th>
-                  {activeTab === "MUTATION" && <th className="pb-2 font-medium">Status</th>}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100">
-                {events.map((event) => (
-                  <tr key={event.id}>
-                    <td className="py-2">
-                      <Link
-                        to={`/atlet/${event.atlet.id}`}
-                        className="font-medium text-primary hover:underline"
-                      >
-                        {event.atlet.namaLengkap}
-                      </Link>
-                    </td>
-                    <td className="py-2 text-neutral-600">
-                      {caborMap.get(event.atlet.cabangOlahragaId) ??
-                        event.atlet.cabangOlahraga.nama}
-                    </td>
-                    <td className="py-2 text-neutral-500 whitespace-nowrap">
-                      {formatDate(event.eventDate)}
-                    </td>
-                    <td className="py-2 text-neutral-700 max-w-xs truncate">
-                      {event.description ?? "-"}
-                    </td>
-                    {activeTab === "MUTATION" && event.mutationStatus && (
-                      <td className="py-2">
-                        <Badge tone={MUTATION_TONE[event.mutationStatus]}>
-                          {MUTATION_STATUS_LABELS[event.mutationStatus]}
-                        </Badge>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <Card className="p-0">
+          <DataTable
+            columns={columns}
+            rows={events}
+            emptyMessage={`Belum ada data ${activeTabDef.label.toLowerCase()}.`}
+            expandContent={expandContent}
+          />
         </Card>
       )}
     </div>
