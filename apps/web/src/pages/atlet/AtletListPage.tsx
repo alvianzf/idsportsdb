@@ -221,30 +221,27 @@ export function AtletListPage() {
             className="pl-9"
           />
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col gap-2">
           {isUnscopedAdmin && (
             <Combobox
               value={cabor}
-              onChange={(v) => {
-                setPage(1);
-                setCabor(v);
-              }}
+              onChange={(v) => { setPage(1); setCabor(v); }}
               options={[{ value: "", label: "Semua Cabor" }, ...cabors.map((c) => ({ value: c.id, label: c.nama }))]}
               placeholder="Semua Cabor"
-              className="w-48"
+              className="w-full"
             />
           )}
           <Select
             value={status}
             onChange={(v) => { setPage(1); setStatus(v); }}
             options={[{ value: "", label: "Semua Status" }, ...ATHLETE_STATUSES.map((s) => ({ value: s, label: ATHLETE_STATUS_LABELS[s] }))]}
-            className="w-44"
+            className="w-full"
           />
           <Select
             value={kecamatan}
             onChange={(v) => { setPage(1); setKecamatan(v); }}
             options={[{ value: "", label: "Semua Kecamatan" }, ...BATAM_KECAMATAN.map((k) => ({ value: k, label: k }))]}
-            className="w-48"
+            className="w-full"
           />
         </div>
       </Card>

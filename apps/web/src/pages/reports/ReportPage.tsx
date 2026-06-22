@@ -80,7 +80,7 @@ export function ReportPage<T>({ title, description, endpoint, params, filters, c
         }
       />
 
-      {filters && <Card className="mb-4 flex flex-wrap items-center gap-3">{filters}</Card>}
+      {filters && <Card className="mb-4 flex flex-col gap-2">{filters}</Card>}
 
       {error && <Card className="text-sm text-danger">{error}</Card>}
 

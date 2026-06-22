@@ -28,7 +28,7 @@ export function PelatihReportPage() {
             value={cabor}
             onChange={(v) => setCabor(v)}
             options={[{ value: "", label: "Semua Cabor" }, ...cabors.map((c) => ({ value: c.id, label: c.nama }))]}
-            className="w-48"
+            className="w-full"
           />
         ) : undefined
       }

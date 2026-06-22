@@ -194,12 +194,12 @@ export function UsersListPage() {
         }
       />
 
-      <Card className="mb-4 flex items-center gap-3">
+      <Card className="mb-4">
         <Select
           value={roleFilter}
           onChange={(v) => setRoleFilter(v as Role | "")}
           options={[{ value: "", label: "Semua Role" }, ...ROLES.map((r) => ({ value: r, label: ROLE_LABELS[r] }))]}
-          className="w-48"
+          className="w-full"
         />
       </Card>
 

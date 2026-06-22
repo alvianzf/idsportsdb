@@ -180,17 +180,14 @@ export function PelatihListPage() {
             className="pl-9"
           />
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col gap-2">
           {isUnscopedAdmin && (
             <Combobox
               value={cabor}
-              onChange={(v) => {
-                setPage(1);
-                setCabor(v);
-              }}
+              onChange={(v) => { setPage(1); setCabor(v); }}
               options={[{ value: "", label: "Semua Cabor" }, ...cabors.map((c) => ({ value: c.id, label: c.nama }))]}
               placeholder="Semua Cabor"
-              className="w-48"
+              className="w-full"
             />
           )}
           <label className="flex items-center gap-2 text-sm text-neutral-700">

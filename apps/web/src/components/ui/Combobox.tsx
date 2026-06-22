@@ -93,22 +93,34 @@ export function Combobox({
     if (!triggerRef.current) return {};
     const rect = triggerRef.current.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
-    const dropdownMaxHeight = 280;
+    const spaceAbove = rect.top;
+    const dropdownMaxHeight = 256; // max-h-52 = 208px + search row ~48px
 
-    // Use position:fixed top:0 left:0 + transform:translate so the browser
-    // handles sub-pixel rounding via GPU compositing instead of CSS layout.
-    // Math.round prevents fractional-pixel drift on high-DPI screens.
     const x = Math.round(rect.left);
-    const y = spaceBelow >= dropdownMaxHeight || spaceBelow >= rect.top
-      ? Math.round(rect.bottom) + 4
-      : Math.round(rect.top) - dropdownMaxHeight - 4;
+    const openBelow = spaceBelow >= dropdownMaxHeight || spaceBelow >= spaceAbove;
 
+    if (openBelow) {
+      return {
+        position: "fixed",
+        top: 0,
+        left: 0,
+        transform: `translate(${x}px, ${Math.round(rect.bottom) + 4}px)`,
+        width: Math.round(rect.width),
+        maxHeight: Math.min(dropdownMaxHeight, spaceBelow - 8),
+        zIndex: 9999,
+      };
+    }
+
+    // Flip upward: align the dropdown's bottom edge to just above the trigger.
+    const availableAbove = Math.max(0, spaceAbove - 8);
+    const dropdownHeight = Math.min(dropdownMaxHeight, availableAbove);
     return {
       position: "fixed",
       top: 0,
       left: 0,
-      transform: `translate(${x}px, ${y}px)`,
+      transform: `translate(${x}px, ${Math.round(rect.top) - dropdownHeight - 4}px)`,
       width: Math.round(rect.width),
+      maxHeight: dropdownHeight,
       zIndex: 9999,
     };
   }
@@ -171,7 +183,7 @@ export function Combobox({
           className="flex-1 bg-transparent text-sm text-on-surface outline-none placeholder:text-on-surface-variant/60"
         />
       </div>
-      <ul role="listbox" className="max-h-52 overflow-y-auto py-1.5">
+      <ul role="listbox" className="overflow-y-auto py-1.5" style={{ maxHeight: "calc(100% - 48px)" }}>
         {filtered.length === 0 ? (
           <li className="px-3 py-2 text-sm text-on-surface-variant">Tidak ada pilihan</li>
         ) : (

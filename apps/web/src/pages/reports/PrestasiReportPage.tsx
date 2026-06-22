@@ -36,15 +36,15 @@ export function PrestasiReportPage() {
             value={tingkat}
             onChange={(v) => setTingkat(v)}
             options={[{ value: "", label: "Semua Tingkat" }, ...COMPETITION_LEVELS.map((l) => ({ value: l, label: COMPETITION_LEVEL_LABELS[l] }))]}
-            className="w-44"
+            className="w-full"
           />
           <Select
             value={medali}
             onChange={(v) => setMedali(v)}
             options={[{ value: "", label: "Semua Medali" }, ...MEDALS.map((m) => ({ value: m, label: MEDAL_LABELS[m] }))]}
-            className="w-40"
+            className="w-full"
           />
-          <Input type="number" placeholder="Tahun" value={tahun} onChange={(e) => setTahun(e.target.value)} className="w-28" />
+          <Input type="number" placeholder="Tahun" value={tahun} onChange={(e) => setTahun(e.target.value)} className="w-full" />
         </>
       }
       columns={[

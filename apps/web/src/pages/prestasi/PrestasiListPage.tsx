@@ -178,30 +178,27 @@ export function PrestasiListPage() {
     <div>
       <PageHeader title="Prestasi Atlet" description="Daftar prestasi atlet KONI Batam" />
 
-      <Card className="mb-4 flex flex-wrap items-center gap-3">
+      <Card className="mb-4 flex flex-col gap-2">
         {isUnscopedAdmin && (
           <Combobox
             value={cabor}
-            onChange={(v) => {
-              setPage(1);
-              setCabor(v);
-            }}
+            onChange={(v) => { setPage(1); setCabor(v); }}
             options={[{ value: "", label: "Semua Cabor" }, ...cabors.map((c) => ({ value: c.id, label: c.nama }))]}
             placeholder="Semua Cabor"
-            className="w-48"
+            className="w-full"
           />
         )}
         <Select
           value={tingkat}
           onChange={(v) => { setPage(1); setTingkat(v); }}
           options={[{ value: "", label: "Semua Tingkat" }, ...COMPETITION_LEVELS.map((l) => ({ value: l, label: COMPETITION_LEVEL_LABELS[l] }))]}
-          className="w-44"
+          className="w-full"
         />
         <Select
           value={medali}
           onChange={(v) => { setPage(1); setMedali(v); }}
           options={[{ value: "", label: "Semua Medali" }, ...MEDALS.map((m) => ({ value: m, label: MEDAL_LABELS[m] }))]}
-          className="w-40"
+          className="w-full"
         />
         <Input
           type="number"
