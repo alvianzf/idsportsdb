@@ -102,7 +102,7 @@ export function DataTable<T extends { id: string }>({
   }
 
   return (
-    <div className={className}>
+    <div className={`@container ${className ?? ""}`}>
       {hasBulk && selectedIds.length > 0 && (
         <div className="mb-2 flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
           <span className="text-sm text-neutral-600">{selectedIds.length} dipilih</span>
@@ -146,7 +146,7 @@ export function DataTable<T extends { id: string }>({
                     "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500 whitespace-nowrap",
                     col.sortable ? "cursor-pointer select-none hover:text-neutral-700" : "",
                     // hide on mobile if not marked mobile:true (and page has mobile columns defined)
-                    mobileHas && !col.mobile ? "hidden lg:table-cell" : "",
+                    mobileHas && !col.mobile ? "hidden @lg:table-cell" : "",
                     col.className ?? "",
                   ].join(" ")}
                 >
@@ -157,7 +157,7 @@ export function DataTable<T extends { id: string }>({
                 </th>
               ))}
               {/* Expand chevron column — mobile only (for collapsed cols) */}
-              {hasCollapsed && <th className="w-8 px-2 py-3 lg:hidden" />}
+              {hasCollapsed && <th className="w-8 px-2 py-3 @lg:hidden" />}
               {/* Expand chevron column — all screens (for expandContent) */}
               {hasExpand && <th className="w-8 px-2 py-3" />}
             </tr>
@@ -185,7 +185,7 @@ export function DataTable<T extends { id: string }>({
                       key={col.key}
                       className={[
                         "px-4 py-3",
-                        mobileHas && !col.mobile ? "hidden lg:table-cell" : "",
+                        mobileHas && !col.mobile ? "hidden @lg:table-cell" : "",
                         col.className ?? "",
                       ].join(" ")}
                     >
@@ -193,7 +193,7 @@ export function DataTable<T extends { id: string }>({
                     </td>
                   ))}
                   {hasCollapsed && (
-                    <td className="w-8 px-2 py-3 lg:hidden">
+                    <td className="w-8 px-2 py-3 @lg:hidden">
                       <button
                         onClick={(e) => { e.stopPropagation(); setExpandedRow((r) => r === row.id ? null : row.id); }}
                         className="rounded p-1 text-neutral-400 hover:text-neutral-700"
@@ -212,7 +212,7 @@ export function DataTable<T extends { id: string }>({
 
                 {/* Expanded detail row — mobile only (for collapsed columns) */}
                 {hasCollapsed && expandedRow === row.id && (
-                  <tr key={`${row.id}-expanded`} className="lg:hidden bg-neutral-50">
+                  <tr key={`${row.id}-expanded`} className="@lg:hidden bg-neutral-50">
                     <td colSpan={columns.length + (hasBulk ? 2 : 1)} className="px-4 py-3">
                       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                         {collapsedCols.map((col) => (
