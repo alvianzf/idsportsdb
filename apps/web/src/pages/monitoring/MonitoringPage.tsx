@@ -115,18 +115,16 @@ export function MonitoringPage() {
   }
 
   // ── DataTable columns ──────────────────────────────────────────────────────
+  // Columns with mobile:true always show; others show on desktop only and
+  // collapse into the expand row on mobile (DataTable built-in behaviour).
   const columns = useMemo<Column<MonitoringEvent>[]>(() => {
-    const base: Column<MonitoringEvent>[] = [
+    const cols: Column<MonitoringEvent>[] = [
       {
         key: "atlet",
         label: "Atlet",
         mobile: true,
         render: (row) => (
-          <Link
-            to={`/atlet/${row.atlet.id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="font-medium text-primary hover:underline"
-          >
+          <Link to={`/atlet/${row.atlet.id}`} className="font-medium text-primary hover:underline">
             {row.atlet.namaLengkap}
           </Link>
         ),
@@ -151,71 +149,48 @@ export function MonitoringPage() {
           <span className="whitespace-nowrap text-neutral-500">{formatDate(row.eventDate)}</span>
         ),
       },
+      // Desktop-only columns (collapse to expand row on mobile)
+      ...(activeTab === "MUTATION"
+        ? [
+            {
+              key: "pindah",
+              label: "Pindah Ke",
+              render: (row: MonitoringEvent) => {
+                const from = caborMap.get(row.atlet.cabangOlahragaId) ?? row.atlet.cabangOlahraga.nama;
+                const to = row.toValue ? (caborMap.get(row.toValue) ?? row.toValue) : null;
+                return to ? (
+                  <span className="text-sm text-neutral-700">
+                    <span className="text-neutral-400">{from}</span>
+                    <span className="mx-1.5 text-neutral-300">→</span>
+                    {to}
+                  </span>
+                ) : <span className="text-neutral-400">—</span>;
+              },
+            },
+            {
+              key: "status",
+              label: "Status",
+              render: (row: MonitoringEvent) =>
+                row.mutationStatus ? (
+                  <Badge tone={MUTATION_TONE[row.mutationStatus]}>
+                    {MUTATION_STATUS_LABELS[row.mutationStatus]}
+                  </Badge>
+                ) : null,
+            },
+          ]
+        : []),
+      {
+        key: "deskripsi",
+        label: "Keterangan",
+        className: "max-w-xs",
+        render: (row) => (
+          <span className="truncate text-neutral-600">{row.description ?? "—"}</span>
+        ),
+      },
     ];
 
-    if (activeTab === "MUTATION") {
-      base.push({
-        key: "status",
-        label: "Status",
-        mobile: true,
-        render: (row) =>
-          row.mutationStatus ? (
-            <Badge tone={MUTATION_TONE[row.mutationStatus]}>
-              {MUTATION_STATUS_LABELS[row.mutationStatus]}
-            </Badge>
-          ) : null,
-      });
-    }
-
-    return base;
+    return cols;
   }, [activeTab, caborMap]);
-
-  // ── Expanded row content ───────────────────────────────────────────────────
-  function expandContent(row: MonitoringEvent) {
-    const caborNama = caborMap.get(row.atlet.cabangOlahragaId) ?? row.atlet.cabangOlahraga.nama;
-    const toNama = row.toValue ? (caborMap.get(row.toValue) ?? row.toValue) : null;
-
-    return (
-      <dl className="grid gap-3 pt-1 text-sm sm:grid-cols-2 md:grid-cols-3">
-        {row.description && (
-          <div className="sm:col-span-2 md:col-span-3">
-            <dt className="text-xs font-medium text-neutral-400">Keterangan</dt>
-            <dd className="mt-0.5 text-neutral-700">{row.description}</dd>
-          </div>
-        )}
-        {activeTab === "MUTATION" && toNama && (
-          <div>
-            <dt className="text-xs font-medium text-neutral-400">Pindah Ke</dt>
-            <dd className="mt-0.5 font-medium text-neutral-800">
-              <span className="text-neutral-400">{caborNama}</span>
-              <span className="mx-2 text-neutral-300">→</span>
-              {toNama}
-            </dd>
-          </div>
-        )}
-        {row.fromValue && activeTab !== "MUTATION" && (
-          <div>
-            <dt className="text-xs font-medium text-neutral-400">Dari</dt>
-            <dd className="mt-0.5 text-neutral-700">{row.fromValue}</dd>
-          </div>
-        )}
-        {row.toValue && activeTab !== "MUTATION" && (
-          <div>
-            <dt className="text-xs font-medium text-neutral-400">Ke</dt>
-            <dd className="mt-0.5 text-neutral-700">{row.toValue}</dd>
-          </div>
-        )}
-        <div>
-          <dt className="text-xs font-medium text-neutral-400">Tanggal Lengkap</dt>
-          <dd className="mt-0.5 text-neutral-700">
-            {new Date(row.eventDate).toLocaleDateString("id-ID", {
-              weekday: "long", year: "numeric", month: "long", day: "numeric",
-            })}
-          </dd>
-        </div>
-      </dl>
-    );
-  }
 
   const activeTabDef = TABS.find((t) => t.type === activeTab)!;
 
@@ -327,7 +302,6 @@ export function MonitoringPage() {
             columns={columns}
             rows={events}
             emptyMessage={`Belum ada data ${activeTabDef.label.toLowerCase()}.`}
-            expandContent={expandContent}
           />
         </Card>
       )}
