@@ -193,34 +193,16 @@ export function PrestasiListPage() {
         )}
         <Select
           value={tingkat}
-          onChange={(e) => {
-            setPage(1);
-            setTingkat(e.target.value);
-          }}
-          className="w-auto"
-        >
-          <option value="">Semua Tingkat</option>
-          {COMPETITION_LEVELS.map((l) => (
-            <option key={l} value={l}>
-              {COMPETITION_LEVEL_LABELS[l]}
-            </option>
-          ))}
-        </Select>
+          onChange={(v) => { setPage(1); setTingkat(v); }}
+          options={[{ value: "", label: "Semua Tingkat" }, ...COMPETITION_LEVELS.map((l) => ({ value: l, label: COMPETITION_LEVEL_LABELS[l] }))]}
+          className="w-44"
+        />
         <Select
           value={medali}
-          onChange={(e) => {
-            setPage(1);
-            setMedali(e.target.value);
-          }}
-          className="w-auto"
-        >
-          <option value="">Semua Medali</option>
-          {MEDALS.map((m) => (
-            <option key={m} value={m}>
-              {MEDAL_LABELS[m]}
-            </option>
-          ))}
-        </Select>
+          onChange={(v) => { setPage(1); setMedali(v); }}
+          options={[{ value: "", label: "Semua Medali" }, ...MEDALS.map((m) => ({ value: m, label: MEDAL_LABELS[m] }))]}
+          className="w-40"
+        />
         <Input
           type="number"
           placeholder="Tahun"

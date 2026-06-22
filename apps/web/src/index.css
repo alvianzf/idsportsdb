@@ -5,19 +5,18 @@
 @import "@fontsource/plus-jakarta-sans/700.css";
 
 /*
- * KONI Batam design system — see specs/000-overview/design-system.md
- * Clean, solid-color theme: KONI red as primary accent, neutral grays
- * for surfaces/text, flat status colors for badges, no gradients.
+ * KONI Batam design system — Material You + Glassmorphism
+ * KONI red as primary brand color, M3 tonal surfaces, warm gradient bg
  */
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 
   /* Primary — KONI red */
-  --color-primary-50: #fdecef;
-  --color-primary-100: #fbd4da;
-  --color-primary-200: #f5a6b3;
-  --color-primary-300: #ee7889;
-  --color-primary-400: #dc3f58;
+  --color-primary-50:  #fff0f1;
+  --color-primary-100: #ffdde0;
+  --color-primary-200: #ffb3ba;
+  --color-primary-300: #ff8090;
+  --color-primary-400: #f94d64;
   --color-primary-500: #c8102e;
   --color-primary-600: #a50d26;
   --color-primary-700: #820a1e;
@@ -25,8 +24,23 @@
   --color-primary-900: #3d040f;
   --color-primary: var(--color-primary-500);
 
-  /* Neutral grays */
-  --color-neutral-50: #fafafa;
+  /* M3 tonal surfaces */
+  --color-primary-container:    #ffdad9;
+  --color-on-primary-container: #410007;
+  --color-surface:              #fff8f7;
+  --color-surface-dim:          #f2d8d8;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low:    #fef1ef;
+  --color-surface-container:        #f8eaea;
+  --color-surface-container-high:   #f2e4e3;
+  --color-surface-container-highest:#ecdedd;
+  --color-on-surface:           #201a1a;
+  --color-on-surface-variant:   #534342;
+  --color-outline:              #857371;
+  --color-outline-variant:      #d8c2c0;
+
+  /* Neutral grays (kept for compatibility) */
+  --color-neutral-50:  #fafafa;
   --color-neutral-100: #f4f4f5;
   --color-neutral-200: #e4e4e7;
   --color-neutral-300: #d4d4d8;
@@ -37,24 +51,26 @@
   --color-neutral-800: #27272a;
   --color-neutral-900: #18181b;
 
-  /* Status colors */
-  --color-success: #16a34a;
+  /* Status */
+  --color-success:       #16a34a;
   --color-success-light: #dcfce7;
-  --color-warning: #d97706;
+  --color-warning:       #d97706;
   --color-warning-light: #fef3c7;
-  --color-danger: #dc2626;
-  --color-danger-light: #fee2e2;
-  --color-info: #2563eb;
-  --color-info-light: #dbeafe;
+  --color-danger:        #dc2626;
+  --color-danger-light:  #fee2e2;
+  --color-info:          #2563eb;
+  --color-info-light:    #dbeafe;
 
-  /* Medal colors */
-  --color-gold: #d4af37;
+  /* Medal */
+  --color-gold:   #d4af37;
   --color-silver: #9ca3af;
   --color-bronze: #b45309;
 }
 
 body {
-  @apply bg-neutral-50 text-neutral-900;
+  background: linear-gradient(135deg, #fefce8 0%, #fef9c3 25%, #fffbeb 60%, #f0fdf4 100%);
+  background-attachment: fixed;
+  color: #201a1a;
   margin: 0;
 }
 

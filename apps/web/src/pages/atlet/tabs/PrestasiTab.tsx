@@ -250,16 +250,9 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
                   id="tingkatKejuaraan"
                   required
                   value={form.tingkatKejuaraan}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, tingkatKejuaraan: e.target.value as CompetitionLevel }))
-                  }
-                >
-                  {COMPETITION_LEVELS.map((l) => (
-                    <option key={l} value={l}>
-                      {COMPETITION_LEVEL_LABELS[l]}
-                    </option>
-                  ))}
-                </Select>
+                  onChange={(v) => setForm((f) => ({ ...f, tingkatKejuaraan: v as CompetitionLevel }))}
+                  options={COMPETITION_LEVELS.map((l) => ({ value: l, label: COMPETITION_LEVEL_LABELS[l] }))}
+                />
               </Field>
               <Field label="Tahun" required htmlFor="tahun">
                 <Input
@@ -277,14 +270,9 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
                   id="medali"
                   required
                   value={form.medali}
-                  onChange={(e) => setForm((f) => ({ ...f, medali: e.target.value as Medal }))}
-                >
-                  {MEDALS.map((m) => (
-                    <option key={m} value={m}>
-                      {MEDAL_LABELS[m]}
-                    </option>
-                  ))}
-                </Select>
+                  onChange={(v) => setForm((f) => ({ ...f, medali: v as Medal }))}
+                  options={MEDALS.map((m) => ({ value: m, label: MEDAL_LABELS[m] }))}
+                />
               </Field>
               <Field
                 label="Peringkat"

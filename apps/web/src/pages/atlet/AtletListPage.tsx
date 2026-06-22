@@ -236,34 +236,16 @@ export function AtletListPage() {
           )}
           <Select
             value={status}
-            onChange={(e) => {
-              setPage(1);
-              setStatus(e.target.value);
-            }}
-            className="w-auto"
-          >
-            <option value="">Semua Status</option>
-            {ATHLETE_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {ATHLETE_STATUS_LABELS[s]}
-              </option>
-            ))}
-          </Select>
+            onChange={(v) => { setPage(1); setStatus(v); }}
+            options={[{ value: "", label: "Semua Status" }, ...ATHLETE_STATUSES.map((s) => ({ value: s, label: ATHLETE_STATUS_LABELS[s] }))]}
+            className="w-44"
+          />
           <Select
             value={kecamatan}
-            onChange={(e) => {
-              setPage(1);
-              setKecamatan(e.target.value);
-            }}
-            className="w-auto"
-          >
-            <option value="">Semua Kecamatan</option>
-            {BATAM_KECAMATAN.map((k) => (
-              <option key={k} value={k}>
-                {k}
-              </option>
-            ))}
-          </Select>
+            onChange={(v) => { setPage(1); setKecamatan(v); }}
+            options={[{ value: "", label: "Semua Kecamatan" }, ...BATAM_KECAMATAN.map((k) => ({ value: k, label: k }))]}
+            className="w-48"
+          />
         </div>
       </Card>
 

@@ -302,14 +302,9 @@ export function AtletFormPage() {
                   id="jenisKelamin"
                   required
                   value={form.jenisKelamin}
-                  onChange={(e) => setForm((f) => ({ ...f, jenisKelamin: e.target.value }))}
-                >
-                  {GENDERS.map((g) => (
-                    <option key={g} value={g}>
-                      {GENDER_LABELS[g]}
-                    </option>
-                  ))}
-                </Select>
+                  onChange={(v) => setForm((f) => ({ ...f, jenisKelamin: v }))}
+                  options={GENDERS.map((g) => ({ value: g, label: GENDER_LABELS[g] }))}
+                />
               </Field>
             </div>
           </section>
@@ -329,15 +324,9 @@ export function AtletFormPage() {
                 <Select
                   id="kecamatan"
                   value={form.kecamatan}
-                  onChange={(e) => setForm((f) => ({ ...f, kecamatan: e.target.value }))}
-                >
-                  <option value="">Pilih kecamatan</option>
-                  {BATAM_KECAMATAN.map((k) => (
-                    <option key={k} value={k}>
-                      {k}
-                    </option>
-                  ))}
-                </Select>
+                  onChange={(v) => setForm((f) => ({ ...f, kecamatan: v }))}
+                  options={[{ value: "", label: "Pilih kecamatan" }, ...BATAM_KECAMATAN.map((k) => ({ value: k, label: k }))]}
+                />
               </Field>
               <Field label="Nomor HP" htmlFor="nomorHp">
                 <Input
@@ -387,28 +376,18 @@ export function AtletFormPage() {
                   id="statusAtlet"
                   required
                   value={form.statusAtlet}
-                  onChange={(e) => setForm((f) => ({ ...f, statusAtlet: e.target.value }))}
-                >
-                  {ATHLETE_STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {ATHLETE_STATUS_LABELS[s]}
-                    </option>
-                  ))}
-                </Select>
+                  onChange={(v) => setForm((f) => ({ ...f, statusAtlet: v }))}
+                  options={ATHLETE_STATUSES.map((s) => ({ value: s, label: ATHLETE_STATUS_LABELS[s] }))}
+                />
               </Field>
               <Field label="Tingkat Atlet" required htmlFor="tingkatAtlet">
                 <Select
                   id="tingkatAtlet"
                   required
                   value={form.tingkatAtlet}
-                  onChange={(e) => setForm((f) => ({ ...f, tingkatAtlet: e.target.value }))}
-                >
-                  {ATHLETE_LEVELS.map((l) => (
-                    <option key={l} value={l}>
-                      {ATHLETE_LEVEL_LABELS[l]}
-                    </option>
-                  ))}
-                </Select>
+                  onChange={(v) => setForm((f) => ({ ...f, tingkatAtlet: v }))}
+                  options={ATHLETE_LEVELS.map((l) => ({ value: l, label: ATHLETE_LEVEL_LABELS[l] }))}
+                />
               </Field>
             </div>
 

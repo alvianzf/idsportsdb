@@ -17,8 +17,8 @@ interface ComboboxProps {
   disabled?: boolean;
 }
 
-const fieldBase =
-  "w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-neutral-100 disabled:text-neutral-400";
+const triggerBase =
+  "w-full rounded-2xl border border-outline-variant bg-white/60 px-4 py-2.5 text-sm backdrop-blur-sm transition-colors focus:border-primary focus:bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50";
 
 export function Combobox({
   options,
@@ -30,6 +30,7 @@ export function Combobox({
   required,
   disabled,
 }: ComboboxProps) {
+  options = options ?? [];
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [highlighted, setHighlighted] = useState(0);
@@ -107,18 +108,21 @@ export function Combobox({
         type="button"
         disabled={disabled}
         onClick={openDropdown}
-        className={`${fieldBase} flex items-center justify-between gap-2 text-left ${!selected ? "text-neutral-400" : "text-neutral-900"}`}
+        className={`${triggerBase} flex items-center justify-between gap-2 text-left ${!selected ? "text-on-surface-variant" : "text-on-surface"}`}
         aria-haspopup="listbox"
         aria-expanded={open}
       >
         <span className="flex-1 truncate">{selected ? selected.label : placeholder}</span>
-        <ChevronDown size={14} className={`shrink-0 text-neutral-400 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown
+          size={15}
+          className={`shrink-0 text-on-surface-variant transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-md border border-neutral-200 bg-white shadow-lg">
-          <div className="flex items-center gap-2 border-b border-neutral-100 px-3 py-2">
-            <Search size={14} className="shrink-0 text-neutral-400" />
+        <div className="absolute z-50 mt-1.5 w-full overflow-hidden rounded-2xl border border-white/50 bg-white/85 shadow-xl backdrop-blur-xl">
+          <div className="flex items-center gap-2 border-b border-outline-variant/40 px-3 py-2.5">
+            <Search size={14} className="shrink-0 text-on-surface-variant" />
             <input
               ref={inputRef}
               type="text"
@@ -126,15 +130,12 @@ export function Combobox({
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Cari..."
-              className="flex-1 text-sm outline-none"
+              className="flex-1 bg-transparent text-sm text-on-surface outline-none placeholder:text-on-surface-variant/60"
             />
           </div>
-          <ul
-            role="listbox"
-            className="max-h-52 overflow-y-auto py-1"
-          >
+          <ul role="listbox" className="max-h-52 overflow-y-auto py-1.5">
             {filtered.length === 0 ? (
-              <li className="px-3 py-2 text-sm text-neutral-400">Tidak ada pilihan</li>
+              <li className="px-3 py-2 text-sm text-on-surface-variant">Tidak ada pilihan</li>
             ) : (
               filtered.map((opt, i) => (
                 <li
@@ -146,8 +147,10 @@ export function Combobox({
                     e.preventDefault();
                     select(opt);
                   }}
-                  className={`cursor-pointer px-3 py-2 text-sm ${
-                    i === highlighted ? "bg-primary-50 text-primary" : "text-neutral-700"
+                  className={`mx-1.5 cursor-pointer rounded-xl px-3 py-2 text-sm transition-colors ${
+                    i === highlighted
+                      ? "bg-primary-50/80 text-primary"
+                      : "text-on-surface hover:bg-surface-container"
                   } ${opt.value === value ? "font-medium" : ""}`}
                 >
                   {opt.label}

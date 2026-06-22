@@ -131,12 +131,9 @@ export function UsersFormPage() {
                 id="role"
                 required
                 value={form.role}
-                onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as Role }))}
-              >
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-                ))}
-              </Select>
+                onChange={(v) => setForm((f) => ({ ...f, role: v as Role }))}
+                options={ROLES.map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
+              />
             </Field>
           </div>
 
@@ -146,13 +143,9 @@ export function UsersFormPage() {
                 id="cabangOlahragaId"
                 required
                 value={form.cabangOlahragaId}
-                onChange={(e) => setForm((f) => ({ ...f, cabangOlahragaId: e.target.value }))}
-              >
-                <option value="">Pilih cabang olahraga</option>
-                {cabors.map((c) => (
-                  <option key={c.id} value={c.id}>{c.nama}</option>
-                ))}
-              </Select>
+                onChange={(v) => setForm((f) => ({ ...f, cabangOlahragaId: v }))}
+                options={[{ value: "", label: "Pilih cabang olahraga" }, ...cabors.map((c) => ({ value: c.id, label: c.nama }))]}
+              />
             </Field>
           )}
 
@@ -162,15 +155,9 @@ export function UsersFormPage() {
                 id="athleteId"
                 required
                 value={form.athleteId}
-                onChange={(e) => setForm((f) => ({ ...f, athleteId: e.target.value }))}
-              >
-                <option value="">Pilih atlet</option>
-                {atlets.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.namaLengkap} ({a.nomorIndukAtlet})
-                  </option>
-                ))}
-              </Select>
+                onChange={(v) => setForm((f) => ({ ...f, athleteId: v }))}
+                options={[{ value: "", label: "Pilih atlet" }, ...atlets.map((a) => ({ value: a.id, label: `${a.namaLengkap} (${a.nomorIndukAtlet})` }))]}
+              />
             </Field>
           )}
 

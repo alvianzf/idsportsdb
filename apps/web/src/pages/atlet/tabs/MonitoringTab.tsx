@@ -227,14 +227,9 @@ export function MonitoringTab({ atletId, canManage, currentCabangOlahragaId }: M
                 required
                 disabled={!!editing}
                 value={form.type}
-                onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as MonitoringEventType, toValue: "" }))}
-              >
-                {MONITORING_EVENT_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {MONITORING_EVENT_TYPE_LABELS[t]}
-                  </option>
-                ))}
-              </Select>
+                onChange={(v) => setForm((f) => ({ ...f, type: v as MonitoringEventType, toValue: "" }))}
+                options={MONITORING_EVENT_TYPES.map((t) => ({ value: t, label: MONITORING_EVENT_TYPE_LABELS[t] }))}
+              />
             </Field>
 
             <Field label="Keterangan" htmlFor="description">
@@ -270,30 +265,18 @@ export function MonitoringTab({ atletId, canManage, currentCabangOlahragaId }: M
                     <Select
                       id="fromValue"
                       value={form.fromValue}
-                      onChange={(e) => setForm((f) => ({ ...f, fromValue: e.target.value }))}
-                    >
-                      <option value="">-</option>
-                      {ATHLETE_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {ATHLETE_STATUS_LABELS[s]}
-                        </option>
-                      ))}
-                    </Select>
+                      onChange={(v) => setForm((f) => ({ ...f, fromValue: v }))}
+                      options={[{ value: "", label: "-" }, ...ATHLETE_STATUSES.map((s) => ({ value: s, label: ATHLETE_STATUS_LABELS[s] }))]}
+                    />
                   </Field>
                   <Field label="Ke Status" required htmlFor="toValue">
                     <Select
                       id="toValue"
                       required
                       value={form.toValue}
-                      onChange={(e) => setForm((f) => ({ ...f, toValue: e.target.value }))}
-                    >
-                      <option value="">Pilih status</option>
-                      {ATHLETE_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {ATHLETE_STATUS_LABELS[s]}
-                        </option>
-                      ))}
-                    </Select>
+                      onChange={(v) => setForm((f) => ({ ...f, toValue: v }))}
+                      options={[{ value: "", label: "Pilih status" }, ...ATHLETE_STATUSES.map((s) => ({ value: s, label: ATHLETE_STATUS_LABELS[s] }))]}
+                    />
                   </Field>
                 </>
               ) : (

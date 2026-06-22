@@ -32,22 +32,18 @@ export function PrestasiReportPage() {
       filenameBase="data-prestasi"
       filters={
         <>
-          <Select value={tingkat} onChange={(e) => setTingkat(e.target.value)} className="w-auto">
-            <option value="">Semua Tingkat</option>
-            {COMPETITION_LEVELS.map((l) => (
-              <option key={l} value={l}>
-                {COMPETITION_LEVEL_LABELS[l]}
-              </option>
-            ))}
-          </Select>
-          <Select value={medali} onChange={(e) => setMedali(e.target.value)} className="w-auto">
-            <option value="">Semua Medali</option>
-            {MEDALS.map((m) => (
-              <option key={m} value={m}>
-                {MEDAL_LABELS[m]}
-              </option>
-            ))}
-          </Select>
+          <Select
+            value={tingkat}
+            onChange={(v) => setTingkat(v)}
+            options={[{ value: "", label: "Semua Tingkat" }, ...COMPETITION_LEVELS.map((l) => ({ value: l, label: COMPETITION_LEVEL_LABELS[l] }))]}
+            className="w-44"
+          />
+          <Select
+            value={medali}
+            onChange={(v) => setMedali(v)}
+            options={[{ value: "", label: "Semua Medali" }, ...MEDALS.map((m) => ({ value: m, label: MEDAL_LABELS[m] }))]}
+            className="w-40"
+          />
           <Input type="number" placeholder="Tahun" value={tahun} onChange={(e) => setTahun(e.target.value)} className="w-28" />
         </>
       }

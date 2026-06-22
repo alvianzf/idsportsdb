@@ -197,14 +197,10 @@ export function UsersListPage() {
       <Card className="mb-4 flex items-center gap-3">
         <Select
           value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value as Role | "")}
-          className="w-auto"
-        >
-          <option value="">Semua Role</option>
-          {ROLES.map((r) => (
-            <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-          ))}
-        </Select>
+          onChange={(v) => setRoleFilter(v as Role | "")}
+          options={[{ value: "", label: "Semua Role" }, ...ROLES.map((r) => ({ value: r, label: ROLE_LABELS[r] }))]}
+          className="w-48"
+        />
       </Card>
 
       {error && <Card className="mb-4 text-sm text-danger">{error}</Card>}

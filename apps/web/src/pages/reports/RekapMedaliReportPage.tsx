@@ -28,14 +28,12 @@ export function RekapMedaliReportPage() {
       filters={
         <>
           {isUnscopedAdmin && (
-            <Select value={cabor} onChange={(e) => setCabor(e.target.value)} className="w-auto">
-              <option value="">Semua Cabor</option>
-              {cabors.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nama}
-                </option>
-              ))}
-            </Select>
+            <Select
+              value={cabor}
+              onChange={(v) => setCabor(v)}
+              options={[{ value: "", label: "Semua Cabor" }, ...cabors.map((c) => ({ value: c.id, label: c.nama }))]}
+              className="w-48"
+            />
           )}
           <Input type="number" placeholder="Tahun" value={tahun} onChange={(e) => setTahun(e.target.value)} className="w-28" />
         </>
