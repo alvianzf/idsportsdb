@@ -39,10 +39,10 @@
 | GET | `/api/v1/atlet/:atletId/card` | SUPER_ADMIN_KONI, ADMIN_KONI, ADMIN_CABOR (own cabor) | - | `AtletCard \| null` (current card) | returns the latest non-revoked card, or `null` if none issued |
 | POST | `/api/v1/atlet/:atletId/card` | SUPER_ADMIN_KONI, ADMIN_KONI, ADMIN_CABOR (own cabor) | `{ expiresAt? }` | `AtletCard` | issues a new card: generates `cardCode` via `nanoid()`, sets `qrPayloadUrl`; does **not** auto-revoke prior cards (admin may call revoke separately) |
 | POST | `/api/v1/atlet/:atletId/card/:cardId/revoke` | SUPER_ADMIN_KONI, ADMIN_KONI, ADMIN_CABOR (own cabor) | - | `AtletCard` (`isRevoked=true`) | |
-| GET | `/api/v1/atlet/:atletId/card/:cardId/download` | SUPER_ADMIN_KONI, ADMIN_KONI, ADMIN_CABOR (own cabor), ATLET (self) | `?format=pdf\|png` | binary (PDF or PNG) | renders a printable card image: athlete photo, name, `nomorIndukAtlet`, cabor, QR code; `lib/pdf.ts` for PDF, `lib/qr.ts` (qrcode pkg) for the QR image |
+| GET | `/api/v1/atlet/:atletId/card/:cardId/download` | SUPER_ADMIN_KONI, ADMIN_KONI, ADMIN_CABOR (own cabor), ATLET (self) | `?format=jpeg\|png` | binary (JPEG or PNG) | `jpeg` (default): CR80 card image at 300 dpi (1012×638 px) via `lib/cardImage.ts`; `png`: QR code only via `lib/qr.ts` |
 | GET | `/api/v1/atlet/me/card` | ATLET | - | `AtletCard \| null` | self-service equivalent of the first endpoint, resolves `atletId` from `req.user.athleteId` |
 | POST | `/api/v1/atlet/me/card` | ATLET | `{}` | `AtletCard` | self-service issue (if the PDF intends athletes can generate their own card — see §7) |
-| GET | `/api/v1/cards/verify/:cardCode` | **public** (no auth) | - | `{ valid: boolean, athlete?: { namaLengkap, nomorIndukAtlet, cabangOlahraga, fotoUrl, statusAtlet }, reason?: "REVOKED" \| "EXPIRED" \| "NOT_FOUND" }` | minimal info only — no NIK/address/contact; `valid=false` if `isRevoked`, `expiresAt < now`, or athlete `statusAtlet != ACTIVE` |
+| GET | `/api/v1/cards/verify/:cardCode` | **public** (no auth) | - | `{ valid: boolean, athlete?: { atletId, namaLengkap, nomorIndukAtlet, cabangOlahraga, fotoUrl, statusAtlet }, reason?: "REVOKED" \| "EXPIRED" \| "NOT_FOUND" \| "INACTIVE" }` | `atletId` always included so authenticated admins can navigate to the record; no NIK/address/contact exposed |
 
 - **Card generation logic**: `apps/api/src/modules/cards/cards.service.ts` —
   `issueCard(atletId, expiresAt?)` creates the `AtletCard` row and builds

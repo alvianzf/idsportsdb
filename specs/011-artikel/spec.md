@@ -41,7 +41,8 @@
 | GET | `/api/v1/artikel/:id` | SUPER_ADMIN_KONI, ADMIN_KONI | - | `Article` | admin detail by id |
 | POST | `/api/v1/artikel` | SUPER_ADMIN_KONI, ADMIN_KONI | `{ title, excerpt?, content, published? }` | `Article` | slug auto-generated; `publishedAt` set if `published: true` |
 | PATCH | `/api/v1/artikel/:id` | SUPER_ADMIN_KONI, ADMIN_KONI | partial fields | `Article` | publishing sets `publishedAt = now()`; reverting to draft clears it |
-| POST | `/api/v1/artikel/:id/cover` | SUPER_ADMIN_KONI, ADMIN_KONI | `multipart/form-data file` | `Article` | stores under `uploads/artikel/`; updates `coverImageUrl` |
+| POST | `/api/v1/artikel/:id/cover` | SUPER_ADMIN_KONI, ADMIN_KONI | `multipart/form-data file` | `Article` (with updated `coverImageUrl`) | stores under `uploads/artikel/`; updates `coverImageUrl` |
+| POST | `/api/v1/artikel/images` | SUPER_ADMIN_KONI, ADMIN_KONI | `multipart/form-data file` (max 15 MB) | `{ url: string }` | uploads an inline image for the WYSIWYG editor; stored under `uploads/artikel-images/`; returns a public URL to embed in article `content` |
 | DELETE | `/api/v1/artikel/:id` | SUPER_ADMIN_KONI, ADMIN_KONI | - | `204` | |
 | GET | `/api/v1/public/artikel` | public (no auth) | `?limit=` (default 6, max 50) | summary fields only | published only, newest first |
 | GET | `/api/v1/public/artikel/:slug` | public (no auth) | - | full article | 404 if not found or not published |

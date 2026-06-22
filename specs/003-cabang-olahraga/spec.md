@@ -42,8 +42,9 @@
 |---|---|---|---|---|---|
 | GET | `/api/v1/cabor` | all authenticated | `?search=` | `CabangOlahraga[]` with `jumlahAtlet`/`jumlahPelatih` | `ADMIN_CABOR` sees all cabor (read-only) for context, but can only edit own |
 | GET | `/api/v1/cabor/:id` | all authenticated | - | `CabangOlahraga` + counts + `pengurus[]` (from `006-pengurus-cabor`) | |
-| POST | `/api/v1/cabor` | SUPER_ADMIN_KONI, ADMIN_KONI | `{ nama, ketuaCabor?, sekretariat?, organisasiNasional? }` (multipart with optional `logo` file) | `CabangOlahraga` | `nama` must be unique |
-| PATCH | `/api/v1/cabor/:id` | SUPER_ADMIN_KONI, ADMIN_KONI | partial fields (multipart with optional `logo` file) | `CabangOlahraga` | |
+| POST | `/api/v1/cabor` | SUPER_ADMIN_KONI, ADMIN_KONI | `{ nama, ketuaCabor?, sekretariat?, organisasiNasional? }` | `CabangOlahraga` | `nama` must be unique |
+| PATCH | `/api/v1/cabor/:id` | SUPER_ADMIN_KONI, ADMIN_KONI | partial fields | `CabangOlahraga` | |
+| POST | `/api/v1/cabor/:id/logo` | SUPER_ADMIN_KONI, ADMIN_KONI | `multipart/form-data file` | `{ logoOrganisasiUrl }` | uploads/replaces the organisasi logo; stored under `uploads/cabor-logos/`; updates `CabangOlahraga.logoOrganisasiUrl` |
 | DELETE | `/api/v1/cabor/:id` | SUPER_ADMIN_KONI | - | `204` | blocked (409) if `jumlahAtlet > 0` or `jumlahPelatih > 0` |
 | GET | `/api/v1/cabor/:id/documents` | all authenticated | - | `CaborDokumen[]` | |
 | POST | `/api/v1/cabor/:id/documents` | SUPER_ADMIN_KONI, ADMIN_KONI | multipart: `file` + `jenis` + `nomorDokumen?` + `tanggalDokumen?` + `deskripsi?` | `CaborDokumen` | |
