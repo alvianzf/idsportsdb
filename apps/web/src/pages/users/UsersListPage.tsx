@@ -144,12 +144,12 @@ export function UsersListPage() {
           <Link to={`/users/${user.id}/edit`}>
             <Button variant="outline">Edit</Button>
           </Link>
-          {/* Reset Password — blue/info */}
+          {/* Reset Password — purple */}
           <Button
             variant="outline"
             onClick={() => handleResetPassword(user)}
             title="Reset kata sandi — kirim ulang email dengan kata sandi baru"
-            className="border-info/40 text-info hover:bg-info/10"
+            className="border-purple-300 text-purple-600 hover:bg-purple-50"
           >
             <RotateCcw size={14} /> Reset Password
           </Button>
