@@ -32,7 +32,15 @@ export async function startWebScan(
 
   videoElement.srcObject = stream;
   videoElement.setAttribute("playsinline", "true");
-  await videoElement.play();
+
+  // autoPlay attribute already triggers playback; calling play() manually can
+  // throw AbortError when the browser beats us to it. Only throw if the video
+  // genuinely fails to start.
+  try {
+    await videoElement.play();
+  } catch {
+    if (videoElement.paused) throw new Error("camera_denied");
+  }
 
   let running = true;
   const canvas = document.createElement("canvas");
