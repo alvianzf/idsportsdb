@@ -100,6 +100,7 @@ export function Combobox({
     const openBelow = spaceBelow >= dropdownMaxHeight || spaceBelow >= spaceAbove;
 
     if (openBelow) {
+      // Anchor top edge just below the trigger.
       return {
         position: "fixed",
         top: 0,
@@ -111,16 +112,16 @@ export function Combobox({
       };
     }
 
-    // Flip upward: align the dropdown's bottom edge to just above the trigger.
-    const availableAbove = Math.max(0, spaceAbove - 8);
-    const dropdownHeight = Math.min(dropdownMaxHeight, availableAbove);
+    // Flip upward: anchor the BOTTOM edge just above the trigger using CSS
+    // `bottom` so the dropdown grows upward regardless of its actual height.
+    // Using `bottom` avoids the off-by-much bug where we subtracted the full
+    // allocated height even when fewer options made the dropdown shorter.
     return {
       position: "fixed",
-      top: 0,
-      left: 0,
-      transform: `translate(${x}px, ${Math.round(rect.top) - dropdownHeight - 4}px)`,
+      bottom: Math.round(window.innerHeight - rect.top) + 4,
+      left: x,
       width: Math.round(rect.width),
-      maxHeight: dropdownHeight,
+      maxHeight: Math.min(dropdownMaxHeight, spaceAbove - 8),
       zIndex: 9999,
     };
   }
