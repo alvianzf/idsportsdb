@@ -21,8 +21,9 @@ export function BeritaPage() {
 
   useEffect(() => {
     api
-      .get<PublicArtikel[]>("/public/artikel", { params: { limit: 60 } })
-      .then((res) => setArticles(res.data))
+      // publicArtikelQuerySchema caps limit at 50 — anything above returns 400.
+      .get<PublicArtikel[] | null>("/public/artikel", { params: { limit: 50 } })
+      .then((res) => setArticles(res.data ?? []))
       .catch(() => setError(true));
   }, []);
 
@@ -31,7 +32,7 @@ export function BeritaPage() {
       {error && <Card className="text-sm text-danger">Gagal memuat berita.</Card>}
       {!error && articles === null && <Card className="text-sm text-neutral-500">Memuat berita...</Card>}
       {articles !== null && articles.length === 0 && (
-        <Card className="text-sm text-neutral-500">Belum ada berita dipublikasikan.</Card>
+        <Card className="text-sm text-neutral-500">Tidak ada berita.</Card>
       )}
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
         {articles?.map((a) => (
