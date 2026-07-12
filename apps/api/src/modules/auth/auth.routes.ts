@@ -1,7 +1,9 @@
+import fs from "node:fs";
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 import { prisma } from "../../lib/prisma.js";
+import { uploader, publicUrl } from "../../lib/storage.js";
 import { authenticate } from "../../middleware/auth.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { loginSchema, refreshSchema, updateUserSchema } from "./auth.schema.js";
@@ -150,6 +152,31 @@ authRouter.patch(
         ...rest,
         ...(password ? { passwordHash: await bcrypt.hash(password, 10) } : {}),
       },
+    });
+    res.json(toSafeUser(user));
+  }),
+);
+
+const avatarUpload = uploader("avatar");
+
+authRouter.post(
+  "/me/avatar",
+  authenticate,
+  avatarUpload.single("file"),
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      res.status(400).json({ error: "File gambar wajib diunggah" });
+      return;
+    }
+    if (!req.file.mimetype.startsWith("image/")) {
+      fs.unlink(req.file.path, () => undefined);
+      res.status(400).json({ error: "File harus berupa gambar (JPG/PNG/WebP)" });
+      return;
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.user!.id },
+      data: { avatarUrl: publicUrl("avatar", req.file.filename) },
     });
     res.json(toSafeUser(user));
   }),

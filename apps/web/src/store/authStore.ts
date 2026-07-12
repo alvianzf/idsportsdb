@@ -6,6 +6,7 @@ export interface AuthUser {
   id: string;
   email: string;
   fullName: string;
+  avatarUrl?: string | null;
   role: Role;
   cabangOlahragaId?: string | null;
   athleteId?: string | null;

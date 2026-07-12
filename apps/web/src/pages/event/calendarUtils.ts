@@ -43,6 +43,16 @@ export interface EventFilters {
 
 export const EMPTY_FILTERS: EventFilters = { search: "", date: "", status: "", tingkat: "", cabor: "" };
 
+/** Date the calendar should jump to for a search: start of the first matched
+ * event on/after today, falling back to the most recent past match. */
+export function searchJumpDate(matches: PublicEvent[], search: string): string | undefined {
+  if (!search.trim() || matches.length === 0) return undefined;
+  const today = ymd(new Date());
+  const sorted = [...matches].sort((a, b) => eventStart(a).localeCompare(eventStart(b)));
+  const upcoming = sorted.find((e) => eventStart(e) >= today);
+  return eventStart(upcoming ?? sorted[sorted.length - 1]);
+}
+
 /** Spec 017 §4 — search (nama, cabor, date) combinable with filters. */
 export function filterEvents(events: PublicEvent[], f: EventFilters): PublicEvent[] {
   const q = f.search.trim().toLowerCase();

@@ -3,7 +3,7 @@ import { api } from "../../lib/api";
 import { Card } from "../../components/ui";
 import { PublicShell } from "./PublicShell";
 import { type PublicEvent } from "./eventShared";
-import { EMPTY_FILTERS, filterEvents, type EventFilters } from "../event/calendarUtils";
+import { EMPTY_FILTERS, filterEvents, searchJumpDate, type EventFilters } from "../event/calendarUtils";
 import {
   EventCards,
   EventFilterBar,
@@ -37,7 +37,9 @@ export function EventPublicPage() {
       {events !== null && (
         <>
           <EventFilterBar view={view} onViewChange={setView} filters={filters} onFiltersChange={setFilters} events={events} />
-          {view === "kalender" && <EventMonthCalendar events={filtered} jumpTo={filters.date || undefined} />}
+          {view === "kalender" && (
+            <EventMonthCalendar events={filtered} jumpTo={filters.date || searchJumpDate(filtered, filters.search)} />
+          )}
           {view === "card" && <EventCards events={filtered} plain />}
           {view === "table" && <EventTable events={filtered} />}
           {view === "gantt" && <EventGantt events={filtered} />}

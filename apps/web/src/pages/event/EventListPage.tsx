@@ -13,7 +13,7 @@ import { api } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 import { useAuthStore } from "../../store/authStore";
 import type { PublicEvent } from "../public/eventShared";
-import { addDays, diffDays, eventEnd, eventStart, EMPTY_FILTERS, filterEvents, type EventFilters } from "./calendarUtils";
+import { addDays, diffDays, eventEnd, eventStart, EMPTY_FILTERS, filterEvents, searchJumpDate, type EventFilters } from "./calendarUtils";
 import { EventCards, EventFilterBar, EventGantt, EventMonthCalendar, EventTable, type EventView } from "./EventViews";
 
 interface CaborOption {
@@ -178,7 +178,7 @@ export function EventListPage() {
             <EventMonthCalendar
               events={filtered}
               canEdit={!!canWrite}
-              jumpTo={filters.date || undefined}
+              jumpTo={filters.date || searchJumpDate(filtered, filters.search)}
               onDayClick={canWrite ? (day) => openCreate(day) : undefined}
               onEventClick={onEventClick}
               onEventDrop={canWrite ? handleEventDrop : undefined}

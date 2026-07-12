@@ -104,6 +104,7 @@ model User {
   passwordHash     String
   role             Role
   fullName         String
+  avatarUrl        String?
   isActive         Boolean  @default(true)
 
   // Required for ADMIN_CABOR; null for other roles (spec 001)

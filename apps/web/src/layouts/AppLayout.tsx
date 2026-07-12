@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Outlet, Navigate, useLocation } from "react-router-dom";
-import { LogOut } from "lucide-react";
+import { ChevronDown, LogOut, UserRound } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Sidebar } from "./Sidebar";
 import { BottomNav } from "./BottomNav";
 import { navItemsForRole } from "./navConfig";
 import { ProfileModal } from "../components/ProfileModal";
+import { resolveFileUrl } from "../lib/api";
 import { useAuthStore } from "../store/authStore";
 
 export function AppLayout() {
@@ -13,6 +14,7 @@ export function AppLayout() {
   const logout = useAuthStore((state) => state.logout);
   const location = useLocation();
   const [showProfile, setShowProfile] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -36,24 +38,55 @@ export function AppLayout() {
             <span className="text-sm font-semibold text-white">KONI Batam</span>
           </div>
           <div className="hidden md:block" />
-          <div className="flex items-center gap-3">
+          <div className="relative">
             <button
-              onClick={() => setShowProfile(true)}
-              className="text-right transition-opacity hover:opacity-80"
+              onClick={() => setMenuOpen((v) => !v)}
+              className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-2 text-right transition-colors hover:bg-white/10"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
             >
-              <p className="text-sm font-medium leading-tight text-white">{user.fullName}</p>
-              <p className="text-xs leading-tight" style={{ color: "rgba(255,255,255,0.65)" }}>
-                {user.role.replace(/_/g, " ")}
-              </p>
+              {user.avatarUrl ? (
+                <img
+                  src={resolveFileUrl(user.avatarUrl)}
+                  alt=""
+                  className="h-9 w-9 rounded-full border border-white/40 object-cover"
+                />
+              ) : (
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-sm font-semibold text-white">
+                  {user.fullName.trim().charAt(0).toUpperCase()}
+                </span>
+              )}
+              <span className="hidden sm:block">
+                <span className="block text-sm font-medium leading-tight text-white">{user.fullName}</span>
+                <span className="block text-xs leading-tight" style={{ color: "rgba(255,255,255,0.65)" }}>
+                  {user.role.replace(/_/g, " ")}
+                </span>
+              </span>
+              <ChevronDown
+                size={15}
+                className={`text-white/75 transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`}
+              />
             </button>
-            <button
-              onClick={logout}
-              aria-label="Keluar"
-              className="rounded-full p-2 transition-colors hover:bg-white/15"
-              style={{ color: "rgba(255,255,255,0.75)" }}
-            >
-              <LogOut size={18} />
-            </button>
+
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-2xl border border-neutral-200 bg-white py-1.5 shadow-xl">
+                  <button
+                    onClick={() => { setMenuOpen(false); setShowProfile(true); }}
+                    className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-neutral-700 transition-colors hover:bg-neutral-50"
+                  >
+                    <UserRound size={15} className="text-neutral-400" /> Edit Profil
+                  </button>
+                  <button
+                    onClick={logout}
+                    className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-danger transition-colors hover:bg-neutral-50"
+                  >
+                    <LogOut size={15} /> Keluar
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </header>
 
