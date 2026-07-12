@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
 import { ROLE_LABELS } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Field, Input } from "../components/ui";
+import { Card, PageHeader, Button, Field, Input, PasswordInput } from "../components/ui";
 import { api } from "../lib/api";
 import { useAuthStore } from "../store/authStore";
 
@@ -55,9 +55,8 @@ export function ProfilePage() {
             />
           </Field>
           <Field label="Password Baru (kosongkan jika tidak diubah)" htmlFor="password">
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -66,9 +65,8 @@ export function ProfilePage() {
           </Field>
           {password && (
             <Field label="Konfirmasi Password" required htmlFor="confirmPassword">
-              <Input
+              <PasswordInput
                 id="confirmPassword"
-                type="password"
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}

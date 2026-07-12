@@ -1,8 +1,10 @@
+import { useState } from "react";
 import type {
   InputHTMLAttributes,
   TextareaHTMLAttributes,
   ReactNode,
 } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { Combobox, type ComboboxOption } from "./Combobox";
 
 const fieldClasses =
@@ -10,6 +12,25 @@ const fieldClasses =
 
 export function Input({ className = "", ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={`${fieldClasses} ${className}`} {...props} />;
+}
+
+/** Password input with a reveal/hide toggle (client note 2026-07-12). */
+export function PasswordInput({ className = "", ...props }: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="relative">
+      <input type={visible ? "text" : "password"} className={`${fieldClasses} pr-11 ${className}`} {...props} />
+      <button
+        type="button"
+        tabIndex={-1}
+        onClick={() => setVisible((v) => !v)}
+        aria-label={visible ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 transition-colors hover:text-neutral-700"
+      >
+        {visible ? <EyeOff size={16} /> : <Eye size={16} />}
+      </button>
+    </div>
+  );
 }
 
 export function Textarea({ className = "", ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {

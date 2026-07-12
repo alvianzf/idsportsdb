@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
-import { Button } from "../components/ui";
+import { Button, PasswordInput } from "../components/ui";
 
 export function ResetPasswordPage() {
   const [params] = useSearchParams();
@@ -58,14 +58,12 @@ export function ResetPasswordPage() {
             <label htmlFor="password" className="mb-1 block text-sm font-medium text-neutral-700">
               Kata Sandi Baru
             </label>
-            <input
+            <PasswordInput
               id="password"
-              type="password"
               required
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               placeholder="Minimal 8 karakter"
             />
           </div>
@@ -73,13 +71,11 @@ export function ResetPasswordPage() {
             <label htmlFor="confirm" className="mb-1 block text-sm font-medium text-neutral-700">
               Konfirmasi Kata Sandi
             </label>
-            <input
+            <PasswordInput
               id="confirm"
-              type="password"
               required
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               placeholder="Ulangi kata sandi baru"
             />
           </div>

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuthStore } from "../store/authStore";
-import { Button } from "../components/ui";
+import { Button, PasswordInput } from "../components/ui";
 
 export function LoginPage() {
   const user = useAuthStore((state) => state.user);
@@ -76,13 +76,11 @@ export function LoginPage() {
             <label htmlFor="password" className="mb-1 block text-sm font-medium text-neutral-700">
               Kata Sandi
             </label>
-            <input
+            <PasswordInput
               id="password"
-              type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               placeholder="••••••••"
             />
           </div>
