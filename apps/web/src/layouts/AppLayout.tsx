@@ -26,7 +26,7 @@ export function AppLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <header
           className="sticky top-0 z-30 flex min-h-14 items-center justify-between border-b border-white/20 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl md:h-16 md:px-6 md:pt-0"
-          style={{ background: "rgba(200,16,46,0.88)" }}
+          style={{ background: "linear-gradient(90deg, #990000 0%, #d92626 100%)" }}
         >
           <div className="flex items-center gap-2 md:hidden">
             <img src="/logo-koni-batam.png" alt="KONI Batam" className="h-8 w-8 object-contain" />

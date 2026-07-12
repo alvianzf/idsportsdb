@@ -39,7 +39,7 @@ export function EventPublicPage() {
           <EventFilterBar view={view} onViewChange={setView} filters={filters} onFiltersChange={setFilters} events={events} />
           {view === "kalender" && <EventMonthCalendar events={filtered} jumpTo={filters.date || undefined} />}
           {view === "card" && <EventCards events={filtered} plain />}
-          {view === "table" && <EventTable events={filtered} plain />}
+          {view === "table" && <EventTable events={filtered} />}
           {view === "gantt" && <EventGantt events={filtered} />}
         </>
       )}

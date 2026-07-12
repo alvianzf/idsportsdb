@@ -17,7 +17,7 @@ export const ATHLETE_STATUS_LABELS: Record<AthleteStatus, string> = {
   ACTIVE: "Aktif",
   INACTIVE: "Nonaktif",
   INJURED: "Cedera",
-  TRAINING_CAMP: "Pemusatan Latihan",
+  TRAINING_CAMP: "TC",
   TRANSFERRED: "Mutasi",
 };
 
@@ -116,7 +116,7 @@ export type MonitoringEventType = (typeof MONITORING_EVENT_TYPES)[number];
 export const MONITORING_EVENT_TYPE_LABELS: Record<MonitoringEventType, string> = {
   INJURY: "Cedera",
   MUTATION: "Mutasi Atlet",
-  TRAINING_CAMP: "Pemusatan Latihan",
+  TRAINING_CAMP: "TC",
   SELECTION: "Seleksi Atlet",
   STATUS_CHANGE: "Perubahan Status",
 };

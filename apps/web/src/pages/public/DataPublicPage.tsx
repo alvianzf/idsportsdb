@@ -12,7 +12,7 @@ import {
   type Gender,
   type Medal,
 } from "@inasportdb/shared-types";
-import { Card, Pagination } from "../../components/ui";
+import { Badge, Card, DataTable, Pagination, type Column } from "../../components/ui";
 import { api } from "../../lib/api";
 import { PublicShell } from "./PublicShell";
 
@@ -103,6 +103,79 @@ export function DataPublicPage() {
       .catch(() => setPelatih([]));
   }, [pelatihPage]);
 
+  // Mobile shows Nama + Cabor; the rest collapses behind the chevron
+  // (client note 2026-07-12 — "for data, focus on name and cabor").
+  const atletColumns: Column<PublicAtlet>[] = [
+    {
+      key: "nama",
+      label: "Nama",
+      mobile: true,
+      render: (a) => <span className="font-medium text-neutral-900">{a.nama}</span>,
+    },
+    { key: "cabor", label: "Cabor", mobile: true, render: (a) => <span className="text-neutral-600">{a.cabor}</span> },
+    {
+      key: "jenisKelamin",
+      label: "Jenis Kelamin",
+      render: (a) => <span className="text-neutral-600">{GENDER_LABELS[a.jenisKelamin]}</span>,
+    },
+    {
+      key: "tingkat",
+      label: "Tingkat",
+      render: (a) => <span className="text-neutral-600">{a.tingkatAtlet ? ATHLETE_LEVEL_LABELS[a.tingkatAtlet] : "-"}</span>,
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (a) => (
+        <Badge tone={a.statusAtlet === "ACTIVE" ? "success" : "neutral"}>{ATHLETE_STATUS_LABELS[a.statusAtlet]}</Badge>
+      ),
+    },
+    {
+      key: "prestasi",
+      label: "Prestasi Tertinggi",
+      render: (a) =>
+        a.prestasiTertinggi ? (
+          <span className="flex flex-wrap items-center gap-1.5 text-neutral-600">
+            {a.prestasiTertinggi.medali !== "NONE" && (
+              <span className={`text-xs font-bold ${MEDAL_TEXT[a.prestasiTertinggi.medali]}`}>
+                {MEDAL_LABELS[a.prestasiTertinggi.medali]}
+              </span>
+            )}
+            <span className="text-xs">
+              {a.prestasiTertinggi.namaKejuaraan} · {COMPETITION_LEVEL_LABELS[a.prestasiTertinggi.tingkatKejuaraan]}{" "}
+              {a.prestasiTertinggi.tahun}
+            </span>
+          </span>
+        ) : null,
+    },
+  ];
+
+  const pelatihColumns: Column<PublicPelatih>[] = [
+    {
+      key: "nama",
+      label: "Nama",
+      mobile: true,
+      render: (p) => <span className="font-medium text-neutral-900">{p.nama}</span>,
+    },
+    { key: "cabor", label: "Cabor", mobile: true, render: (p) => <span className="text-neutral-600">{p.cabor}</span> },
+    {
+      key: "lisensi",
+      label: "Tingkatan Lisensi",
+      render: (p) => <span className="text-neutral-600">{p.tingkatanLisensi ?? "-"}</span>,
+    },
+    {
+      key: "masaBerlaku",
+      label: "Masa Berlaku",
+      render: (p) => (
+        <span className="text-neutral-600">
+          {p.masaBerlakuAkhir
+            ? new Date(p.masaBerlakuAkhir).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" })
+            : "-"}
+        </span>
+      ),
+    },
+  ];
+
   return (
     <PublicShell title="Data & Statistik" description="Data atlet, tenaga olahraga, dan statistik KONI Batam">
       {/* Statistics */}
@@ -141,62 +214,11 @@ export function DataPublicPage() {
 
       {menu === "atlet" && (
         <>
-          <Card className="overflow-x-auto p-0">
-            <table className="w-full min-w-[720px] text-sm">
-              <thead>
-                <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
-                  <th className="px-4 py-3">Nama</th>
-                  <th className="px-4 py-3">Cabor</th>
-                  <th className="px-4 py-3">Jenis Kelamin</th>
-                  <th className="px-4 py-3">Tingkat</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Prestasi Tertinggi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100">
-                {atlet === null ? (
-                  <tr><td colSpan={6} className="px-4 py-6 text-center text-neutral-400">Memuat data...</td></tr>
-                ) : atlet.length === 0 ? (
-                  <tr><td colSpan={6} className="px-4 py-6 text-center text-neutral-400">Belum ada data atlet.</td></tr>
-                ) : (
-                  atlet.map((a) => (
-                    <tr key={a.id}>
-                      <td className="px-4 py-3 font-medium text-neutral-900">{a.nama}</td>
-                      <td className="px-4 py-3 text-neutral-600">{a.cabor}</td>
-                      <td className="px-4 py-3 text-neutral-600">{GENDER_LABELS[a.jenisKelamin]}</td>
-                      <td className="px-4 py-3 text-neutral-600">
-                        {a.tingkatAtlet ? ATHLETE_LEVEL_LABELS[a.tingkatAtlet] : "-"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`text-xs font-bold uppercase tracking-wide ${
-                            a.statusAtlet === "ACTIVE" ? "text-success" : "text-neutral-500"
-                          }`}
-                        >
-                          {ATHLETE_STATUS_LABELS[a.statusAtlet]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        {a.prestasiTertinggi ? (
-                          <span className="flex flex-wrap items-center gap-1.5 text-neutral-600">
-                            <span className={`text-xs font-bold ${MEDAL_TEXT[a.prestasiTertinggi.medali]}`}>
-                              {MEDAL_LABELS[a.prestasiTertinggi.medali]}
-                            </span>
-                            <span className="text-xs">
-                              {a.prestasiTertinggi.namaKejuaraan} ·{" "}
-                              {COMPETITION_LEVEL_LABELS[a.prestasiTertinggi.tingkatKejuaraan]} {a.prestasiTertinggi.tahun}
-                            </span>
-                          </span>
-                        ) : (
-                          <span className="text-xs text-neutral-400">-</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </Card>
+          {atlet === null ? (
+            <Card className="text-sm text-neutral-500">Memuat data...</Card>
+          ) : (
+            <DataTable columns={atletColumns} rows={atlet} emptyMessage="Belum ada data atlet." />
+          )}
           <div className="mt-3">
             <Pagination page={atletPage} pageSize={PAGE_SIZE} total={atletTotal} onPageChange={setAtletPage} />
           </div>
@@ -205,38 +227,11 @@ export function DataPublicPage() {
 
       {menu === "tenaga" && (
         <>
-          <Card className="overflow-x-auto p-0">
-            <table className="w-full min-w-[560px] text-sm">
-              <thead>
-                <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
-                  <th className="px-4 py-3">Nama</th>
-                  <th className="px-4 py-3">Cabor</th>
-                  <th className="px-4 py-3">Tingkatan Lisensi</th>
-                  <th className="px-4 py-3">Masa Berlaku</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100">
-                {pelatih === null ? (
-                  <tr><td colSpan={4} className="px-4 py-6 text-center text-neutral-400">Memuat data...</td></tr>
-                ) : pelatih.length === 0 ? (
-                  <tr><td colSpan={4} className="px-4 py-6 text-center text-neutral-400">Belum ada data pelatih.</td></tr>
-                ) : (
-                  pelatih.map((p) => (
-                    <tr key={p.id}>
-                      <td className="px-4 py-3 font-medium text-neutral-900">{p.nama}</td>
-                      <td className="px-4 py-3 text-neutral-600">{p.cabor}</td>
-                      <td className="px-4 py-3 text-neutral-600">{p.tingkatanLisensi ?? "-"}</td>
-                      <td className="px-4 py-3 text-neutral-600">
-                        {p.masaBerlakuAkhir
-                          ? new Date(p.masaBerlakuAkhir).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" })
-                          : "-"}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </Card>
+          {pelatih === null ? (
+            <Card className="text-sm text-neutral-500">Memuat data...</Card>
+          ) : (
+            <DataTable columns={pelatihColumns} rows={pelatih} emptyMessage="Belum ada data pelatih." />
+          )}
           <div className="mt-3">
             <Pagination page={pelatihPage} pageSize={PAGE_SIZE} total={pelatihTotal} onPageChange={setPelatihPage} />
           </div>

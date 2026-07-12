@@ -7,7 +7,7 @@ import {
   EVENT_STATUS_LABELS,
   type EventStatus,
 } from "@inasportdb/shared-types";
-import { Badge, Card, Input, Select } from "../../components/ui";
+import { Badge, Card, DataTable, Input, Select, type Column } from "../../components/ui";
 import { EVENT_STATUS_TONE, formatEventDate, type PublicEvent } from "../public/eventShared";
 import {
   addDays,
@@ -31,19 +31,9 @@ const STATUS_BG: Record<EventStatus, string> = {
   DIUNDUR: "bg-warning",
 };
 
-const STATUS_TEXT: Record<EventStatus, string> = {
-  ON_TRACK: "text-info",
-  SELESAI: "text-success",
-  DIBATALKAN: "text-danger",
-  DIUNDUR: "text-warning",
-};
-
-/** Status label — `plain` renders colored text (public pages carry no badge
- * pills per client note 2026-07-12); otherwise the admin Badge. */
-function StatusLabel({ status, plain }: { status: EventStatus; plain?: boolean }) {
-  if (plain) {
-    return <span className={`text-xs font-bold uppercase tracking-wide ${STATUS_TEXT[status]}`}>{EVENT_STATUS_LABELS[status]}</span>;
-  }
+/** Event status is always a badge (client note 2026-07-12: allowed on the
+ * kalender event even though public pages otherwise avoid badge pills). */
+function StatusLabel({ status }: { status: EventStatus }) {
   return <Badge tone={EVENT_STATUS_TONE[status]}>{EVENT_STATUS_LABELS[status]}</Badge>;
 }
 
@@ -360,7 +350,7 @@ export function EventCards({
             {e.deskripsi && <p className="mt-1 text-xs text-neutral-500 line-clamp-2">{e.deskripsi}</p>}
           </div>
           <div className="flex shrink-0 items-center gap-2 self-start sm:self-center">
-            <StatusLabel status={e.status} plain={plain} />
+            <StatusLabel status={e.status} />
             {actions?.(e)}
           </div>
         </Card>
@@ -370,78 +360,54 @@ export function EventCards({
 }
 
 // ---------------------------------------------------------------------------
-// Table view (sortable)
+// Table view (sortable; mobile collapses behind a chevron, showing
+// Tanggal + Nama — via the shared DataTable)
 // ---------------------------------------------------------------------------
 
-type SortKey = "tanggal" | "nama" | "tingkat" | "status";
+export function EventTable({ events, onEventClick }: { events: PublicEvent[]; onEventClick?: (event: PublicEvent) => void }) {
+  const columns: Column<PublicEvent>[] = [
+    {
+      key: "tanggal",
+      label: "Tanggal",
+      mobile: true,
+      sortable: true,
+      getValue: (e) => eventStart(e),
+      render: (e) => <span className="whitespace-nowrap text-neutral-600">{formatEventDate(e)}</span>,
+    },
+    {
+      key: "nama",
+      label: "Nama Kejuaraan",
+      mobile: true,
+      sortable: true,
+      getValue: (e) => e.namaKejuaraan,
+      render: (e) =>
+        onEventClick ? (
+          <button onClick={() => onEventClick(e)} className="text-left font-medium text-primary hover:underline">
+            {e.namaKejuaraan}
+          </button>
+        ) : (
+          <span className="font-medium text-neutral-900">{e.namaKejuaraan}</span>
+        ),
+    },
+    {
+      key: "tingkat",
+      label: "Tingkat",
+      sortable: true,
+      getValue: (e) => e.tingkat,
+      render: (e) => <span className="text-neutral-600">{EVENT_LEVEL_LABELS[e.tingkat]}</span>,
+    },
+    { key: "lokasi", label: "Lokasi", render: (e) => <span className="text-neutral-600">{e.lokasi ?? "-"}</span> },
+    { key: "cabor", label: "Cabor", render: (e) => <span className="text-neutral-600">{e.cabangOlahraga?.nama ?? "-"}</span> },
+    {
+      key: "status",
+      label: "Status",
+      sortable: true,
+      getValue: (e) => e.status,
+      render: (e) => <StatusLabel status={e.status} />,
+    },
+  ];
 
-export function EventTable({ events, onEventClick, plain }: { events: PublicEvent[]; onEventClick?: (event: PublicEvent) => void; plain?: boolean }) {
-  const [sortKey, setSortKey] = useState<SortKey>("tanggal");
-  const [asc, setAsc] = useState(true);
-
-  const sorted = useMemo(() => {
-    const val = (e: PublicEvent): string =>
-      sortKey === "tanggal" ? eventStart(e) : sortKey === "nama" ? e.namaKejuaraan : sortKey === "tingkat" ? e.tingkat : e.status;
-    return [...events].sort((a, b) => (asc ? val(a).localeCompare(val(b)) : val(b).localeCompare(val(a))));
-  }, [events, sortKey, asc]);
-
-  function header(key: SortKey, label: string) {
-    return (
-      <th className="px-4 py-3">
-        <button
-          onClick={() => {
-            if (sortKey === key) setAsc((v) => !v);
-            else {
-              setSortKey(key);
-              setAsc(true);
-            }
-          }}
-          className="font-semibold uppercase tracking-wide hover:text-neutral-700"
-        >
-          {label} {sortKey === key ? (asc ? "↑" : "↓") : ""}
-        </button>
-      </th>
-    );
-  }
-
-  return (
-    <Card className="overflow-x-auto p-0">
-      <table className="w-full min-w-[720px] text-sm">
-        <thead>
-          <tr className="border-b border-neutral-200 text-left text-xs text-neutral-500">
-            {header("tanggal", "Tanggal")}
-            {header("nama", "Nama Kejuaraan")}
-            {header("tingkat", "Tingkat")}
-            <th className="px-4 py-3 font-semibold uppercase tracking-wide">Lokasi</th>
-            <th className="px-4 py-3 font-semibold uppercase tracking-wide">Cabor</th>
-            {header("status", "Status")}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-neutral-100">
-          {sorted.length === 0 ? (
-            <tr><td colSpan={6} className="px-4 py-6 text-center text-neutral-400">Tidak ada event yang cocok.</td></tr>
-          ) : (
-            sorted.map((e) => (
-              <tr
-                key={e.id}
-                onClick={onEventClick ? () => onEventClick(e) : undefined}
-                className={onEventClick ? "cursor-pointer hover:bg-neutral-50" : undefined}
-              >
-                <td className="whitespace-nowrap px-4 py-3 text-neutral-600">{formatEventDate(e)}</td>
-                <td className="px-4 py-3 font-medium text-neutral-900">{e.namaKejuaraan}</td>
-                <td className="px-4 py-3 text-neutral-600">{EVENT_LEVEL_LABELS[e.tingkat]}</td>
-                <td className="px-4 py-3 text-neutral-600">{e.lokasi ?? "-"}</td>
-                <td className="px-4 py-3 text-neutral-600">{e.cabangOlahraga?.nama ?? "-"}</td>
-                <td className="px-4 py-3">
-                  <StatusLabel status={e.status} plain={plain} />
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </Card>
-  );
+  return <DataTable columns={columns} rows={events} emptyMessage="Tidak ada event yang cocok." />;
 }
 
 // ---------------------------------------------------------------------------

@@ -35,7 +35,7 @@ type TabType = "INJURY" | "MUTATION" | "TRAINING_CAMP" | "SELECTION";
 const TABS: { type: TabType; label: string }[] = [
   { type: "INJURY", label: "Cedera" },
   { type: "MUTATION", label: "Mutasi Atlet" },
-  { type: "TRAINING_CAMP", label: "Pemusatan Latihan" },
+  { type: "TRAINING_CAMP", label: "TC" },
   { type: "SELECTION", label: "Seleksi Atlet" },
 ];
 

@@ -12,13 +12,14 @@ export function Sidebar({ items }: { items: NavItem[] }) {
       className="flex h-full flex-col border-r border-white/15 backdrop-blur-2xl transition-all duration-200"
       style={{
         width: collapsed ? 56 : 240,
-        background: "rgba(130, 10, 30, 0.82)",
+        // Match the landing hero gradient (revisi 2026-07-12).
+        background: "linear-gradient(180deg, #5c0000 0%, #990000 55%, #b81c1c 100%)",
       }}
     >
       {/* Brand header */}
       <div
         className="flex h-16 items-center gap-2 px-3 border-b border-white/15"
-        style={{ background: "rgba(200,16,46,0.60)" }}
+        style={{ background: "rgba(255,255,255,0.06)" }}
       >
         <img src="/logo-koni-batam.png" alt="KONI Batam" className="h-8 w-8 shrink-0 object-contain" />
         {!collapsed && (

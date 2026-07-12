@@ -49,8 +49,8 @@ export function BottomNav({ items }: { items: NavItem[] }) {
             {({ isActive }) => (
               <>
                 <motion.span
-                  className={`flex h-14 w-14 items-center justify-center rounded-full shadow-lg text-white backdrop-blur-sm ${
-                    isActive ? "bg-primary-700" : "bg-primary"
+                  className={`flex h-14 w-14 items-center justify-center rounded-full shadow-lg text-white backdrop-blur-sm bg-gradient-to-br ${
+                    isActive ? "from-[#5c0000] to-[#990000]" : "from-[#990000] to-[#d92626]"
                   }`}
                   whileTap={{ scale: 0.88 }}
                   whileHover={{ scale: 1.06 }}

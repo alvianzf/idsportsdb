@@ -186,6 +186,9 @@ atletBulkRouter.post(
   requireRole(DATA_ADMIN_ROLES),
   importUpload.single("file"),
   asyncHandler(async (req, res) => {
+    // ?dryRun=1 parses and validates without writing — powers the client-side
+    // preview shown before the actual upload.
+    const dryRun = req.query.dryRun === "1";
     if (!req.file) {
       res.status(400).json({ error: "File is required" });
       return;
@@ -225,9 +228,19 @@ atletBulkRouter.post(
     // Cache cabor lookup by lowercase name.
     const caborList = await prisma.cabangOlahraga.findMany({ select: { id: true, nama: true } });
     const caborByName = new Map(caborList.map((c) => [c.nama.toLowerCase(), c.id]));
+    const caborNameById = new Map(caborList.map((c) => [c.id, c.nama]));
 
     let imported = 0;
     const rejected: { row: number; error: string }[] = [];
+    const preview: {
+      row: number;
+      namaLengkap: string;
+      nik: string;
+      cabor: string;
+      jenisKelamin: string;
+      statusAtlet: string;
+      error?: string;
+    }[] = [];
 
     for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++) {
       const row = sheet.getRow(rowNumber);
@@ -238,24 +251,39 @@ atletBulkRouter.post(
       });
       if (!Object.values(raw).some((v) => v !== "")) continue; // skip blank rows
 
+      const reject = (error: string) => {
+        rejected.push({ row: rowNumber, error });
+        if (dryRun) {
+          preview.push({
+            row: rowNumber,
+            namaLengkap: raw.namaLengkap ?? "",
+            nik: raw.nik ?? "",
+            cabor: raw.cabor ?? "",
+            jenisKelamin: raw.jenisKelamin ?? "",
+            statusAtlet: raw.statusAtlet ?? "",
+            error,
+          });
+        }
+      };
+
       // Resolve cabor: ADMIN_CABOR always imports into their own cabor.
       let cabangOlahragaId = req.scopedCaborId;
       if (!cabangOlahragaId) {
         cabangOlahragaId = raw.cabor ? caborByName.get(raw.cabor.toLowerCase()) : undefined;
         if (!cabangOlahragaId) {
-          rejected.push({ row: rowNumber, error: `Cabang olahraga "${raw.cabor ?? ""}" tidak ditemukan` });
+          reject(`Cabang olahraga "${raw.cabor ?? ""}" tidak ditemukan`);
           continue;
         }
       }
 
       const jenisKelamin = parseGender(raw.jenisKelamin ?? "");
       if (!jenisKelamin) {
-        rejected.push({ row: rowNumber, error: "Jenis kelamin harus L atau P" });
+        reject("Jenis kelamin harus L atau P");
         continue;
       }
       const statusAtlet = parseStatus(raw.statusAtlet ?? "");
       if (!statusAtlet) {
-        rejected.push({ row: rowNumber, error: `Status "${raw.statusAtlet}" tidak dikenal (Aktif/Tidak Aktif)` });
+        reject(`Status "${raw.statusAtlet}" tidak dikenal (Aktif/Tidak Aktif)`);
         continue;
       }
 
@@ -275,7 +303,20 @@ atletBulkRouter.post(
       });
       if (!parsed.success) {
         const first = parsed.error.issues[0];
-        rejected.push({ row: rowNumber, error: `${first.path.join(".")}: ${first.message}` });
+        reject(`${first.path.join(".")}: ${first.message}`);
+        continue;
+      }
+
+      if (dryRun) {
+        preview.push({
+          row: rowNumber,
+          namaLengkap: parsed.data.namaLengkap,
+          nik: parsed.data.nik,
+          cabor: caborNameById.get(cabangOlahragaId) ?? "",
+          jenisKelamin,
+          statusAtlet,
+        });
+        imported++;
         continue;
       }
 
@@ -289,6 +330,11 @@ atletBulkRouter.post(
         }
         throw err;
       }
+    }
+
+    if (dryRun) {
+      res.json({ rows: preview, valid: imported, invalid: rejected.length });
+      return;
     }
 
     if (imported > 0) emit("atlet:change");

@@ -116,8 +116,15 @@ publicRouter.get(
     const page = Math.max(Number(req.query.page) || 1, 1);
     const pageSize = Math.min(Number(req.query.pageSize) || 20, 50);
 
+    // Revisi 2026-07-12: mutasi (TRANSFERRED) dan atlet non-aktif tidak
+    // ditampilkan di menu Data publik.
+    const publicWhere = {
+      statusAtlet: { notIn: ["INACTIVE", "TRANSFERRED"] as ("INACTIVE" | "TRANSFERRED")[] },
+    };
+
     const [atlets, total] = await Promise.all([
       prisma.atlet.findMany({
+        where: publicWhere,
         select: {
           id: true,
           namaLengkap: true,
@@ -134,7 +141,7 @@ publicRouter.get(
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      prisma.atlet.count(),
+      prisma.atlet.count({ where: publicWhere }),
     ]);
 
     const items = atlets.map((a) => {

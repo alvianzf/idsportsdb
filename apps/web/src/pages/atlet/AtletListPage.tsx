@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Download, Plus, Search, Trash2, Upload } from "lucide-react";
 import {
@@ -9,7 +9,7 @@ import {
   UNSCOPED_ADMIN_ROLES,
   type AthleteStatus,
 } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Input, Select, Badge, Pagination, Combobox, DataTable, Modal, type Column, type BulkAction } from "../../components/ui";
+import { Card, PageHeader, Button, Input, Select, Badge, Pagination, Combobox, DataTable, DropZone, Modal, type Column, type BulkAction } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import { confirmAction } from "../../lib/confirm";
@@ -58,9 +58,16 @@ export function AtletListPage() {
   const [error, setError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importPreview, setImportPreview] = useState<{
+    rows: { row: number; namaLengkap: string; nik: string; cabor: string; jenisKelamin: string; statusAtlet: string; error?: string }[];
+    valid: number;
+    invalid: number;
+  } | null>(null);
+  const [previewing, setPreviewing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ imported: number; rejected: { row: number; error: string }[] } | null>(null);
-  const importInputRef = useRef<HTMLInputElement>(null);
 
   const pageSize = 20;
 
@@ -141,16 +148,44 @@ export function AtletListPage() {
     }
   }
 
-  // Revisi 2026-07-12: bulk update — import athletes from an uploaded Excel/CSV.
-  async function handleImportFile(file: File) {
-    setImporting(true);
+  // Parse+validate on the server without writing, to preview before upload.
+  async function handleImportFileChange(file: File | null) {
+    setImportFile(file);
+    setImportPreview(null);
+    if (!file) return;
+    setPreviewing(true);
     try {
       const form = new FormData();
       form.append("file", file);
+      const res = await api.post<typeof importPreview>("/atlet/import?dryRun=1", form);
+      setImportPreview(res.data);
+    } catch (err) {
+      const message = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
+      toast.error(typeof message === "string" ? message : "Gagal membaca berkas.");
+      setImportFile(null);
+    } finally {
+      setPreviewing(false);
+    }
+  }
+
+  function closeImport() {
+    setShowImport(false);
+    setImportFile(null);
+    setImportPreview(null);
+  }
+
+  // Revisi 2026-07-12: bulk update — import athletes from an uploaded Excel/CSV.
+  async function handleImportSubmit() {
+    if (!importFile) return;
+    setImporting(true);
+    try {
+      const form = new FormData();
+      form.append("file", importFile);
       const res = await api.post<{ imported: number; rejected: { row: number; error: string }[] }>(
         "/atlet/import",
         form,
       );
+      closeImport();
       setImportResult(res.data);
       if (res.data.imported > 0) setReloadKey((k) => k + 1);
     } catch (err) {
@@ -159,7 +194,6 @@ export function AtletListPage() {
       toast.error(typeof message === "string" ? message : "Gagal mengimpor berkas.");
     } finally {
       setImporting(false);
-      if (importInputRef.current) importInputRef.current.value = "";
     }
   }
 
@@ -249,19 +283,9 @@ export function AtletListPage() {
             </div>
             {canCreate && (
               <>
-                <Button variant="outline" disabled={importing} onClick={() => importInputRef.current?.click()}>
-                  <Upload size={16} /> {importing ? "Mengimpor..." : "Impor"}
+                <Button variant="outline" onClick={() => setShowImport(true)}>
+                  <Upload size={16} /> Impor
                 </Button>
-                <input
-                  ref={importInputRef}
-                  type="file"
-                  accept=".xlsx,.csv"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) void handleImportFile(file);
-                  }}
-                />
                 <Link to="/atlet/new">
                   <Button>
                     <Plus size={16} /> Tambah
@@ -322,6 +346,100 @@ export function AtletListPage() {
             <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
           </div>
         </>
+      )}
+
+      {showImport && (
+        <Modal title="Impor Data Atlet" onClose={closeImport}>
+          <div className="space-y-4 text-sm">
+            <div className="space-y-2 rounded-lg bg-neutral-50 p-3 text-xs text-neutral-600">
+              <p className="font-semibold text-neutral-800">Ketentuan berkas</p>
+              <ul className="list-inside list-disc space-y-1">
+                <li>Format <strong>Excel (.xlsx)</strong> atau <strong>CSV</strong>, maksimal 10 MB.</li>
+                <li>Baris pertama harus berupa judul kolom. Kolom yang dikenali:
+                  Nomor Induk, Nomor Registrasi, Nama Lengkap, NIK, Jenis Kelamin,
+                  Cabang Olahraga, Status, Alamat, Kecamatan, Nomor HP, Email,
+                  Pendidikan Terakhir, Pekerjaan.</li>
+                <li>Wajib diisi: Nomor Induk, Nomor Registrasi, Nama Lengkap, NIK (16 digit), Jenis Kelamin, Alamat.</li>
+                <li>Jenis Kelamin: <strong>L</strong> atau <strong>P</strong>; Status: <strong>Aktif</strong> / <strong>Tidak Aktif</strong> (kosong = Aktif).</li>
+                {isUnscopedAdmin ? (
+                  <li>Kolom Cabang Olahraga diisi <strong>nama cabor</strong> persis seperti terdaftar.</li>
+                ) : (
+                  <li>Seluruh baris diimpor ke cabor Anda — kolom Cabang Olahraga diabaikan.</li>
+                )}
+                <li>Baris yang tidak valid dilewati dan dilaporkan setelah impor selesai.</li>
+              </ul>
+            </div>
+
+            <DropZone
+              accept=".xlsx,.csv"
+              value={importFile}
+              onChange={(f) => void handleImportFileChange(f)}
+              label="Seret & lepas berkas Excel/CSV di sini"
+              sublabel=".xlsx atau .csv, maks. 10 MB"
+            />
+
+            {previewing && <p className="text-xs text-neutral-500">Membaca berkas...</p>}
+
+            {importPreview && (
+              <div>
+                <p className="mb-2 text-xs text-neutral-600">
+                  Pratinjau: <span className="font-semibold text-success">{importPreview.valid} baris valid</span>
+                  {importPreview.invalid > 0 && (
+                    <>
+                      , <span className="font-semibold text-danger">{importPreview.invalid} bermasalah</span> (dilewati saat impor)
+                    </>
+                  )}
+                </p>
+                <div className="max-h-56 overflow-auto rounded-lg border border-neutral-200">
+                  <table className="w-full min-w-[560px] text-xs">
+                    <thead className="sticky top-0 bg-neutral-50">
+                      <tr className="text-left text-neutral-500">
+                        <th className="px-2.5 py-2">Baris</th>
+                        <th className="px-2.5 py-2">Nama</th>
+                        <th className="px-2.5 py-2">NIK</th>
+                        <th className="px-2.5 py-2">Cabor</th>
+                        <th className="px-2.5 py-2">JK</th>
+                        <th className="px-2.5 py-2">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-100">
+                      {importPreview.rows.map((r) => (
+                        <tr key={r.row} className={r.error ? "bg-danger-light/40" : undefined}>
+                          <td className="px-2.5 py-1.5 text-neutral-500">{r.row}</td>
+                          <td className="px-2.5 py-1.5 font-medium text-neutral-800">
+                            {r.namaLengkap || "-"}
+                            {r.error && <p className="font-normal text-danger">{r.error}</p>}
+                          </td>
+                          <td className="px-2.5 py-1.5 text-neutral-600">{r.nik || "-"}</td>
+                          <td className="px-2.5 py-1.5 text-neutral-600">{r.cabor || "-"}</td>
+                          <td className="px-2.5 py-1.5 text-neutral-600">{r.jenisKelamin || "-"}</td>
+                          <td className="px-2.5 py-1.5 text-neutral-600">{r.statusAtlet || "-"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Button
+                disabled={!importFile || importing || previewing || !importPreview || importPreview.valid === 0}
+                onClick={() => void handleImportSubmit()}
+              >
+                <Upload size={16} />
+                {importing
+                  ? "Mengimpor..."
+                  : importPreview
+                    ? `Impor ${importPreview.valid} Baris`
+                    : "Impor"}
+              </Button>
+              <Button variant="outline" onClick={closeImport}>
+                Batal
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
 
       {importResult && (
