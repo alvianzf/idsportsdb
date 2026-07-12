@@ -21,6 +21,7 @@ import { monitoringRouter, atletMonitoringRouter } from "./modules/monitoring/mo
 import { reportsRouter } from "./modules/reports/reports.routes.js";
 import { artikelRouter } from "./modules/artikel/artikel.routes.js";
 import { eventRouter } from "./modules/event/event.routes.js";
+import { sliderRouter } from "./modules/slider/slider.routes.js";
 import { publicRouter } from "./modules/public/public.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { prisma } from "./lib/prisma.js";
@@ -63,6 +64,7 @@ app.use("/api/v1/pengurus", pengurusRouter);
 app.use("/api/v1/reports", reportsRouter);
 app.use("/api/v1/artikel", artikelRouter);
 app.use("/api/v1/events", eventRouter);
+app.use("/api/v1/slider", sliderRouter);
 
 app.use("/api/v1", (_req, res) => {
   res.status(404).json({ error: "Not found" });

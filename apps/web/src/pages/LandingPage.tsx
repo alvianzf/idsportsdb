@@ -17,6 +17,7 @@ import { api, resolveFileUrl } from "../lib/api";
 import { getSocket } from "../lib/socket";
 import { useAuthStore } from "../store/authStore";
 import { PUBLIC_NAV } from "./public/publicNav";
+import { LandingSlider } from "./public/LandingSlider";
 import {
   EVENT_STATUS_TONE,
   formatEventDate,
@@ -120,6 +121,9 @@ export function LandingPage() {
           </nav>
         </div>
       </header>
+
+      {/* Full-width slider (superadmin-managed, spec 019) */}
+      <LandingSlider />
 
       {/* Hero — sharp red gradient */}
       <section className="relative overflow-hidden bg-gradient-to-br from-[#5c0000] via-[#990000] to-[#d92626]">

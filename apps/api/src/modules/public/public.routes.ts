@@ -198,3 +198,16 @@ publicRouter.get(
     });
   }),
 );
+
+/** Active landing-page slider images, ordered. No auth required (spec 019). */
+publicRouter.get(
+  "/slider",
+  asyncHandler(async (_req, res) => {
+    const slides = await prisma.sliderImage.findMany({
+      where: { isActive: true },
+      orderBy: { order: "asc" },
+      select: { id: true, imageUrl: true, caption: true, linkUrl: true },
+    });
+    res.json(slides);
+  }),
+);

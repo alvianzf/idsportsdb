@@ -57,6 +57,7 @@ const ArtikelListPage = page(() => import("../pages/artikel/ArtikelListPage"), "
 const ArtikelFormPage = page(() => import("../pages/artikel/ArtikelFormPage"), "ArtikelFormPage");
 const ArtikelPublicPage = page(() => import("../pages/artikel/ArtikelPublicPage"), "ArtikelPublicPage");
 
+const SliderAdminPage = page(() => import("../pages/slider/SliderAdminPage"), "SliderAdminPage");
 const UsersListPage = page(() => import("../pages/users/UsersListPage"), "UsersListPage");
 const UsersFormPage = page(() => import("../pages/users/UsersFormPage"), "UsersFormPage");
 
@@ -179,6 +180,16 @@ const router = createBrowserRouter([
         element: (
           <RequireRole roles={["SUPER_ADMIN_KONI", "ADMIN_KONI"]}>
             <Suspense fallback={<PageLoader />}><ArtikelFormPage /></Suspense>
+          </RequireRole>
+        ),
+      },
+
+      // Slider beranda (Super Admin only, spec 019)
+      {
+        path: "slider",
+        element: (
+          <RequireRole roles={["SUPER_ADMIN_KONI"]}>
+            <Suspense fallback={<PageLoader />}><SliderAdminPage /></Suspense>
           </RequireRole>
         ),
       },

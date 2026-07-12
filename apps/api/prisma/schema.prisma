@@ -152,6 +152,21 @@ model CabangOlahraga {
   // who additionally compete here via AtletCabor (atletTambahan).
 }
 
+// Revisi 2026-07-12: slider foto full-width di landing page, dikelola
+// superadmin (spec 019-landing-slider). Rekomendasi gambar 1920×640 (3:1).
+model SliderImage {
+  id        String   @id @default(uuid())
+  imageUrl  String
+  caption   String?
+  linkUrl   String?
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, order])
+}
+
 // Revisi 2026-07-12: kalender event KONI Batam (spec 017-event-calendar).
 model Event {
   id               String          @id @default(uuid())
