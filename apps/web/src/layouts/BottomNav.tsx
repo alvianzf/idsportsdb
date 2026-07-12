@@ -11,81 +11,82 @@ export function BottomNav({ items }: { items: NavItem[] }) {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-10 flex items-end border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="fixed inset-x-0 bottom-0 z-10 flex items-end border-t border-white/30 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl md:hidden"
+      style={{ background: "rgba(255,248,247,0.82)" }}
       aria-label="Navigasi utama"
     >
-      {/* Left items */}
       {leftItems.map(({ to, label, icon: Icon }) => (
-        <NavLink
-          key={to}
-          to={to}
-          className={({ isActive }) =>
-            `flex flex-1 flex-col items-center gap-0.5 py-3 text-xs font-medium ${
-              isActive ? "text-primary" : "text-neutral-500"
-            }`
-          }
-        >
+        <NavLink key={to} to={to} className="flex flex-1 flex-col items-center py-2">
           {({ isActive }) => (
             <motion.span
               className="flex flex-col items-center gap-0.5"
               whileTap={{ scale: 0.88 }}
-              animate={isActive ? { y: -2 } : { y: 0 }}
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
             >
-              <Icon size={22} />
-              {label}
+              <span
+                className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors ${
+                  isActive ? "bg-primary-container" : ""
+                }`}
+              >
+                <Icon
+                  size={22}
+                  className={isActive ? "text-on-primary-container" : "text-on-surface-variant"}
+                  strokeWidth={isActive ? 2.5 : 1.8}
+                />
+              </span>
+              <span className={`text-xs font-medium ${isActive ? "text-primary" : "text-on-surface-variant"}`}>
+                {label}
+              </span>
             </motion.span>
           )}
         </NavLink>
       ))}
 
-      {/* Center FAB */}
       {centerItem && (() => {
         const { to, label, icon: Icon } = centerItem;
         return (
-          <NavLink
-            to={to}
-            className="relative -top-4 mx-4 flex flex-col items-center gap-1"
-          >
+          <NavLink to={to} className="relative -top-4 mx-4 flex flex-col items-center gap-1">
             {({ isActive }) => (
               <>
                 <motion.span
-                  className={`flex h-14 w-14 items-center justify-center rounded-full shadow-lg text-white ${
+                  className={`flex h-14 w-14 items-center justify-center rounded-full shadow-lg text-white backdrop-blur-sm ${
                     isActive ? "bg-primary-700" : "bg-primary"
                   }`}
                   whileTap={{ scale: 0.88 }}
-                  whileHover={{ scale: 1.08 }}
+                  whileHover={{ scale: 1.06 }}
                   transition={{ type: "spring", stiffness: 450, damping: 25 }}
                 >
-                  <Icon size={28} />
+                  <Icon size={26} />
                 </motion.span>
-                <span className="text-xs font-medium text-neutral-500">{label}</span>
+                <span className="text-xs font-medium text-on-surface-variant">{label}</span>
               </>
             )}
           </NavLink>
         );
       })()}
 
-      {/* Right items */}
       {rightItems.map(({ to, label, icon: Icon }) => (
-        <NavLink
-          key={to}
-          to={to}
-          className={({ isActive }) =>
-            `flex flex-1 flex-col items-center gap-0.5 py-3 text-xs font-medium ${
-              isActive ? "text-primary" : "text-neutral-500"
-            }`
-          }
-        >
+        <NavLink key={to} to={to} className="flex flex-1 flex-col items-center py-2">
           {({ isActive }) => (
             <motion.span
               className="flex flex-col items-center gap-0.5"
               whileTap={{ scale: 0.88 }}
-              animate={isActive ? { y: -2 } : { y: 0 }}
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
             >
-              <Icon size={22} />
-              {label}
+              <span
+                className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors ${
+                  isActive ? "bg-primary-container" : ""
+                }`}
+              >
+                <Icon
+                  size={22}
+                  className={isActive ? "text-on-primary-container" : "text-on-surface-variant"}
+                  strokeWidth={isActive ? 2.5 : 1.8}
+                />
+              </span>
+              <span className={`text-xs font-medium ${isActive ? "text-primary" : "text-on-surface-variant"}`}>
+                {label}
+              </span>
             </motion.span>
           )}
         </NavLink>

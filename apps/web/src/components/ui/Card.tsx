@@ -6,13 +6,13 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export function Card({ className = "", hoverable = false, ...props }: CardProps) {
-  const base = `rounded-lg border border-neutral-200 bg-white p-4 md:p-6 ${className}`;
+  const base = `rounded-3xl border border-white/50 bg-white/60 backdrop-blur-md p-4 md:p-6 shadow-sm ${className}`;
 
   if (hoverable) {
     return (
       <motion.div
         className={base}
-        whileHover={{ y: -3, boxShadow: "0 8px 24px rgba(0,0,0,0.09)" }}
+        whileHover={{ y: -4, boxShadow: "0 12px 32px rgba(200,16,46,0.10)" }}
         transition={{ type: "spring", stiffness: 400, damping: 28 }}
         {...(props as React.ComponentProps<typeof motion.div>)}
       />
