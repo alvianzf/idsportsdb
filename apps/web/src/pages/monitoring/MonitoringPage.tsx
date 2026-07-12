@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Check, X } from "lucide-react";
+import { Check, SquarePen, X } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   MUTATION_STATUSES,
@@ -8,7 +8,7 @@ import {
   type MonitoringEventType,
   type MutationStatus,
 } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Badge } from "../../components/ui";
+import { Card, PageHeader, Button, Badge, Field, Modal, Select } from "../../components/ui";
 import { DataTable, type Column } from "../../components/ui/DataTable";
 import { api } from "../../lib/api";
 import { getSocket } from "../../lib/socket";
@@ -63,6 +63,8 @@ export function MonitoringPage() {
   const [caborMap, setCaborMap] = useState<Map<string, string>>(new Map());
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editEvent, setEditEvent] = useState<MonitoringEvent | null>(null);
+  const [editStatus, setEditStatus] = useState<MutationStatus>("PENDING");
 
   const loadRef = useRef<() => void>(() => undefined);
 
@@ -109,6 +111,26 @@ export function MonitoringPage() {
       load();
     } catch {
       toast.error("Gagal memproses mutasi.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function openEditStatus(event: MonitoringEvent) {
+    setEditStatus(event.mutationStatus ?? "PENDING");
+    setEditEvent(event);
+  }
+
+  async function handleSaveStatus() {
+    if (!editEvent) return;
+    setBusyId(editEvent.id);
+    try {
+      await api.patch(`/monitoring/${editEvent.id}/mutasi`, { status: editStatus });
+      toast.success("Status mutasi diperbarui.");
+      setEditEvent(null);
+      load();
+    } catch {
+      toast.error("Gagal mengubah status.");
     } finally {
       setBusyId(null);
     }
@@ -269,11 +291,21 @@ export function MonitoringPage() {
                     <p className="mt-1 text-sm text-neutral-700">{event.description}</p>
                   )}
                 </div>
-                {event.mutationStatus && (
-                  <Badge tone={MUTATION_TONE[event.mutationStatus]}>
-                    {MUTATION_STATUS_LABELS[event.mutationStatus]}
-                  </Badge>
-                )}
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {event.mutationStatus && (
+                    <Badge tone={MUTATION_TONE[event.mutationStatus]}>
+                      {MUTATION_STATUS_LABELS[event.mutationStatus]}
+                    </Badge>
+                  )}
+                  <button
+                    onClick={() => openEditStatus(event)}
+                    title="Ubah status"
+                    aria-label="Ubah status"
+                    className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
+                  >
+                    <SquarePen size={15} />
+                  </button>
+                </div>
               </div>
               {event.mutationStatus === "PENDING" && (
                 <div className="flex gap-2">
@@ -304,6 +336,35 @@ export function MonitoringPage() {
             emptyMessage={`Belum ada data ${activeTabDef.label.toLowerCase()}.`}
           />
         </Card>
+      )}
+
+      {editEvent && (
+        <Modal title="Ubah Status Mutasi" onClose={() => setEditEvent(null)}>
+          <div className="space-y-4">
+            <p className="text-sm text-neutral-600">
+              {editEvent.atlet.namaLengkap}
+              {editEvent.toValue && (
+                <> &rarr; {caborMap.get(editEvent.toValue) ?? editEvent.toValue}</>
+              )}
+            </p>
+            <Field label="Status" required htmlFor="mutasi-status">
+              <Select
+                id="mutasi-status"
+                value={editStatus}
+                onChange={(v) => setEditStatus(v as MutationStatus)}
+                options={MUTATION_STATUSES.map((s) => ({ value: s, label: MUTATION_STATUS_LABELS[s] }))}
+              />
+            </Field>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEditEvent(null)}>
+                Batal
+              </Button>
+              <Button disabled={busyId === editEvent.id} onClick={() => void handleSaveStatus()}>
+                {busyId === editEvent.id ? "Menyimpan..." : "Simpan"}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

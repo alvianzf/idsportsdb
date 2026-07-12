@@ -24,7 +24,7 @@ export const updateMonitoringEventSchema = z.object({
 });
 
 export const mutasiActionSchema = z.object({
-  status: z.enum(["APPROVED", "REJECTED"]),
+  status: z.enum(MUTATION_STATUSES),
 });
 
 export const listMonitoringQuerySchema = z.object({
