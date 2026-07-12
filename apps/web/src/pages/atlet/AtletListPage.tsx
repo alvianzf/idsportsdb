@@ -148,6 +148,21 @@ export function AtletListPage() {
     }
   }
 
+  // Sample files so users don't upload the wrong format.
+  async function handleTemplateDownload(format: "xlsx" | "csv") {
+    try {
+      const res = await api.get("/atlet/import/template", { params: { format }, responseType: "blob" });
+      const url = URL.createObjectURL(res.data as Blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `template-impor-atlet.${format}`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Gagal mengunduh template.");
+    }
+  }
+
   // Parse+validate on the server without writing, to preview before upload.
   async function handleImportFileChange(file: File | null) {
     setImportFile(file);
@@ -368,6 +383,16 @@ export function AtletListPage() {
                 )}
                 <li>Baris yang tidak valid dilewati dan dilaporkan setelah impor selesai.</li>
               </ul>
+              <p className="pt-1">
+                Gunakan template agar format tidak salah:{" "}
+                <button onClick={() => void handleTemplateDownload("xlsx")} className="font-semibold text-primary hover:underline">
+                  Unduh template Excel
+                </button>{" "}
+                ·{" "}
+                <button onClick={() => void handleTemplateDownload("csv")} className="font-semibold text-primary hover:underline">
+                  Unduh template CSV
+                </button>
+              </p>
             </div>
 
             <DropZone

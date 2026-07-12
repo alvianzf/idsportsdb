@@ -132,6 +132,65 @@ atletBulkRouter.get(
 );
 
 // ---------------------------------------------------------------------------
+// Import template — downloadable sample so users upload the right format.
+// ---------------------------------------------------------------------------
+
+const TEMPLATE_SAMPLE_ROWS = [
+  {
+    nomorIndukAtlet: "ATL-2026-001",
+    nomorRegistrasi: "REG-ATL-001",
+    namaLengkap: "Budi Santoso",
+    nik: "2171010101990001",
+    jenisKelamin: "L",
+    cabor: "Atletik",
+    statusAtlet: "Aktif",
+    alamat: "Jl. Contoh No. 1, Batam Kota",
+    kecamatan: "Batam Kota",
+    nomorHp: "081234567890",
+    email: "budi@email.com",
+    pendidikan: "SMA/SMK",
+    pekerjaan: "Pelajar",
+  },
+  {
+    nomorIndukAtlet: "REN-2026-002",
+    nomorRegistrasi: "REG-REN-002",
+    namaLengkap: "Siti Aminah",
+    nik: "2171010101990002",
+    jenisKelamin: "P",
+    cabor: "Renang",
+    statusAtlet: "Tidak Aktif",
+    alamat: "Jl. Contoh No. 2, Sekupang",
+    kecamatan: "Sekupang",
+    nomorHp: "081234567891",
+    email: "",
+    pendidikan: "S1",
+    pekerjaan: "",
+  },
+];
+
+atletBulkRouter.get(
+  "/import/template",
+  requireRole(DATA_ADMIN_ROLES),
+  asyncHandler(async (req, res) => {
+    const format = req.query.format === "csv" ? "csv" : "xlsx";
+
+    if (format === "csv") {
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Template");
+      sheet.columns = EXPORT_COLUMNS;
+      sheet.addRows(TEMPLATE_SAMPLE_ROWS);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", 'attachment; filename="template-impor-atlet.csv"');
+      await workbook.csv.write(res);
+      res.end();
+      return;
+    }
+
+    await streamExcel(res, "template-impor-atlet.xlsx", "Template", EXPORT_COLUMNS, TEMPLATE_SAMPLE_ROWS);
+  }),
+);
+
+// ---------------------------------------------------------------------------
 // Import
 // ---------------------------------------------------------------------------
 
