@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, Eye, EyeOff, Info, Trash2, Upload } from "lucide-react";
 import toast from "react-hot-toast";
-import { Badge, Button, Card, Field, Input, PageHeader } from "../../components/ui";
+import { Badge, Button, Card, DropZone, Field, Input, Modal, PageHeader } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 
@@ -22,7 +22,8 @@ export function SliderAdminPage() {
   const [error, setError] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [showUpload, setShowUpload] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
 
   function load() {
     api
@@ -33,7 +34,14 @@ export function SliderAdminPage() {
 
   useEffect(load, []);
 
-  async function handleUpload(file: File) {
+  function closeUpload() {
+    setShowUpload(false);
+    setFile(null);
+    setCaption("");
+  }
+
+  async function handleUpload() {
+    if (!file) return;
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
       toast.error(`Ukuran file maksimal ${MAX_SIZE_MB} MB.`);
       return;
@@ -45,13 +53,12 @@ export function SliderAdminPage() {
       if (caption) form.append("caption", caption);
       await api.post("/slider", form);
       toast.success("Foto slider berhasil diunggah.");
-      setCaption("");
+      closeUpload();
       load();
     } catch {
       toast.error("Gagal mengunggah foto.");
     } finally {
       setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
@@ -108,8 +115,21 @@ export function SliderAdminPage() {
             </p>
           </div>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="flex-1">
+        <Button onClick={() => setShowUpload(true)}>
+          <Upload size={16} /> Unggah Foto
+        </Button>
+      </Card>
+
+      {showUpload && (
+        <Modal title="Unggah Foto Slider" onClose={closeUpload}>
+          <div className="space-y-4">
+            <DropZone
+              accept="image/*"
+              value={file}
+              onChange={setFile}
+              label="Seret & lepas foto di sini"
+              sublabel={`JPG/PNG/WebP, rekomendasi 1920 × 640 px, maks. ${MAX_SIZE_MB} MB`}
+            />
             <Field label="Keterangan (opsional)" htmlFor="slide-caption">
               <Input
                 id="slide-caption"
@@ -118,22 +138,17 @@ export function SliderAdminPage() {
                 placeholder="Teks yang tampil di atas foto"
               />
             </Field>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={closeUpload}>
+                Batal
+              </Button>
+              <Button disabled={!file || uploading} onClick={() => void handleUpload()}>
+                <Upload size={16} /> {uploading ? "Mengunggah..." : "Unggah"}
+              </Button>
+            </div>
           </div>
-          <Button disabled={uploading} onClick={() => fileRef.current?.click()}>
-            <Upload size={16} /> {uploading ? "Mengunggah..." : "Unggah Foto"}
-          </Button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void handleUpload(file);
-            }}
-          />
-        </div>
-      </Card>
+        </Modal>
+      )}
 
       {error && <Card className="text-sm text-danger">Gagal memuat data slider.</Card>}
       {!error && slides === null && <Card className="text-sm text-neutral-500">Memuat data...</Card>}
