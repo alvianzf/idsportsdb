@@ -332,7 +332,7 @@ export function LandingPage() {
                 <p className="text-sm font-bold text-white">KONI Kota Batam</p>
               </div>
               <p className="mt-2 max-w-md leading-relaxed">
-                Kompleks Ruko KBC (Kuningan Business Centre) Blok A5 No. 1, Kel. Belian, Kec. Batam Kota,
+                Kompleks Ruko KBC (King Business Center) Blok A5 No. 1, Kel. Belian, Kec. Batam Kota,
                 Kota Batam, Kepulauan Riau
               </p>
             </div>
