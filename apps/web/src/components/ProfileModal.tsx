@@ -9,6 +9,7 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
   const { user, setSession, accessToken, refreshToken } = useAuthStore();
   const [fullName, setFullName] = useState(user?.fullName ?? "");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [removeAvatar, setRemoveAvatar] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
@@ -27,6 +28,9 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
         form.append("file", avatarFile);
         const avatarRes = await api.post("/auth/me/avatar", form);
         avatarUrl = avatarRes.data.avatarUrl;
+      } else if (removeAvatar && avatarUrl) {
+        await api.delete("/auth/me/avatar");
+        avatarUrl = null;
       }
       const res = await api.patch("/auth/me", {
         fullName,
@@ -55,8 +59,19 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
           <DropZone
             accept="image/*"
             value={avatarFile}
-            onChange={setAvatarFile}
-            existingUrl={user?.avatarUrl ? resolveFileUrl(user.avatarUrl) : null}
+            onChange={(f) => {
+              if (f) {
+                setAvatarFile(f);
+                setRemoveAvatar(false);
+              } else if (avatarFile) {
+                // Un-stage the new file; the existing photo stays.
+                setAvatarFile(null);
+              } else {
+                // X on the existing photo — delete it on save.
+                setRemoveAvatar(true);
+              }
+            }}
+            existingUrl={!removeAvatar && user?.avatarUrl ? resolveFileUrl(user.avatarUrl) : null}
             label="Seret & lepas foto di sini"
             sublabel="JPG/PNG/WebP"
           />

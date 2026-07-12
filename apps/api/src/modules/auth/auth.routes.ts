@@ -1,9 +1,10 @@
 import fs from "node:fs";
+import path from "node:path";
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 import { prisma } from "../../lib/prisma.js";
-import { uploader, publicUrl } from "../../lib/storage.js";
+import { uploader, publicUrl, uploadRoot } from "../../lib/storage.js";
 import { authenticate } from "../../middleware/auth.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { loginSchema, refreshSchema, updateUserSchema } from "./auth.schema.js";
@@ -159,6 +160,10 @@ authRouter.patch(
 
 const avatarUpload = uploader("avatar");
 
+function unlinkUpload(url: string) {
+  fs.unlink(path.join(uploadRoot, url.replace("/uploads/", "")), () => undefined);
+}
+
 authRouter.post(
   "/me/avatar",
   authenticate,
@@ -174,10 +179,32 @@ authRouter.post(
       return;
     }
 
+    const previous = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: { avatarUrl: true },
+    });
     const user = await prisma.user.update({
       where: { id: req.user!.id },
       data: { avatarUrl: publicUrl("avatar", req.file.filename) },
     });
+    if (previous?.avatarUrl) unlinkUpload(previous.avatarUrl);
+    res.json(toSafeUser(user));
+  }),
+);
+
+authRouter.delete(
+  "/me/avatar",
+  authenticate,
+  asyncHandler(async (req, res) => {
+    const previous = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: { avatarUrl: true },
+    });
+    const user = await prisma.user.update({
+      where: { id: req.user!.id },
+      data: { avatarUrl: null },
+    });
+    if (previous?.avatarUrl) unlinkUpload(previous.avatarUrl);
     res.json(toSafeUser(user));
   }),
 );
