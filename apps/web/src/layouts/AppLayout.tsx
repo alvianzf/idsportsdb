@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Sidebar } from "./Sidebar";
 import { BottomNav } from "./BottomNav";
 import { navItemsForRole } from "./navConfig";
+import { Breadcrumbs } from "../components/Breadcrumbs";
 import { ProfileModal } from "../components/ProfileModal";
 import { resolveFileUrl } from "../lib/api";
 import { useAuthStore } from "../store/authStore";
@@ -91,6 +92,7 @@ export function AppLayout() {
         </header>
 
         <main className="flex-1 overflow-hidden p-4 pb-[calc(5rem+env(safe-area-inset-bottom))] md:p-6 md:pb-6">
+          <Breadcrumbs homeTo={user.role === "ATLET" ? "/me" : "/dashboard"} />
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={location.pathname}
