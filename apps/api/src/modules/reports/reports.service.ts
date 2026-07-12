@@ -1,15 +1,30 @@
 import type { CompetitionLevel, Medal } from "@inasportdb/shared-types";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { atletInCaborFilter } from "../atlet/atlet.service.js";
+import type { AtletReportFilters } from "./reports.schema.js";
+
+function atletFilterWhere(filters: AtletReportFilters): Prisma.AtletWhereInput {
+  return {
+    ...(filters.status ? { statusAtlet: filters.status } : {}),
+    ...(filters.jenisKelamin ? { jenisKelamin: filters.jenisKelamin } : {}),
+  };
+}
 
 /** specs/009-pelaporan/spec.md — report 1: data atlet per cabor. */
-export async function getAtletPerCabor(caborId: string | null) {
+export async function getAtletPerCabor(caborId: string | null, filters: AtletReportFilters = {}) {
+  const atletWhere = atletFilterWhere(filters);
   const cabors = await prisma.cabangOlahraga.findMany({
     where: caborId ? { id: caborId } : undefined,
     select: {
       id: true,
       nama: true,
-      _count: { select: { atlets: true, atletTambahan: true } },
+      _count: {
+        select: {
+          atlets: { where: atletWhere },
+          atletTambahan: { where: { atlet: atletWhere } },
+        },
+      },
     },
     orderBy: { nama: "asc" },
   });
@@ -65,14 +80,19 @@ export async function getAtletPerKecamatan(caborId: string | null) {
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
 
-  return Array.from(counts.entries()).map(([kecamatan, count]) => ({ kecamatan, count }));
+  return Array.from(counts.entries())
+    .map(([kecamatan, count]) => ({ kecamatan, count }))
+    .sort((a, b) => a.kecamatan.localeCompare(b.kecamatan, "id"));
 }
 
 /** Full athlete records for the regulator detail sheets (Excel) and the
  * compact PDF listing. Includes cabor name and the most recent prestasi. */
-export function getAtletDetail(caborId: string | null) {
+export function getAtletDetail(caborId: string | null, filters: AtletReportFilters = {}) {
   return prisma.atlet.findMany({
-    where: caborId ? atletInCaborFilter(caborId) : undefined,
+    where: {
+      ...(caborId ? atletInCaborFilter(caborId) : {}),
+      ...atletFilterWhere(filters),
+    },
     include: {
       cabangOlahraga: { select: { nama: true } },
       prestasis: {
@@ -90,7 +110,7 @@ export function getPelatihReport(caborId: string | null) {
   return prisma.pelatih.findMany({
     where: caborId ? { cabangOlahragaId: caborId } : undefined,
     include: { cabangOlahraga: { select: { nama: true } } },
-    orderBy: { namaPelatih: "asc" },
+    orderBy: [{ cabangOlahraga: { nama: "asc" } }, { namaPelatih: "asc" }],
   });
 }
 
@@ -113,7 +133,7 @@ export function getPrestasiReport(
   return prisma.prestasi.findMany({
     where,
     include: { atlet: { select: { namaLengkap: true, cabangOlahraga: { select: { nama: true } } } } },
-    orderBy: [{ tahun: "desc" }],
+    orderBy: [{ atlet: { cabangOlahraga: { nama: "asc" } } }, { tahun: "desc" }],
   });
 }
 
@@ -142,12 +162,14 @@ export async function getRekapMedali(caborId: string | null, tahun?: number) {
     else if (p.medali === "BRONZE") entry.bronze++;
   }
 
-  return Array.from(map.entries()).map(([cabangOlahragaId, v]) => ({
-    cabangOlahragaId,
-    nama: v.nama,
-    gold: v.gold,
-    silver: v.silver,
-    bronze: v.bronze,
-    total: v.gold + v.silver + v.bronze,
-  }));
+  return Array.from(map.entries())
+    .map(([cabangOlahragaId, v]) => ({
+      cabangOlahragaId,
+      nama: v.nama,
+      gold: v.gold,
+      silver: v.silver,
+      bronze: v.bronze,
+      total: v.gold + v.silver + v.bronze,
+    }))
+    .sort((a, b) => a.nama.localeCompare(b.nama, "id"));
 }

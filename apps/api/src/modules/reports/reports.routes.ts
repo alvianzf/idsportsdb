@@ -13,6 +13,7 @@ import { streamPdf, drawPdfTable, dateLabelWib, type PdfMeta } from "../../lib/p
 import { streamExcel, streamExcelSheets, type ExcelSheetSpec } from "../../lib/excel.js";
 import {
   baseReportQuerySchema,
+  atletPerCaborQuerySchema,
   atletPerUsiaQuerySchema,
   pelatihReportQuerySchema,
   prestasiReportQuerySchema,
@@ -133,20 +134,22 @@ reportsRouter.use(
 reportsRouter.get(
   "/atlet-per-cabor",
   asyncHandler(async (req, res) => {
-    const parsed = baseReportQuerySchema.safeParse(req.query);
+    const parsed = atletPerCaborQuerySchema.safeParse(req.query);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
 
-    const data = await getAtletPerCabor(req.scopedCaborId ?? null);
+    const caborId = req.scopedCaborId ?? parsed.data.cabor ?? null;
+    const filters = { status: parsed.data.status, jenisKelamin: parsed.data.jenisKelamin };
+    const data = await getAtletPerCabor(caborId, filters);
 
     if (parsed.data.format === "json") {
       res.json(data);
       return;
     }
 
-    const atlets = await getAtletDetail(req.scopedCaborId ?? null);
+    const atlets = await getAtletDetail(caborId, filters);
     if (parsed.data.format === "excel") {
       await streamExcelSheets(res, "atlet-per-cabor.xlsx", [
         {
