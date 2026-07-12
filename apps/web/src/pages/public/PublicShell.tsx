@@ -24,6 +24,7 @@ export function PublicShell({ title, description, children }: { title: string; d
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.to === "/"}
                 className={({ isActive }) =>
                   `rounded-md px-3 py-1.5 font-medium transition-colors ${
                     isActive ? "bg-primary-50 text-primary" : "text-neutral-600 hover:text-primary"

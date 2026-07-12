@@ -104,7 +104,12 @@ export function LandingPage() {
               <NavLink
                 key={item.to}
                 to={item.to}
-                className="rounded-md px-3 py-1.5 font-semibold text-neutral-700 transition-colors hover:bg-primary-50 hover:text-primary"
+                end={item.to === "/"}
+                className={({ isActive }) =>
+                  `rounded-md px-3 py-1.5 font-semibold transition-colors ${
+                    isActive ? "bg-primary-50 text-primary" : "text-neutral-700 hover:bg-primary-50 hover:text-primary"
+                  }`
+                }
               >
                 {item.label}
               </NavLink>
