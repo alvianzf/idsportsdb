@@ -3,12 +3,29 @@ import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom"
 import { AppLayout } from "../layouts/AppLayout";
 import { RequireRole } from "../components/RequireRole";
 
-// Helper so named-export pages work with React.lazy (which needs a default export)
+// Helper so named-export pages work with React.lazy (which needs a default export).
+// A failed chunk fetch usually means a new deploy replaced the hashed assets while
+// this tab still holds the old index.html — reload once to pick up the new build.
 function page<T extends Record<string, React.ComponentType>>(
   loader: () => Promise<T>,
   name: keyof T,
 ): React.LazyExoticComponent<React.ComponentType> {
-  return lazy(() => loader().then((m) => ({ default: m[name] as React.ComponentType })));
+  return lazy(() =>
+    loader().then(
+      (m) => {
+        sessionStorage.removeItem("chunk-reload");
+        return { default: m[name] as React.ComponentType };
+      },
+      (err) => {
+        if (!sessionStorage.getItem("chunk-reload")) {
+          sessionStorage.setItem("chunk-reload", "1");
+          window.location.reload();
+          return new Promise<never>(() => undefined); // reloading — never resolve
+        }
+        throw err; // second failure: real problem, surface it
+      },
+    ),
+  );
 }
 
 // Public / shell (kept eager — tiny, needed immediately)
