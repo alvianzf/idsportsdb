@@ -20,7 +20,6 @@ import { ResetPasswordPage } from "../pages/ResetPasswordPage";
 
 // Lazy pages — each becomes its own JS chunk
 const DashboardPage = page(() => import("../pages/DashboardPage"), "DashboardPage");
-const ProfilePage = page(() => import("../pages/ProfilePage"), "ProfilePage");
 
 const CaborListPage = page(() => import("../pages/cabor/CaborListPage"), "CaborListPage");
 const CaborDetailPage = page(() => import("../pages/cabor/CaborDetailPage"), "CaborDetailPage");
@@ -220,7 +219,7 @@ const router = createBrowserRouter([
         ),
       },
 
-      { path: "settings/profile", element: <Suspense fallback={<PageLoader />}><ProfilePage /></Suspense> },
+      { path: "settings/profile", element: <Navigate to="/dashboard" replace /> },
 
       // Atlet self-service
       { path: "me", element: <Suspense fallback={<PageLoader />}><MePage /></Suspense> },

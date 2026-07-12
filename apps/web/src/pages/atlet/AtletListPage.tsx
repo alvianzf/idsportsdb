@@ -368,7 +368,7 @@ export function AtletListPage() {
           <div className="space-y-4 text-sm">
             <div className="space-y-2 rounded-lg bg-neutral-50 p-3 text-xs text-neutral-600">
               <p className="font-semibold text-neutral-800">Ketentuan berkas</p>
-              <ul className="list-inside list-disc space-y-1">
+              <ul className="list-disc space-y-1 pl-5">
                 <li>Format <strong>Excel (.xlsx)</strong> atau <strong>CSV</strong>, maksimal 10 MB.</li>
                 <li>Baris pertama harus berupa judul kolom. Kolom yang dikenali:
                   Nomor Induk, Nomor Registrasi, Nama Lengkap, NIK, Jenis Kelamin,
@@ -383,16 +383,17 @@ export function AtletListPage() {
                 )}
                 <li>Baris yang tidak valid dilewati dan dilaporkan setelah impor selesai.</li>
               </ul>
-              <p className="pt-1">
-                Gunakan template agar format tidak salah:{" "}
-                <button onClick={() => void handleTemplateDownload("xlsx")} className="font-semibold text-primary hover:underline">
-                  Unduh template Excel
-                </button>{" "}
-                ·{" "}
-                <button onClick={() => void handleTemplateDownload("csv")} className="font-semibold text-primary hover:underline">
-                  Unduh template CSV
-                </button>
-              </p>
+              <div className="space-y-2 pt-2">
+                <p>Gunakan template agar format tidak salah:</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button variant="outline" className="px-4 py-1.5" onClick={() => void handleTemplateDownload("xlsx")}>
+                    <Download size={16} /> Excel
+                  </Button>
+                  <Button variant="outline" className="px-4 py-1.5" onClick={() => void handleTemplateDownload("csv")}>
+                    <Download size={16} /> CSV
+                  </Button>
+                </div>
+              </div>
             </div>
 
             <DropZone

@@ -9,7 +9,12 @@ interface ModalProps {
 
 export function Modal({ title, onClose, children }: ModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-sm"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-white/50 bg-white/75 p-4 shadow-xl backdrop-blur-xl md:p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-on-surface">{title}</h2>

@@ -19,7 +19,7 @@ export function PublicShell({ title, description, children }: { title: string; d
               <p className="text-xs leading-tight text-neutral-500">Sistem Informasi Manajemen Atlet</p>
             </div>
           </Link>
-          <nav className="flex items-center gap-1 text-sm">
+          <nav className="flex w-full items-center justify-center gap-1 text-sm md:w-auto md:justify-end">
             {PUBLIC_NAV.map((item) => (
               <NavLink
                 key={item.to}

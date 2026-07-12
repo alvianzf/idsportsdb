@@ -1,15 +1,18 @@
-import { Outlet, Navigate, Link, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Sidebar } from "./Sidebar";
 import { BottomNav } from "./BottomNav";
 import { navItemsForRole } from "./navConfig";
+import { ProfileModal } from "../components/ProfileModal";
 import { useAuthStore } from "../store/authStore";
 
 export function AppLayout() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const location = useLocation();
+  const [showProfile, setShowProfile] = useState(false);
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -34,15 +37,15 @@ export function AppLayout() {
           </div>
           <div className="hidden md:block" />
           <div className="flex items-center gap-3">
-            <Link
-              to="/settings/profile"
+            <button
+              onClick={() => setShowProfile(true)}
               className="text-right transition-opacity hover:opacity-80"
             >
               <p className="text-sm font-medium leading-tight text-white">{user.fullName}</p>
               <p className="text-xs leading-tight" style={{ color: "rgba(255,255,255,0.65)" }}>
                 {user.role.replace(/_/g, " ")}
               </p>
-            </Link>
+            </button>
             <button
               onClick={logout}
               aria-label="Keluar"
@@ -70,6 +73,8 @@ export function AppLayout() {
 
         <BottomNav items={items} />
       </div>
+
+      {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
     </div>
   );
 }

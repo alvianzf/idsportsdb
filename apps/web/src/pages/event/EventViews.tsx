@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent, type TouchEvent } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, MapPin, Rows3, Search, Table2 } from "lucide-react";
 import {
   EVENT_LEVELS,
@@ -185,6 +185,21 @@ export function EventMonthCalendar({
 }) {
   const today = ymd(new Date());
   const [month, setMonth] = useState(firstOfMonth(today));
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  function handleTouchStart(e: TouchEvent) {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }
+
+  function handleTouchEnd(e: TouchEvent) {
+    if (!touchStart.current) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current.x;
+    const dy = e.changedTouches[0].clientY - touchStart.current.y;
+    touchStart.current = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+      setMonth((m) => shiftMonth(m, dx < 0 ? 1 : -1));
+    }
+  }
 
   // Date filter/search jumps the calendar to that month (spec 017 §4).
   useEffect(() => {
@@ -201,7 +216,7 @@ export function EventMonthCalendar({
   }
 
   return (
-    <Card className="overflow-x-auto p-0">
+    <Card className="overflow-hidden p-0">
       <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3">
         <h2 className="text-sm font-bold capitalize text-neutral-900">{monthLabel(month)}</h2>
         <div className="flex items-center gap-1">
@@ -217,7 +232,7 @@ export function EventMonthCalendar({
         </div>
       </div>
 
-      <div className="min-w-[640px]">
+      <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <div className="grid grid-cols-7 border-b border-neutral-100 text-center text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
           {DAY_LABELS.map((d) => (
             <div key={d} className="py-2">{d}</div>

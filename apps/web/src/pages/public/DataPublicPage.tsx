@@ -121,6 +121,7 @@ export function DataPublicPage() {
     {
       key: "tingkat",
       label: "Tingkat",
+      mobile: true,
       render: (a) => <span className="text-neutral-600">{a.tingkatAtlet ? ATHLETE_LEVEL_LABELS[a.tingkatAtlet] : "-"}</span>,
     },
     {
