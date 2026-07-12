@@ -3,6 +3,7 @@ import { Link, NavLink } from "react-router-dom";
 import { Button } from "../../components/ui";
 import { useAuthStore } from "../../store/authStore";
 import { PUBLIC_NAV } from "./publicNav";
+import { PublicBottomNav } from "./PublicBottomNav";
 
 /** Shared header/footer shell for public (no-auth) pages. Revisi 2026-07-12. */
 export function PublicShell({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
@@ -19,39 +20,43 @@ export function PublicShell({ title, description, children }: { title: string; d
               <p className="text-xs leading-tight text-neutral-500">Sistem Informasi Manajemen Atlet</p>
             </div>
           </Link>
-          <nav className="flex w-full items-center justify-center gap-1 text-sm md:w-auto md:justify-end">
-            {PUBLIC_NAV.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === "/"}
-                className={({ isActive }) =>
-                  `rounded-md px-3 py-1.5 font-medium transition-colors ${
-                    isActive ? "bg-primary-50 text-primary" : "text-neutral-600 hover:text-primary"
-                  }`
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
+          <div className="flex items-center gap-1">
+            <nav className="hidden items-center gap-1 text-sm md:flex">
+              {PUBLIC_NAV.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.to === "/"}
+                  className={({ isActive }) =>
+                    `rounded-md px-3 py-1.5 font-medium transition-colors ${
+                      isActive ? "bg-primary-50 text-primary" : "text-neutral-600 hover:text-primary"
+                    }`
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
             {user ? (
-              <Link to={user.role === "ATLET" ? "/me" : "/dashboard"} className="ml-2">
+              <Link to={user.role === "ATLET" ? "/me" : "/dashboard"} className="md:ml-2">
                 <Button>Dashboard</Button>
               </Link>
             ) : (
-              <Link to="/login" className="ml-2">
+              <Link to="/login" className="md:ml-2">
                 <Button>Masuk</Button>
               </Link>
             )}
-          </nav>
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8 md:px-6">
+      <main className="mx-auto max-w-5xl px-4 py-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:px-6 md:pb-8">
         <h1 className="text-xl font-semibold text-neutral-900 md:text-2xl">{title}</h1>
         {description && <p className="mt-1 text-sm text-neutral-500">{description}</p>}
         <div className="mt-6">{children}</div>
       </main>
+
+      <PublicBottomNav />
     </div>
   );
 }

@@ -17,6 +17,7 @@ import { api, resolveFileUrl } from "../lib/api";
 import { getSocket } from "../lib/socket";
 import { useAuthStore } from "../store/authStore";
 import { PUBLIC_NAV } from "./public/publicNav";
+import { PublicBottomNav } from "./public/PublicBottomNav";
 import { LandingSlider } from "./public/LandingSlider";
 import {
   EVENT_STATUS_TEXT,
@@ -88,7 +89,7 @@ export function LandingPage() {
   const totalMedali = stats ? stats.medals.GOLD + stats.medals.SILVER + stats.medals.BRONZE : null;
 
   return (
-    <div className="min-h-svh bg-neutral-50">
+    <div className="min-h-svh bg-neutral-50 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-neutral-200/80 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
@@ -99,31 +100,33 @@ export function LandingPage() {
               <p className="text-[11px] leading-tight text-neutral-500">Sistem Informasi Manajemen Atlet</p>
             </div>
           </Link>
-          <nav className="flex w-full items-center justify-center gap-1 text-sm md:w-auto md:justify-end">
-            {PUBLIC_NAV.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === "/"}
-                className={({ isActive }) =>
-                  `rounded-md px-3 py-1.5 font-semibold transition-colors ${
-                    isActive ? "bg-primary-50 text-primary" : "text-neutral-700 hover:bg-primary-50 hover:text-primary"
-                  }`
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
+          <div className="flex items-center gap-1">
+            <nav className="hidden items-center gap-1 text-sm md:flex">
+              {PUBLIC_NAV.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.to === "/"}
+                  className={({ isActive }) =>
+                    `rounded-md px-3 py-1.5 font-semibold transition-colors ${
+                      isActive ? "bg-primary-50 text-primary" : "text-neutral-700 hover:bg-primary-50 hover:text-primary"
+                    }`
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
             {user ? (
-              <Link to={user.role === "ATLET" ? "/me" : "/dashboard"} className="ml-2">
+              <Link to={user.role === "ATLET" ? "/me" : "/dashboard"} className="md:ml-2">
                 <Button>Dashboard</Button>
               </Link>
             ) : (
-              <Link to="/login" className="ml-2">
+              <Link to="/login" className="md:ml-2">
                 <Button>Masuk</Button>
               </Link>
             )}
-          </nav>
+          </div>
         </div>
       </header>
 
@@ -345,6 +348,8 @@ export function LandingPage() {
           </div>
         </div>
       </footer>
+
+      <PublicBottomNav />
     </div>
   );
 }
