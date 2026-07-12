@@ -119,11 +119,18 @@ export function drawPdfTable(
 
   drawHeaderRow();
 
-  doc.fontSize(9);
+  // Tallest row that fits a fresh page (below the re-drawn table header);
+  // anything taller is clipped with an ellipsis so a single cell can never
+  // trigger pdfkit's own mid-cell pagination and desync the row.
+  const maxRowHeight = doc.page.height - doc.page.margins.bottom - doc.page.margins.top - 24;
+
   for (const row of rows) {
+    doc.font("Helvetica").fontSize(9); // measurement must match render state
     const cells = columns.map((_, i) => String(row[i] ?? ""));
-    const rowHeight =
-      Math.max(12, ...cells.map((text, i) => doc.heightOfString(text, { width: widths[i] - CELL_GAP }))) + 4;
+    const rowHeight = Math.min(
+      Math.max(12, ...cells.map((text, i) => doc.heightOfString(text, { width: widths[i] - CELL_GAP }))) + 4,
+      maxRowHeight,
+    );
 
     if (y + rowHeight > bottomY()) {
       doc.addPage(); // pageAdded handler re-draws header/footer and resets the cursor
@@ -133,7 +140,7 @@ export function drawPdfTable(
 
     let x = startX;
     for (let i = 0; i < cells.length; i++) {
-      doc.text(cells[i], x, y, { width: widths[i] - CELL_GAP });
+      doc.text(cells[i], x, y, { width: widths[i] - CELL_GAP, height: rowHeight, ellipsis: true });
       x += widths[i];
     }
     y += rowHeight;
