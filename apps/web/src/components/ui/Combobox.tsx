@@ -170,9 +170,9 @@ export function Combobox({
     <div
       ref={dropdownRef}
       style={dropdownStyle}
-      className="overflow-hidden rounded-2xl border border-white/50 bg-white/90 shadow-xl backdrop-blur-xl"
+      className="flex flex-col overflow-hidden rounded-2xl border border-white/50 bg-white/90 shadow-xl backdrop-blur-xl"
     >
-      <div className="flex items-center gap-2 border-b border-outline-variant/40 px-3 py-2.5">
+      <div className="flex shrink-0 items-center gap-2 border-b border-outline-variant/40 px-3 py-2.5">
         <Search size={14} className="shrink-0 text-on-surface-variant" />
         <input
           ref={inputRef}
@@ -184,7 +184,7 @@ export function Combobox({
           className="flex-1 bg-transparent text-sm text-on-surface outline-none placeholder:text-on-surface-variant/60"
         />
       </div>
-      <ul role="listbox" className="overflow-y-auto py-1.5" style={{ maxHeight: "calc(100% - 48px)" }}>
+      <ul role="listbox" className="min-h-0 flex-1 overflow-y-auto py-1.5">
         {filtered.length === 0 ? (
           <li className="px-3 py-2 text-sm text-on-surface-variant">Tidak ada pilihan</li>
         ) : (
