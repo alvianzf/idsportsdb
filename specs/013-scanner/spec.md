@@ -1,5 +1,10 @@
 # Spec: Pemindai Kartu Atlet (In-App QR Card Scanner)
 
+> **DIBATALKAN — Revisi klien 2026-07-12**: kartu atlet digital tidak
+> diperlukan (`010-kartu-atlet-digital` dibatalkan), sehingga scanner QR kartu
+> ikut dibatalkan. Spec dipertahankan sebagai arsip.
+> See `specs/000-overview/revisi-2026-07-12.md`.
+
 ## 1. Overview
 
 - **Purpose & scope**: A dedicated in-app QR code scanner that lets admins point their

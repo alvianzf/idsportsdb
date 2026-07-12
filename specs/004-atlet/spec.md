@@ -135,6 +135,29 @@
   `PAS_FOTO`) for quick display in lists/cards — `fotoUrl` is set when a
   `PAS_FOTO` document is uploaded (kept in sync by the upload handler).
 
+## Revisi (2026-07-12)
+
+Hasil pertemuan klien — see `specs/000-overview/revisi-2026-07-12.md`:
+
+- **Tempat & tanggal lahir on hold**: `tempatLahir`/`tanggalLahir` become
+  optional (`String?` / `DateTime?`) and are hidden from the form until the
+  client confirms.
+- **Data atlet inti**: foto, jenis kelamin, cabor, status atlet. `statusAtlet`
+  simplified to **AKTIF / TIDAK AKTIF** only (drop INJURED/TRAINING_CAMP/
+  TRANSFERRED from the form; injury/camp tracked via Monitoring 008).
+- **Tingkat atlet TBC/TBD**: the `AthleteLevel` enum is not final — keep the
+  field optional and do not build workflows on top of it yet.
+- **Pendidikan terakhir**: `pendidikan` means *last education* — dropdown of
+  jenjang (SD, SMP, SMA/SMK, D3, S1, S2, S3) instead of free text.
+- **Data mereka input sendiri**: athletes self-input their data — the ATLET
+  role gains write access to their own biodata (`PATCH /api/v1/atlet/me`);
+  admin roles review/correct. Update §3 and §5 accordingly during
+  implementation.
+- **Bulk update**: import athletes from an uploaded **Excel/CSV** file
+  (upload → validate per row → report accepted/rejected rows).
+- **Bulk download**: export the (filtered) athlete list to **Excel, CSV, and
+  PDF** — replaces the card-ZIP bulk action (cards canceled, see 010).
+
 ## 8. Dependencies
 
 - Depends on: `001-auth-rbac`, `003-cabang-olahraga`. Required by:

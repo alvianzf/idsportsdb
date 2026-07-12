@@ -10,9 +10,9 @@
 - **lucide-react** — icons
 - **@fontsource/plus-jakarta-sans** — self-hosted font (offline-safe for mobile webview)
 
-Mobile porting: the SPA is built to static assets (`apps/web/dist`) and wrapped with
-**Capacitor** (Phase 6) for Android/iOS. Layouts are mobile-first; bottom nav on
-small screens, sidebar on desktop (`src/layouts/`).
+Mobile porting: **dibatalkan (revisi 2026-07-12)** — the Capacitor Android/iOS wrap
+(Phase 6) is no longer part of the deliverable; the app ships web-only. Layouts remain
+mobile-first; bottom nav on small screens, sidebar on desktop (`src/layouts/`).
 
 ## Backend (`apps/api`)
 

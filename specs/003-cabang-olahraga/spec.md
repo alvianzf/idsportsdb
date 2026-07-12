@@ -6,6 +6,9 @@
   Batam. Other modules (Atlet, Pelatih, Pengurus Cabor) reference a cabor via
   foreign key, and `ADMIN_CABOR` users are scoped to one cabor.
 - **PDF reference**: Modul E — "Data Cabang Olahraga" (page 2)
+- **Revisi (2026-07-12)**: KONI Batam membawahi **48 cabor** (seed lengkap, see
+  `015-seed-data`). Pengurus cabor dikelola **di dalam halaman detail cabor**,
+  bukan menu terpisah (see `006-pengurus-cabor`).
 - **Glossary**:
   - `Cabor` — short for Cabang Olahraga (sport discipline/branch)
   - `Ketua Cabor` — head of the sport discipline

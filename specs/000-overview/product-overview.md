@@ -5,7 +5,9 @@
 A web-based information system for **KONI Batam** (Komite Olahraga Nasional Indonesia,
 Batam chapter) to manage athletes, coaches, sport disciplines, achievements, and
 reporting — replacing manual/paper-based record keeping. Delivered as a mobile-first
-SPA so it can later be wrapped for Android/iOS via Capacitor webview.
+SPA. ~~so it can later be wrapped for Android/iOS via Capacitor webview~~
+**Revisi 2026-07-12: aplikasi mobile dibatalkan** — web-only
+(see `revisi-2026-07-12.md`).
 
 Source requirements: `KONI-Batam_WebApp.pdf` (root of this repo).
 
@@ -30,7 +32,7 @@ Source requirements: `KONI-Batam_WebApp.pdf` (root of this repo).
 | F. Data Prestasi Atlet | Athlete achievements | `007-prestasi-atlet` |
 | G. Monitoring Atlet | Athlete monitoring | `008-monitoring-atlet` |
 | H. Pelaporan | Reporting | `009-pelaporan` |
-| I. Kartu Atlet Digital | Digital athlete card | `010-kartu-atlet-digital` |
+| I. Kartu Atlet Digital | Digital athlete card | `010-kartu-atlet-digital` — **dibatalkan (revisi 2026-07-12)** |
 
 Auth/RBAC (`001-auth-rbac`) underlies all of the above and is built first.
 

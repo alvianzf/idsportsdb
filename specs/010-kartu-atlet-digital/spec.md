@@ -1,5 +1,10 @@
 # Spec: Kartu Atlet Digital (Digital Athlete Card)
 
+> **DIBATALKAN — Revisi klien 2026-07-12**: kartu atlet digital tidak
+> diperlukan. Modul ini (beserta scanner QR, `013-scanner`) tidak lagi menjadi
+> bagian deliverable. Spec dipertahankan sebagai arsip.
+> See `specs/000-overview/revisi-2026-07-12.md`.
+
 ## 1. Overview
 
 - **Purpose & scope**: Issues a digital ID card per athlete with a QR code

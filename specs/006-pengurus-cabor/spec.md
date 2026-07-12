@@ -5,6 +5,9 @@
 - **Purpose & scope**: Tracks the board/officials of each sport discipline
   (e.g. chairperson, secretary, treasurer) and their term of service.
 - **PDF reference**: Modul D — "Data Pengurus Cabor" (page 2)
+- **Revisi (2026-07-12)**: pengurus cabor **ditambah/dikelola di dalam halaman
+  detail cabor** (`/cabor/:id`, tab Pengurus) — tidak ada menu navigasi
+  terpisah. See `specs/000-overview/revisi-2026-07-12.md`.
 - **Glossary**:
   - `Pengurus` — official/board member
   - `Jabatan` — position/title

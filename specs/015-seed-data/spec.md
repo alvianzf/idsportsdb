@@ -5,6 +5,13 @@
 - **Purpose**: Populate the database with realistic KONI Batam data for
   development and demonstration. All seeding is idempotent (uses upsert /
   findFirst guards) so it can be re-run safely.
+- **Revisi (2026-07-12)** — see `specs/000-overview/revisi-2026-07-12.md`:
+  - Seed harus mencakup **48 cabang olahraga** (bukan 8) sesuai daftar cabor
+    KONI Batam.
+  - **Dummy sebelum handover**: database diisi data dummy penuh (atlet,
+    pelatih, pengurus per cabor) sebelum serah terima; data dummy dibersihkan
+    saat go-live setelah data riil diinput.
+  - `AtletCard` seeding tidak diperlukan lagi (modul kartu dibatalkan).
 
 ## 2. Running the seed
 
