@@ -1,19 +1,21 @@
 import type { Response } from "express";
 import ExcelJS from "exceljs";
 
-/** Streams a single-sheet .xlsx as the response. */
-export async function streamExcel(
-  res: Response,
-  filename: string,
-  sheetName: string,
-  columns: { header: string; key: string; width?: number }[],
-  rows: Record<string, unknown>[],
-) {
+export interface ExcelSheetSpec {
+  name: string;
+  columns: { header: string; key: string; width?: number }[];
+  rows: Record<string, unknown>[];
+}
+
+/** Streams a multi-sheet .xlsx as the response. */
+export async function streamExcelSheets(res: Response, filename: string, sheets: ExcelSheetSpec[]) {
   const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet(sheetName);
-  sheet.columns = columns;
-  sheet.addRows(rows);
-  sheet.getRow(1).font = { bold: true };
+  for (const spec of sheets) {
+    const sheet = workbook.addWorksheet(spec.name);
+    sheet.columns = spec.columns;
+    sheet.addRows(spec.rows);
+    sheet.getRow(1).font = { bold: true };
+  }
 
   res.setHeader(
     "Content-Type",
@@ -23,4 +25,15 @@ export async function streamExcel(
 
   await workbook.xlsx.write(res);
   res.end();
+}
+
+/** Streams a single-sheet .xlsx as the response. */
+export function streamExcel(
+  res: Response,
+  filename: string,
+  sheetName: string,
+  columns: { header: string; key: string; width?: number }[],
+  rows: Record<string, unknown>[],
+) {
+  return streamExcelSheets(res, filename, [{ name: sheetName, columns, rows }]);
 }

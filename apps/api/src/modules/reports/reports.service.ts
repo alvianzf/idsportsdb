@@ -21,7 +21,7 @@ export async function getAtletPerCabor(caborId: string | null) {
   }));
 }
 
-function calcAge(birth: Date, now: Date): number {
+export function calcAge(birth: Date, now: Date): number {
   let age = now.getFullYear() - birth.getFullYear();
   const beforeBirthdayThisYear =
     now.getMonth() < birth.getMonth() ||
@@ -66,6 +66,23 @@ export async function getAtletPerKecamatan(caborId: string | null) {
   }
 
   return Array.from(counts.entries()).map(([kecamatan, count]) => ({ kecamatan, count }));
+}
+
+/** Full athlete records for the regulator detail sheets (Excel) and the
+ * compact PDF listing. Includes cabor name and the most recent prestasi. */
+export function getAtletDetail(caborId: string | null) {
+  return prisma.atlet.findMany({
+    where: caborId ? atletInCaborFilter(caborId) : undefined,
+    include: {
+      cabangOlahraga: { select: { nama: true } },
+      prestasis: {
+        orderBy: { tahun: "desc" },
+        take: 1,
+        select: { namaKejuaraan: true, tahun: true, medali: true },
+      },
+    },
+    orderBy: [{ cabangOlahraga: { nama: "asc" } }, { namaLengkap: "asc" }],
+  });
 }
 
 /** specs/009-pelaporan/spec.md — report 4: data pelatih. */
