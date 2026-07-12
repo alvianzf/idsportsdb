@@ -19,6 +19,14 @@ export const EVENT_STATUS_TONE: Record<EventStatus, "success" | "danger" | "warn
   DIUNDUR: "warning",
 };
 
+/** Plain colored-text classes — public pages carry no badge pills. */
+export const EVENT_STATUS_TEXT: Record<EventStatus, string> = {
+  SELESAI: "text-success",
+  ON_TRACK: "text-info",
+  DIBATALKAN: "text-danger",
+  DIUNDUR: "text-warning",
+};
+
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" });
 }

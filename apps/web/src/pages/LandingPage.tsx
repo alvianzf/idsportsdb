@@ -12,14 +12,14 @@ import {
   Users,
 } from "lucide-react";
 import { EVENT_LEVEL_LABELS, EVENT_STATUS_LABELS } from "@inasportdb/shared-types";
-import { Badge, Button } from "../components/ui";
+import { Button } from "../components/ui";
 import { api, resolveFileUrl } from "../lib/api";
 import { getSocket } from "../lib/socket";
 import { useAuthStore } from "../store/authStore";
 import { PUBLIC_NAV } from "./public/publicNav";
 import { LandingSlider } from "./public/LandingSlider";
 import {
-  EVENT_STATUS_TONE,
+  EVENT_STATUS_TEXT,
   formatEventDate,
   type PublicEvent,
 } from "./public/eventShared";
@@ -139,9 +139,9 @@ export function LandingPage() {
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="max-w-2xl"
           >
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-white/90 backdrop-blur">
+            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-white/85">
               <Trophy size={13} /> Satu Data Olahraga Batam
-            </span>
+            </p>
             <h1 className="mt-5 text-3xl font-extrabold leading-tight tracking-tight text-white md:text-5xl">
               Komite Olahraga Nasional Indonesia
               <span className="block bg-gradient-to-r from-[#ffd166] via-[#ffb347] to-[#ff8c42] bg-clip-text text-transparent">
@@ -259,14 +259,14 @@ export function LandingPage() {
                           </span>
                         )}
                       </div>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        <Badge tone="neutral">{EVENT_LEVEL_LABELS[e.tingkat]}</Badge>
-                        {e.cabangOlahraga && <Badge tone="info">{e.cabangOlahraga.nama}</Badge>}
-                      </div>
+                      <p className="mt-2 text-xs text-neutral-500">
+                        {EVENT_LEVEL_LABELS[e.tingkat]}
+                        {e.cabangOlahraga ? ` · ${e.cabangOlahraga.nama}` : ""}
+                      </p>
                     </div>
-                    <Badge tone={EVENT_STATUS_TONE[e.status]} className="shrink-0">
+                    <span className={`shrink-0 text-xs font-bold uppercase tracking-wide ${EVENT_STATUS_TEXT[e.status]}`}>
                       {EVENT_STATUS_LABELS[e.status]}
-                    </Badge>
+                    </span>
                   </div>
                 </div>
               ))}

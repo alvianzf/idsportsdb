@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { CalendarDays, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   EVENT_LEVELS,
@@ -7,37 +7,19 @@ import {
   EVENT_STATUSES,
   EVENT_STATUS_LABELS,
   UNSCOPED_ADMIN_ROLES,
-  type EventLevel,
-  type EventStatus,
 } from "@inasportdb/shared-types";
-import { Badge, Button, Card, Combobox, Field, Input, Modal, PageHeader, Select } from "../../components/ui";
+import { Button, Card, Combobox, Field, Input, Modal, PageHeader, Select } from "../../components/ui";
 import { api } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 import { useAuthStore } from "../../store/authStore";
-
-interface EventRow {
-  id: string;
-  namaKejuaraan: string;
-  tingkat: EventLevel;
-  lokasi: string | null;
-  deskripsi: string | null;
-  tanggalMulai: string;
-  tanggalSelesai: string | null;
-  status: EventStatus;
-  cabangOlahraga: { id: string; nama: string } | null;
-}
+import type { PublicEvent } from "../public/eventShared";
+import { addDays, diffDays, eventEnd, eventStart, EMPTY_FILTERS, filterEvents, type EventFilters } from "./calendarUtils";
+import { EventCards, EventFilterBar, EventGantt, EventMonthCalendar, EventTable, type EventView } from "./EventViews";
 
 interface CaborOption {
   id: string;
   nama: string;
 }
-
-const STATUS_TONE: Record<EventStatus, "success" | "danger" | "warning" | "info"> = {
-  SELESAI: "success",
-  ON_TRACK: "info",
-  DIBATALKAN: "danger",
-  DIUNDUR: "warning",
-};
 
 interface EventForm {
   namaKejuaraan: string;
@@ -61,43 +43,40 @@ const emptyForm: EventForm = {
   status: "ON_TRACK",
 };
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" });
-}
-
-/** Kalender Event admin page. See specs/017-event-calendar/spec.md. */
+/** Kalender Event admin page — Google-Calendar-like (spec 017 §4): four views,
+ * search/filter, drag-and-drop reschedule, click-a-day to create. */
 export function EventListPage() {
   const role = useAuthStore((state) => state.user?.role);
   const canWrite = role && UNSCOPED_ADMIN_ROLES.includes(role);
   const canDelete = role === "SUPER_ADMIN_KONI";
 
-  const [events, setEvents] = useState<EventRow[] | null>(null);
-  const [status, setStatus] = useState("");
+  const [events, setEvents] = useState<PublicEvent[] | null>(null);
   const [error, setError] = useState(false);
+  const [view, setView] = useState<EventView>("kalender");
+  const [filters, setFilters] = useState<EventFilters>(EMPTY_FILTERS);
   const [cabors, setCabors] = useState<CaborOption[]>([]);
-  const [editing, setEditing] = useState<EventRow | "new" | null>(null);
+  const [editing, setEditing] = useState<PublicEvent | "new" | null>(null);
   const [form, setForm] = useState<EventForm>(emptyForm);
   const [saving, setSaving] = useState(false);
 
   function load() {
-    setEvents(null);
     api
-      .get<EventRow[]>("/events", { params: { status: status || undefined } })
+      .get<PublicEvent[]>("/events")
       .then((res) => setEvents(res.data))
       .catch(() => setError(true));
   }
 
-  useEffect(load, [status]);
+  useEffect(load, []);
   useEffect(() => {
     api.get<CaborOption[]>("/cabor").then((res) => setCabors(res.data)).catch(() => undefined);
   }, []);
 
-  function openCreate() {
-    setForm(emptyForm);
+  function openCreate(prefillDate?: string) {
+    setForm({ ...emptyForm, tanggalMulai: prefillDate ?? "" });
     setEditing("new");
   }
 
-  function openEdit(event: EventRow) {
+  function openEdit(event: PublicEvent) {
     setForm({
       namaKejuaraan: event.namaKejuaraan,
       tingkat: event.tingkat,
@@ -109,6 +88,21 @@ export function EventListPage() {
       status: event.status,
     });
     setEditing(event);
+  }
+
+  // Spec 017 §4: drop on a day = new start date, duration preserved.
+  async function handleEventDrop(event: PublicEvent, newStart: string) {
+    if (!canWrite) return;
+    const duration = diffDays(eventStart(event), eventEnd(event));
+    const payload: Record<string, string> = { tanggalMulai: newStart };
+    if (event.tanggalSelesai) payload.tanggalSelesai = addDays(newStart, duration);
+    try {
+      await api.patch(`/events/${event.id}`, payload);
+      toast.success("Jadwal event dipindahkan.");
+      load();
+    } catch {
+      toast.error("Gagal memindahkan jadwal.");
+    }
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -141,7 +135,7 @@ export function EventListPage() {
     }
   }
 
-  async function handleDelete(event: EventRow) {
+  async function handleDelete(event: PublicEvent) {
     const confirmed = await confirmAction({
       text: `Hapus event "${event.namaKejuaraan}"?`,
       danger: true,
@@ -151,11 +145,15 @@ export function EventListPage() {
     try {
       await api.delete(`/events/${event.id}`);
       toast.success("Event berhasil dihapus.");
+      setEditing(null);
       load();
     } catch {
       toast.error("Gagal menghapus event.");
     }
   }
+
+  const filtered = filterEvents(events ?? [], filters);
+  const onEventClick = canWrite ? openEdit : undefined;
 
   return (
     <div>
@@ -164,71 +162,53 @@ export function EventListPage() {
         description="Agenda kejuaraan dan kegiatan KONI Batam"
         actions={
           canWrite ? (
-            <Button onClick={openCreate}>
+            <Button onClick={() => openCreate()}>
               <Plus size={16} /> Tambah Event
             </Button>
           ) : undefined
         }
       />
 
-      <Card className="mb-4">
-        <Select
-          value={status}
-          onChange={setStatus}
-          options={[
-            { value: "", label: "Semua Status" },
-            ...EVENT_STATUSES.map((s) => ({ value: s, label: EVENT_STATUS_LABELS[s] })),
-          ]}
-          className="w-full sm:w-56"
-        />
-      </Card>
-
       {error && <Card className="text-sm text-danger">Gagal memuat data event.</Card>}
       {!error && events === null && <Card className="text-sm text-neutral-500">Memuat data...</Card>}
-      {events !== null && events.length === 0 && (
-        <Card className="text-sm text-neutral-500">Belum ada event.</Card>
+      {events !== null && (
+        <>
+          <EventFilterBar view={view} onViewChange={setView} filters={filters} onFiltersChange={setFilters} events={events} />
+          {view === "kalender" && (
+            <EventMonthCalendar
+              events={filtered}
+              canEdit={!!canWrite}
+              jumpTo={filters.date || undefined}
+              onDayClick={canWrite ? (day) => openCreate(day) : undefined}
+              onEventClick={onEventClick}
+              onEventDrop={canWrite ? handleEventDrop : undefined}
+            />
+          )}
+          {view === "card" && (
+            <EventCards
+              events={filtered}
+              onEventClick={onEventClick}
+              actions={
+                canWrite
+                  ? (e) => (
+                      <Button
+                        variant="outline"
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          openEdit(e);
+                        }}
+                      >
+                        <Pencil size={14} />
+                      </Button>
+                    )
+                  : undefined
+              }
+            />
+          )}
+          {view === "table" && <EventTable events={filtered} onEventClick={onEventClick} />}
+          {view === "gantt" && <EventGantt events={filtered} onEventClick={onEventClick} />}
+        </>
       )}
-
-      <div className="space-y-3">
-        {events?.map((e) => (
-          <Card key={e.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="font-medium text-neutral-900">{e.namaKejuaraan}</p>
-                <Badge tone="neutral">{EVENT_LEVEL_LABELS[e.tingkat]}</Badge>
-                {e.cabangOlahraga && <Badge tone="info">{e.cabangOlahraga.nama}</Badge>}
-              </div>
-              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-neutral-500">
-                <span className="flex items-center gap-1">
-                  <CalendarDays size={13} />
-                  {formatDate(e.tanggalMulai)}
-                  {e.tanggalSelesai && e.tanggalSelesai !== e.tanggalMulai
-                    ? ` – ${formatDate(e.tanggalSelesai)}`
-                    : ""}
-                </span>
-                {e.lokasi && (
-                  <span className="flex items-center gap-1">
-                    <MapPin size={13} /> {e.lokasi}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-2 self-start sm:self-center">
-              <Badge tone={STATUS_TONE[e.status]}>{EVENT_STATUS_LABELS[e.status]}</Badge>
-              {canWrite && (
-                <Button variant="outline" onClick={() => openEdit(e)}>
-                  <Pencil size={14} />
-                </Button>
-              )}
-              {canDelete && (
-                <Button variant="danger" onClick={() => handleDelete(e)}>
-                  <Trash2 size={14} />
-                </Button>
-              )}
-            </div>
-          </Card>
-        ))}
-      </div>
 
       {editing && (
         <Modal title={editing === "new" ? "Tambah Event" : "Ubah Event"} onClose={() => setEditing(null)}>
@@ -301,13 +281,18 @@ export function EventListPage() {
                 onChange={(e) => setForm((f) => ({ ...f, deskripsi: e.target.value }))}
               />
             </Field>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <Button type="submit" disabled={saving}>
                 {saving ? "Menyimpan..." : "Simpan"}
               </Button>
               <Button type="button" variant="outline" onClick={() => setEditing(null)}>
                 Batal
               </Button>
+              {editing !== "new" && canDelete && (
+                <Button type="button" variant="danger" className="ml-auto" onClick={() => handleDelete(editing)}>
+                  <Trash2 size={14} /> Hapus
+                </Button>
+              )}
             </div>
           </form>
         </Modal>

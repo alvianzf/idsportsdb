@@ -12,7 +12,7 @@ import {
   type Gender,
   type Medal,
 } from "@inasportdb/shared-types";
-import { Badge, Card, Pagination } from "../../components/ui";
+import { Card, Pagination } from "../../components/ui";
 import { api } from "../../lib/api";
 import { PublicShell } from "./PublicShell";
 
@@ -47,11 +47,12 @@ interface PublicPelatih {
   cabor: string;
 }
 
-const MEDAL_TONE: Record<Medal, "gold" | "silver" | "bronze" | "neutral"> = {
-  GOLD: "gold",
-  SILVER: "silver",
-  BRONZE: "bronze",
-  NONE: "neutral",
+// Plain colored text — public pages carry no badge pills (client note 2026-07-12).
+const MEDAL_TEXT: Record<Medal, string> = {
+  GOLD: "text-gold",
+  SILVER: "text-silver",
+  BRONZE: "text-bronze",
+  NONE: "text-neutral-500",
 };
 
 const PAGE_SIZE = 20;
@@ -146,7 +147,7 @@ export function DataPublicPage() {
                 <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
                   <th className="px-4 py-3">Nama</th>
                   <th className="px-4 py-3">Cabor</th>
-                  <th className="px-4 py-3">JK</th>
+                  <th className="px-4 py-3">Jenis Kelamin</th>
                   <th className="px-4 py-3">Tingkat</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Prestasi Tertinggi</th>
@@ -167,16 +168,20 @@ export function DataPublicPage() {
                         {a.tingkatAtlet ? ATHLETE_LEVEL_LABELS[a.tingkatAtlet] : "-"}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge tone={a.statusAtlet === "ACTIVE" ? "success" : "neutral"}>
+                        <span
+                          className={`text-xs font-bold uppercase tracking-wide ${
+                            a.statusAtlet === "ACTIVE" ? "text-success" : "text-neutral-500"
+                          }`}
+                        >
                           {ATHLETE_STATUS_LABELS[a.statusAtlet]}
-                        </Badge>
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         {a.prestasiTertinggi ? (
                           <span className="flex flex-wrap items-center gap-1.5 text-neutral-600">
-                            <Badge tone={MEDAL_TONE[a.prestasiTertinggi.medali]}>
+                            <span className={`text-xs font-bold ${MEDAL_TEXT[a.prestasiTertinggi.medali]}`}>
                               {MEDAL_LABELS[a.prestasiTertinggi.medali]}
-                            </Badge>
+                            </span>
                             <span className="text-xs">
                               {a.prestasiTertinggi.namaKejuaraan} ·{" "}
                               {COMPETITION_LEVEL_LABELS[a.prestasiTertinggi.tingkatKejuaraan]} {a.prestasiTertinggi.tahun}
