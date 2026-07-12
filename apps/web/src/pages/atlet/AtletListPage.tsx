@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Download, Plus, Search, Trash2 } from "lucide-react";
+import { Download, Plus, Search, Trash2, Upload } from "lucide-react";
 import {
   ATHLETE_STATUSES,
   ATHLETE_STATUS_LABELS,
@@ -9,7 +9,7 @@ import {
   UNSCOPED_ADMIN_ROLES,
   type AthleteStatus,
 } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Input, Select, Badge, Pagination, Combobox, DataTable, type Column, type BulkAction } from "../../components/ui";
+import { Card, PageHeader, Button, Input, Select, Badge, Pagination, Combobox, DataTable, Modal, type Column, type BulkAction } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import { confirmAction } from "../../lib/confirm";
@@ -57,7 +57,10 @@ export function AtletListPage() {
   const [cabors, setCabors] = useState<CaborOption[]>([]);
   const [error, setError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  const [dlState, setDlState] = useState<{ count: number; bytes: number } | null>(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ imported: number; rejected: { row: number; error: string }[] } | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const pageSize = 20;
 
@@ -111,24 +114,52 @@ export function AtletListPage() {
     setReloadKey((k) => k + 1);
   }
 
-  async function handleBulkDownloadKartu(ids: string[]) {
-    setDlState({ count: ids.length, bytes: 0 });
+  // Revisi 2026-07-12: bulk download to Excel/CSV/PDF (replaces card ZIP).
+  async function handleExport(format: "xlsx" | "csv" | "pdf") {
+    setShowExportMenu(false);
+    const exporting = toast.loading("Menyiapkan berkas...");
     try {
-      const res = await api.post("/cards/bulk-download", { ids }, {
+      const res = await api.get("/atlet/export", {
+        params: {
+          format,
+          search: search || undefined,
+          cabor: cabor || undefined,
+          status: status || undefined,
+          kecamatan: kecamatan || undefined,
+        },
         responseType: "blob",
-        onDownloadProgress: (e) => setDlState({ count: ids.length, bytes: e.loaded }),
       });
       const url = URL.createObjectURL(res.data as Blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "kartu-atlet-bulk.zip";
+      link.download = `data-atlet.${format}`;
       link.click();
       URL.revokeObjectURL(url);
-      toast.success(`${ids.length} kartu berhasil diunduh.`);
+      toast.success("Data atlet berhasil diunduh.", { id: exporting });
     } catch {
-      toast.error("Gagal mengunduh kartu. Pastikan atlet yang dipilih memiliki kartu aktif.");
+      toast.error("Gagal mengunduh data atlet.", { id: exporting });
+    }
+  }
+
+  // Revisi 2026-07-12: bulk update — import athletes from an uploaded Excel/CSV.
+  async function handleImportFile(file: File) {
+    setImporting(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await api.post<{ imported: number; rejected: { row: number; error: string }[] }>(
+        "/atlet/import",
+        form,
+      );
+      setImportResult(res.data);
+      if (res.data.imported > 0) setReloadKey((k) => k + 1);
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { error?: string } } }).response?.data?.error;
+      toast.error(typeof message === "string" ? message : "Gagal mengimpor berkas.");
     } finally {
-      setDlState(null);
+      setImporting(false);
+      if (importInputRef.current) importInputRef.current.value = "";
     }
   }
 
@@ -188,7 +219,6 @@ export function AtletListPage() {
   ];
 
   const bulkActions: BulkAction[] = [
-    { label: "Unduh Kartu", icon: Download, variant: "outline", onClick: handleBulkDownloadKartu },
     ...(canDelete ? [{ label: "Hapus", icon: Trash2, variant: "danger" as const, onClick: handleBulkDelete }] : []),
   ];
 
@@ -198,13 +228,48 @@ export function AtletListPage() {
         title="Data Atlet"
         description="Daftar atlet binaan KONI Batam"
         actions={
-          canCreate ? (
-            <Link to="/atlet/new">
-              <Button>
-                <Plus size={16} /> Tambah
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Button variant="outline" onClick={() => setShowExportMenu((v) => !v)}>
+                <Download size={16} /> Unduh
               </Button>
-            </Link>
-          ) : undefined
+              {showExportMenu && (
+                <div className="absolute right-0 z-20 mt-1 w-36 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg">
+                  {(["xlsx", "csv", "pdf"] as const).map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => handleExport(f)}
+                      className="block w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-50"
+                    >
+                      {f === "xlsx" ? "Excel (.xlsx)" : f.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {canCreate && (
+              <>
+                <Button variant="outline" disabled={importing} onClick={() => importInputRef.current?.click()}>
+                  <Upload size={16} /> {importing ? "Mengimpor..." : "Impor"}
+                </Button>
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept=".xlsx,.csv"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void handleImportFile(file);
+                  }}
+                />
+                <Link to="/atlet/new">
+                  <Button>
+                    <Plus size={16} /> Tambah
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
         }
       />
 
@@ -259,48 +324,30 @@ export function AtletListPage() {
         </>
       )}
 
-      {dlState && <BulkDownloadOverlay count={dlState.count} bytes={dlState.bytes} />}
-    </div>
-  );
-}
-
-function BulkDownloadOverlay({ count, bytes }: { count: number; bytes: number }) {
-  const kb = (bytes / 1024).toFixed(0);
-  return (
-    <>
-      <style>{`
-        @keyframes koni-indeterminate {
-          0%   { transform: translateX(-100%); }
-          100% { transform: translateX(350%); }
-        }
-        .koni-indeterminate {
-          animation: koni-indeterminate 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-      `}</style>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Mengunduh kartu"
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-      >
-        <div className="w-full max-w-xs rounded-xl bg-white p-6 shadow-xl">
-          <p className="mb-1 text-sm font-semibold text-neutral-900">
-            Menyiapkan {count} kartu...
-          </p>
-          <p className="mb-4 text-xs text-neutral-500">
-            {bytes > 0 ? `${kb} KB diunduh` : "Sedang diproses di server"}
-          </p>
-
-          {/* Indeterminate progress track */}
-          <div className="relative h-2 w-full overflow-hidden rounded-full bg-neutral-200">
-            <div className="koni-indeterminate absolute inset-y-0 w-1/3 rounded-full bg-primary" />
+      {importResult && (
+        <Modal title="Hasil Impor" onClose={() => setImportResult(null)}>
+          <div className="space-y-3 text-sm">
+            <p className="text-neutral-700">
+              <span className="font-semibold text-success">{importResult.imported}</span> atlet berhasil diimpor
+              {importResult.rejected.length > 0 && (
+                <>
+                  , <span className="font-semibold text-danger">{importResult.rejected.length}</span> baris ditolak
+                </>
+              )}
+              .
+            </p>
+            {importResult.rejected.length > 0 && (
+              <ul className="max-h-64 space-y-1 overflow-y-auto rounded-lg bg-neutral-50 p-3 text-xs text-neutral-600">
+                {importResult.rejected.map((r) => (
+                  <li key={`${r.row}-${r.error}`}>
+                    <span className="font-medium">Baris {r.row}:</span> {r.error}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-
-          <p className="mt-4 text-center text-xs text-neutral-400">
-            Mohon jangan tutup halaman ini
-          </p>
-        </div>
-      </div>
-    </>
+        </Modal>
+      )}
+    </div>
   );
 }

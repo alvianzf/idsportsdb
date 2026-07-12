@@ -34,12 +34,28 @@ enum AthleteStatus {
   TRANSFERRED // mutasi
 }
 
+// Revisi 2026-07-12: tingkat atlet final — Kota/Provinsi/Nasional/Internasional.
 enum AthleteLevel {
-  PEMULA
-  DAERAH
+  KOTA
   PROVINSI
   NASIONAL
   INTERNASIONAL
+}
+
+// Revisi 2026-07-12: kalender event (spec 017).
+enum EventStatus {
+  ON_TRACK
+  SELESAI
+  DIBATALKAN
+  DIUNDUR
+}
+
+enum EventLevel {
+  KOTA_KABUPATEN
+  PROVINSI
+  NASIONAL
+  INTERNASIONAL
+  OPEN
 }
 
 enum CompetitionLevel {
@@ -129,10 +145,30 @@ model CabangOlahraga {
   users         User[]
   atletTambahan AtletCabor[]
   documents     CaborDocument[]
+  events        Event[]
 
   // jumlahAtlet / jumlahPelatih (Modul E) are derived via _count, not stored;
   // jumlahAtlet includes athletes whose primary cabor is this one plus those
   // who additionally compete here via AtletCabor (atletTambahan).
+}
+
+// Revisi 2026-07-12: kalender event KONI Batam (spec 017-event-calendar).
+model Event {
+  id               String          @id @default(uuid())
+  namaKejuaraan    String
+  tingkat          EventLevel
+  lokasi           String?
+  deskripsi        String?
+  tanggalMulai     DateTime
+  tanggalSelesai   DateTime?
+  cabangOlahragaId String?
+  cabangOlahraga   CabangOlahraga? @relation(fields: [cabangOlahragaId], references: [id], onDelete: SetNull)
+  status           EventStatus     @default(ON_TRACK)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([tanggalMulai])
+  @@index([status])
 }
 
 // SK (Surat Keputusan / decree) and other official documents for a CabangOlahraga.
@@ -156,8 +192,9 @@ model Atlet {
   nomorRegistrasi   String        @unique
   namaLengkap       String
   nik               String        @unique
-  tempatLahir       String
-  tanggalLahir      DateTime
+  // Revisi 2026-07-12: tempat/tanggal lahir on hold — optional, hidden from forms.
+  tempatLahir       String?
+  tanggalLahir      DateTime?
   jenisKelamin      Gender
   alamat            String
   // Not in the source PDF field list; added to support the
@@ -171,7 +208,8 @@ model Atlet {
   cabangOlahraga    CabangOlahraga @relation(fields: [cabangOlahragaId], references: [id])
 
   statusAtlet       AthleteStatus @default(ACTIVE)
-  tingkatAtlet      AthleteLevel
+  // Revisi 2026-07-12: tingkat atlet TBD — optional until the client finalizes levels.
+  tingkatAtlet      AthleteLevel?
   pendidikan        String?
   pekerjaan         String?
 
@@ -307,6 +345,8 @@ model MonitoringEvent {
 }
 
 // Digital athlete card (Modul I). QR encodes a public verify URL containing cardCode.
+// Revisi 2026-07-12: modul kartu atlet digital dibatalkan. Model dipertahankan
+// agar tabel/data lama tidak terhapus oleh db push; tidak ada kode yang memakainya.
 model AtletCard {
   id           String    @id @default(uuid())
   atletId      String

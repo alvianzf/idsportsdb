@@ -11,6 +11,7 @@ import { uploader, publicUrl, uploadRoot } from "../../lib/storage.js";
 import {
   createAtletSchema,
   updateAtletSchema,
+  updateAtletMeSchema,
   listAtletQuerySchema,
   uploadDocumentSchema,
 } from "./atlet.schema.js";
@@ -103,6 +104,37 @@ atletRouter.get(
       res.status(404).json({ error: "Not found" });
       return;
     }
+    res.json(atlet);
+  }),
+);
+
+// Revisi 2026-07-12: athletes self-input their own biodata.
+atletRouter.patch(
+  "/me",
+  requireRole(["ATLET"]),
+  asyncHandler(async (req, res) => {
+    if (!req.user!.athleteId) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    const parsed = updateAtletMeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+
+    const atlet = await prisma.atlet.update({
+      where: { id: req.user!.athleteId },
+      data: parsed.data,
+      include: {
+        cabangOlahraga: caborSummary,
+        ...caborTambahanInclude,
+        documents: true,
+        prestasis: { orderBy: { tahun: "desc" } },
+      },
+    });
+    emit("atlet:change");
     res.json(atlet);
   }),
 );

@@ -5,12 +5,13 @@ import toast from "react-hot-toast";
 import {
   ATHLETE_LEVELS,
   ATHLETE_LEVEL_LABELS,
-  ATHLETE_STATUSES,
   ATHLETE_STATUS_LABELS,
   BATAM_KECAMATAN,
+  EDUCATION_LEVELS,
   GENDERS,
   GENDER_LABELS,
   UNSCOPED_ADMIN_ROLES,
+  type AthleteStatus,
 } from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Field, Input, Select, Combobox } from "../../components/ui";
 import { api } from "../../lib/api";
@@ -25,6 +26,10 @@ const REGISTRATION_DOCS: { type: RegistrationDocType; label: string; required: b
 ];
 
 const MAX_DOC_SIZE_MB = 10;
+
+// Revisi 2026-07-12: the form only offers Aktif/Tidak Aktif; other statuses
+// (cedera, pemusatan latihan, mutasi) are set via the Monitoring module.
+const FORM_STATUSES: AthleteStatus[] = ["ACTIVE", "INACTIVE"];
 
 interface CaborOption {
   id: string;
@@ -42,8 +47,6 @@ interface AtletForm {
   nomorRegistrasi: string;
   namaLengkap: string;
   nik: string;
-  tempatLahir: string;
-  tanggalLahir: string;
   jenisKelamin: string;
   alamat: string;
   kecamatan: string;
@@ -62,8 +65,6 @@ const empty: AtletForm = {
   nomorRegistrasi: "",
   namaLengkap: "",
   nik: "",
-  tempatLahir: "",
-  tanggalLahir: "",
   jenisKelamin: "L",
   alamat: "",
   kecamatan: "",
@@ -72,7 +73,7 @@ const empty: AtletForm = {
   cabangOlahragaId: "",
   cabangOlahragaLain: [],
   statusAtlet: "ACTIVE",
-  tingkatAtlet: "PEMULA",
+  tingkatAtlet: "",
   pendidikan: "",
   pekerjaan: "",
 };
@@ -128,8 +129,6 @@ export function AtletFormPage() {
           nomorRegistrasi: a.nomorRegistrasi ?? "",
           namaLengkap: a.namaLengkap ?? "",
           nik: a.nik ?? "",
-          tempatLahir: a.tempatLahir ?? "",
-          tanggalLahir: a.tanggalLahir ? a.tanggalLahir.slice(0, 10) : "",
           jenisKelamin: a.jenisKelamin ?? "L",
           alamat: a.alamat ?? "",
           kecamatan: a.kecamatan ?? "",
@@ -138,7 +137,7 @@ export function AtletFormPage() {
           cabangOlahragaId: a.cabangOlahragaId ?? "",
           cabangOlahragaLain: caborTambahan,
           statusAtlet: a.statusAtlet ?? "ACTIVE",
-          tingkatAtlet: a.tingkatAtlet ?? "PEMULA",
+          tingkatAtlet: a.tingkatAtlet ?? "",
           pendidikan: a.pendidikan ?? "",
           pekerjaan: a.pekerjaan ?? "",
         });
@@ -193,8 +192,6 @@ export function AtletFormPage() {
         nomorRegistrasi: form.nomorRegistrasi,
         namaLengkap: form.namaLengkap,
         nik: form.nik,
-        tempatLahir: form.tempatLahir,
-        tanggalLahir: form.tanggalLahir,
         jenisKelamin: form.jenisKelamin,
         alamat: form.alamat,
         kecamatan: form.kecamatan || undefined,
@@ -203,7 +200,7 @@ export function AtletFormPage() {
         cabangOlahragaId: form.cabangOlahragaId || undefined,
         cabangOlahragaLain: form.cabangOlahragaLain,
         statusAtlet: form.statusAtlet,
-        tingkatAtlet: form.tingkatAtlet,
+        tingkatAtlet: form.tingkatAtlet || undefined,
         pendidikan: form.pendidikan || undefined,
         pekerjaan: form.pekerjaan || undefined,
       };
@@ -278,23 +275,6 @@ export function AtletFormPage() {
                   required
                   value={form.nomorRegistrasi}
                   onChange={(e) => setForm((f) => ({ ...f, nomorRegistrasi: e.target.value }))}
-                />
-              </Field>
-              <Field label="Tempat Lahir" required htmlFor="tempatLahir">
-                <Input
-                  id="tempatLahir"
-                  required
-                  value={form.tempatLahir}
-                  onChange={(e) => setForm((f) => ({ ...f, tempatLahir: e.target.value }))}
-                />
-              </Field>
-              <Field label="Tanggal Lahir" required htmlFor="tanggalLahir">
-                <Input
-                  id="tanggalLahir"
-                  type="date"
-                  required
-                  value={form.tanggalLahir}
-                  onChange={(e) => setForm((f) => ({ ...f, tanggalLahir: e.target.value }))}
                 />
               </Field>
               <Field label="Jenis Kelamin" required htmlFor="jenisKelamin">
@@ -377,16 +357,24 @@ export function AtletFormPage() {
                   required
                   value={form.statusAtlet}
                   onChange={(v) => setForm((f) => ({ ...f, statusAtlet: v }))}
-                  options={ATHLETE_STATUSES.map((s) => ({ value: s, label: ATHLETE_STATUS_LABELS[s] }))}
+                  options={[
+                    ...FORM_STATUSES.map((s) => ({ value: s, label: ATHLETE_STATUS_LABELS[s] })),
+                    // Preserve a non-form status (cedera/pelatnas/mutasi) already on the record.
+                    ...(form.statusAtlet && !FORM_STATUSES.includes(form.statusAtlet as AthleteStatus)
+                      ? [{ value: form.statusAtlet, label: ATHLETE_STATUS_LABELS[form.statusAtlet as AthleteStatus] }]
+                      : []),
+                  ]}
                 />
               </Field>
-              <Field label="Tingkat Atlet" required htmlFor="tingkatAtlet">
+              <Field label="Tingkat Atlet" htmlFor="tingkatAtlet">
                 <Select
                   id="tingkatAtlet"
-                  required
                   value={form.tingkatAtlet}
                   onChange={(v) => setForm((f) => ({ ...f, tingkatAtlet: v }))}
-                  options={ATHLETE_LEVELS.map((l) => ({ value: l, label: ATHLETE_LEVEL_LABELS[l] }))}
+                  options={[
+                    { value: "", label: "Belum ditentukan" },
+                    ...ATHLETE_LEVELS.map((l) => ({ value: l, label: ATHLETE_LEVEL_LABELS[l] })),
+                  ]}
                 />
               </Field>
             </div>
@@ -450,11 +438,19 @@ export function AtletFormPage() {
           <section className="space-y-4">
             <h2 className="text-sm font-semibold text-neutral-900">Lainnya</h2>
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Pendidikan" htmlFor="pendidikan">
-                <Input
+              <Field label="Pendidikan Terakhir" htmlFor="pendidikan">
+                <Select
                   id="pendidikan"
                   value={form.pendidikan}
-                  onChange={(e) => setForm((f) => ({ ...f, pendidikan: e.target.value }))}
+                  onChange={(v) => setForm((f) => ({ ...f, pendidikan: v }))}
+                  options={[
+                    { value: "", label: "Pilih jenjang" },
+                    ...EDUCATION_LEVELS.map((e) => ({ value: e, label: e })),
+                    // Preserve legacy free-text values already on the record.
+                    ...(form.pendidikan && !EDUCATION_LEVELS.includes(form.pendidikan as (typeof EDUCATION_LEVELS)[number])
+                      ? [{ value: form.pendidikan, label: form.pendidikan }]
+                      : []),
+                  ]}
                 />
               </Field>
               <Field label="Pekerjaan" htmlFor="pekerjaan">

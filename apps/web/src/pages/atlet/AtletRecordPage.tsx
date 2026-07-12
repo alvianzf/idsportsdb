@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Maximize2, User } from "lucide-react";
-import { KoniQR } from "../../components/ui";
+import { ArrowLeft, User } from "lucide-react";
 import {
   ATHLETE_LEVEL_LABELS,
   ATHLETE_STATUS_LABELS,
@@ -12,20 +11,11 @@ import {
   type CompetitionLevel,
   type Medal,
 } from "@inasportdb/shared-types";
-import { Badge, Modal } from "../../components/ui";
+import { Badge } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAuthenticatedUrl } from "../../hooks/useAuthenticatedUrl";
 import { useAuthStore } from "../../store/authStore";
 import type { AtletDetail } from "./types";
-
-interface AtletCard {
-  id: string;
-  cardCode: string;
-  qrPayloadUrl: string;
-  issuedAt: string;
-  expiresAt: string | null;
-  isRevoked: boolean;
-}
 
 interface Prestasi {
   id: string;
@@ -65,17 +55,10 @@ export function AtletRecordPage() {
   const navigate = useNavigate();
 
   const [atlet, setAtlet] = useState<AtletDetail | null>(null);
-  const [card, setCard] = useState<AtletCard | null | undefined>(undefined);
   const [prestasi, setPrestasi] = useState<Prestasi[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showQrModal, setShowQrModal] = useState(false);
   // Must be called unconditionally before any early returns (Rules of Hooks)
   const fotoSrc = useAuthenticatedUrl(atlet?.fotoUrl);
-
-  if (!user) return <Navigate to="/login" replace />;
-
-  const isAthleteViewingOwn = user.role === "ATLET" && user.athleteId === id;
-  const cardPath = isAthleteViewingOwn ? "/atlet/me/card" : `/atlet/${id}/card`;
 
   useEffect(() => {
     if (!id) return;
@@ -84,14 +67,12 @@ export function AtletRecordPage() {
       .then((r) => setAtlet(r.data))
       .catch(() => setError("Gagal memuat data atlet."));
     api
-      .get<AtletCard | null>(cardPath)
-      .then((r) => setCard(r.data))
-      .catch(() => setCard(null));
-    api
       .get<Prestasi[]>(`/atlet/${id}/prestasi`)
       .then((r) => setPrestasi(r.data))
       .catch(() => setPrestasi([]));
-  }, [id, cardPath]);
+  }, [id]);
+
+  if (!user) return <Navigate to="/login" replace />;
 
   if (error) {
     return (
@@ -109,8 +90,6 @@ export function AtletRecordPage() {
     );
   }
 
-  const activeCard = card && !card.isRevoked ? card : null;
-
   return (
     <div className="min-h-svh bg-neutral-100">
       {/* Header bar */}
@@ -127,10 +106,10 @@ export function AtletRecordPage() {
         </button>
       </div>
 
-      {/* Non-active banner — shown when accessed via QR scan for an inactive athlete */}
+      {/* Non-active banner */}
       {atlet.statusAtlet !== "ACTIVE" && (
         <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-xs font-medium text-amber-700">
-          Kartu valid namun status atlet saat ini: {ATHLETE_STATUS_LABELS[atlet.statusAtlet]}
+          Status atlet saat ini: {ATHLETE_STATUS_LABELS[atlet.statusAtlet]}
         </div>
       )}
 
@@ -165,49 +144,21 @@ export function AtletRecordPage() {
         {/* Status badges */}
         <div className="mt-4 flex flex-wrap justify-center gap-2 px-4">
           <Badge tone={STATUS_TONE[atlet.statusAtlet]}>{ATHLETE_STATUS_LABELS[atlet.statusAtlet]}</Badge>
-          <Badge tone="neutral">{ATHLETE_LEVEL_LABELS[atlet.tingkatAtlet]}</Badge>
+          {atlet.tingkatAtlet && <Badge tone="neutral">{ATHLETE_LEVEL_LABELS[atlet.tingkatAtlet]}</Badge>}
           <Badge tone="info">{GENDER_LABELS[atlet.jenisKelamin]}</Badge>
         </div>
 
-        {/* QR code under badges */}
-        {activeCard ? (
-          <div className="mt-4 flex flex-col items-center gap-2 pb-5">
-            <button
-              onClick={() => setShowQrModal(true)}
-              title="Perbesar QR"
-              className="rounded-xl border border-neutral-200 p-2 shadow-sm transition hover:border-primary"
-            >
-              <KoniQR value={activeCard.qrPayloadUrl} size={88} />
-            </button>
-            <p className="text-xs text-neutral-400">Ketuk untuk memperbesar</p>
-          </div>
-        ) : (
-          <div className="pb-5" />
-        )}
+        <div className="pb-5" />
       </div>
 
       {/* Key stats */}
       <div className="mt-3 grid grid-cols-2 gap-px bg-neutral-200 sm:grid-cols-3">
         <StatCell label="Nomor Induk" value={atlet.nomorIndukAtlet} />
         <StatCell label="Nomor Registrasi" value={atlet.nomorRegistrasi} />
-        <StatCell label="Tanggal Lahir" value={formatDate(atlet.tanggalLahir)} />
-        <StatCell label="Tempat Lahir" value={atlet.tempatLahir} />
+        <StatCell label="Tanggal Lahir" value={atlet.tanggalLahir ? formatDate(atlet.tanggalLahir) : "-"} />
+        <StatCell label="Tempat Lahir" value={atlet.tempatLahir ?? "-"} />
         <StatCell label="Kecamatan" value={atlet.kecamatan ?? "-"} />
         <StatCell label="Nomor HP" value={atlet.nomorHp ?? "-"} />
-        {activeCard && (
-          <div className="col-span-2 flex items-center justify-between bg-white px-4 py-3 sm:col-span-1">
-            <div>
-              <p className="text-xs text-neutral-500">Kartu Atlet</p>
-              <p className="mt-0.5 text-sm font-semibold text-neutral-900">Aktif</p>
-            </div>
-            <button
-              onClick={() => setShowQrModal(true)}
-              className="flex items-center gap-1 rounded-lg border border-neutral-200 px-2 py-1.5 text-xs font-medium text-primary hover:border-primary transition"
-            >
-              <Maximize2 size={12} /> Lihat QR
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Prestasi */}
@@ -259,17 +210,6 @@ export function AtletRecordPage() {
         </dl>
       </div>
 
-      {showQrModal && activeCard && (
-        <Modal title="QR Kartu Atlet" onClose={() => setShowQrModal(false)}>
-          <div className="flex flex-col items-center gap-4 py-2">
-            <KoniQR value={activeCard.qrPayloadUrl} size={240} />
-            <p className="text-sm font-semibold text-neutral-800">{atlet.namaLengkap}</p>
-            <p className="max-w-xs break-all text-center text-xs text-neutral-500">
-              {activeCard.qrPayloadUrl}
-            </p>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 }

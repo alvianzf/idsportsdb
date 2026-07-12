@@ -36,15 +36,22 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-neutral-50 p-4">
-      <div className="w-full max-w-sm rounded-lg border border-neutral-200 bg-white p-6">
-        <div className="mb-6 flex flex-col items-center gap-2 text-center">
-          <img src="/logo-koni-batam.png" alt="KONI Batam" className="h-16 w-16 object-contain" />
-          <h1 className="text-lg font-semibold text-neutral-900">KONI Batam</h1>
-          <p className="text-sm text-neutral-500">Sistem Informasi Manajemen Atlet</p>
-        </div>
+    // Revisi 2026-07-12: split login — left half red 50% opacity with the KONI
+    // logo centered (20% viewport height), right half the centered form.
+    <div className="flex min-h-svh bg-neutral-50">
+      <div className="hidden w-1/2 items-center justify-center bg-primary/50 md:flex">
+        <img src="/logo-koni-batam.png" alt="KONI Batam" className="h-[20svh] object-contain" />
+      </div>
 
-        {resetSuccess && (
+      <div className="flex w-full items-center justify-center p-4 md:w-1/2">
+        <div className="w-full max-w-sm">
+          <div className="mb-6 flex flex-col items-center gap-2 text-center">
+            <img src="/logo-koni-batam.png" alt="KONI Batam" className="h-16 w-16 object-contain md:hidden" />
+            <h1 className="text-lg font-semibold text-neutral-900">KONI Batam</h1>
+            <p className="text-sm text-neutral-500">Sistem Informasi Manajemen Atlet</p>
+          </div>
+
+          {resetSuccess && (
           <p className="mb-4 rounded-md bg-success-light px-3 py-2 text-sm text-success">
             Kata sandi berhasil diubah. Silakan masuk dengan kata sandi baru Anda.
           </p>
@@ -93,7 +100,8 @@ export function LoginPage() {
               Lupa kata sandi?
             </Link>
           </p>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );

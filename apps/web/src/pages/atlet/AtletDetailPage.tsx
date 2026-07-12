@@ -12,14 +12,12 @@ import { BiodataTab } from "./tabs/BiodataTab";
 import { DokumenTab } from "./tabs/DokumenTab";
 import { PrestasiTab } from "./tabs/PrestasiTab";
 import { MonitoringTab } from "./tabs/MonitoringTab";
-import { KartuTab } from "./tabs/KartuTab";
 
 const TABS = [
   { key: "biodata", label: "Biodata" },
   { key: "dokumen", label: "Dokumen" },
   { key: "prestasi", label: "Prestasi" },
   { key: "monitoring", label: "Monitoring" },
-  { key: "kartu", label: "Kartu" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -116,7 +114,6 @@ export function AtletDetailPage() {
       {tab === "monitoring" && (
         <MonitoringTab atletId={atlet.id} canManage={!!canEdit} currentCabangOlahragaId={atlet.cabangOlahragaId} />
       )}
-      {tab === "kartu" && <KartuTab atletId={atlet.id} canManage={!!canEdit} />}
     </div>
   );
 }

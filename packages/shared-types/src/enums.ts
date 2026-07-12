@@ -21,21 +21,50 @@ export const ATHLETE_STATUS_LABELS: Record<AthleteStatus, string> = {
   TRANSFERRED: "Mutasi",
 };
 
+// Revisi 2026-07-12: tingkat atlet final — Kota/Provinsi/Nasional/Internasional.
 export const ATHLETE_LEVELS = [
-  "PEMULA",
-  "DAERAH",
+  "KOTA",
   "PROVINSI",
   "NASIONAL",
   "INTERNASIONAL",
 ] as const;
 export type AthleteLevel = (typeof ATHLETE_LEVELS)[number];
 export const ATHLETE_LEVEL_LABELS: Record<AthleteLevel, string> = {
-  PEMULA: "Pemula",
-  DAERAH: "Daerah",
+  KOTA: "Kota",
   PROVINSI: "Provinsi",
   NASIONAL: "Nasional",
   INTERNASIONAL: "Internasional",
 };
+
+// Revisi 2026-07-12: kalender event (spec 017-event-calendar).
+export const EVENT_STATUSES = ["ON_TRACK", "SELESAI", "DIBATALKAN", "DIUNDUR"] as const;
+export type EventStatus = (typeof EVENT_STATUSES)[number];
+export const EVENT_STATUS_LABELS: Record<EventStatus, string> = {
+  ON_TRACK: "On Track",
+  SELESAI: "Selesai",
+  DIBATALKAN: "Dibatalkan",
+  DIUNDUR: "Diundur",
+};
+
+export const EVENT_LEVELS = [
+  "KOTA_KABUPATEN",
+  "PROVINSI",
+  "NASIONAL",
+  "INTERNASIONAL",
+  "OPEN",
+] as const;
+export type EventLevel = (typeof EVENT_LEVELS)[number];
+export const EVENT_LEVEL_LABELS: Record<EventLevel, string> = {
+  KOTA_KABUPATEN: "Kota/Kabupaten",
+  PROVINSI: "Provinsi",
+  NASIONAL: "Nasional",
+  INTERNASIONAL: "Internasional",
+  OPEN: "Open",
+};
+
+// Revisi 2026-07-12: pendidikan = pendidikan terakhir, picked from a fixed jenjang list.
+export const EDUCATION_LEVELS = ["SD", "SMP", "SMA/SMK", "D3", "S1", "S2", "S3"] as const;
+export type EducationLevel = (typeof EDUCATION_LEVELS)[number];
 
 export const COMPETITION_LEVELS = [
   "KOTA",

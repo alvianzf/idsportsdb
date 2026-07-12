@@ -18,8 +18,8 @@ export interface AtletDetail {
   nomorRegistrasi: string;
   namaLengkap: string;
   nik: string;
-  tempatLahir: string;
-  tanggalLahir: string;
+  tempatLahir: string | null;
+  tanggalLahir: string | null;
   jenisKelamin: Gender;
   alamat: string;
   kecamatan: string | null;
@@ -30,7 +30,7 @@ export interface AtletDetail {
   cabangOlahraga: CaborRef;
   caborTambahan: { id: string; cabangOlahragaId: string; cabangOlahraga: CaborRef; nomorIndukAtlet: string | null; nomorRegistrasi: string | null }[];
   statusAtlet: AthleteStatus;
-  tingkatAtlet: AthleteLevel;
+  tingkatAtlet: AthleteLevel | null;
   pendidikan: string | null;
   pekerjaan: string | null;
   documents?: AtletDocument[];

@@ -14,12 +14,13 @@ import { dashboardRouter } from "./modules/dashboard/dashboard.routes.js";
 import { caborRouter } from "./modules/cabor/cabor.routes.js";
 import { caborPengurusRouter, pengurusRouter } from "./modules/pengurus/pengurus.routes.js";
 import { atletRouter } from "./modules/atlet/atlet.routes.js";
+import { atletBulkRouter } from "./modules/atlet/atlet.bulk.js";
 import { pelatihRouter } from "./modules/pelatih/pelatih.routes.js";
 import { prestasiRouter, atletPrestasiRouter } from "./modules/prestasi/prestasi.routes.js";
 import { monitoringRouter, atletMonitoringRouter } from "./modules/monitoring/monitoring.routes.js";
 import { reportsRouter } from "./modules/reports/reports.routes.js";
-import { cardsRouter, atletCardRouter } from "./modules/cards/cards.routes.js";
 import { artikelRouter } from "./modules/artikel/artikel.routes.js";
+import { eventRouter } from "./modules/event/event.routes.js";
 import { publicRouter } from "./modules/public/public.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { prisma } from "./lib/prisma.js";
@@ -50,17 +51,18 @@ app.use("/api/v1/users", usersRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/cabor", caborRouter);
 app.use("/api/v1/cabor", caborPengurusRouter);
+// Bulk export/import first so /export and /import are not matched by "/:id".
+app.use("/api/v1/atlet", atletBulkRouter);
 app.use("/api/v1/atlet", atletRouter);
 app.use("/api/v1/atlet", atletPrestasiRouter);
 app.use("/api/v1/atlet", atletMonitoringRouter);
-app.use("/api/v1/atlet", atletCardRouter);
 app.use("/api/v1/pelatih", pelatihRouter);
 app.use("/api/v1/prestasi", prestasiRouter);
 app.use("/api/v1/monitoring", monitoringRouter);
 app.use("/api/v1/pengurus", pengurusRouter);
 app.use("/api/v1/reports", reportsRouter);
-app.use("/api/v1/cards", cardsRouter);
 app.use("/api/v1/artikel", artikelRouter);
+app.use("/api/v1/events", eventRouter);
 
 app.use("/api/v1", (_req, res) => {
   res.status(404).json({ error: "Not found" });

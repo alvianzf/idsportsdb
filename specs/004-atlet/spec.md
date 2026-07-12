@@ -145,8 +145,9 @@ Hasil pertemuan klien — see `specs/000-overview/revisi-2026-07-12.md`:
 - **Data atlet inti**: foto, jenis kelamin, cabor, status atlet. `statusAtlet`
   simplified to **AKTIF / TIDAK AKTIF** only (drop INJURED/TRAINING_CAMP/
   TRANSFERRED from the form; injury/camp tracked via Monitoring 008).
-- **Tingkat atlet TBC/TBD**: the `AthleteLevel` enum is not final — keep the
-  field optional and do not build workflows on top of it yet.
+- **Tingkat atlet (final)**: `AthleteLevel` = **KOTA | PROVINSI | NASIONAL |
+  INTERNASIONAL** (replaces PEMULA/DAERAH/...). Editable in the atlet form;
+  optional so legacy rows without a level remain valid.
 - **Pendidikan terakhir**: `pendidikan` means *last education* — dropdown of
   jenjang (SD, SMP, SMA/SMK, D3, S1, S2, S3) instead of free text.
 - **Data mereka input sendiri**: athletes self-input their data — the ATLET

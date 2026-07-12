@@ -40,6 +40,8 @@ export async function getAtletPerUsia(caborId: string | null, bucket: number) {
   const now = new Date();
   const counts = new Map<number, number>();
   for (const a of atlets) {
+    // Revisi 2026-07-12: tanggal lahir is optional — skip athletes without one.
+    if (!a.tanggalLahir) continue;
     const age = calcAge(a.tanggalLahir, now);
     const bucketStart = Math.floor(age / bucket) * bucket;
     counts.set(bucketStart, (counts.get(bucketStart) ?? 0) + 1);

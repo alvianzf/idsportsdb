@@ -5,10 +5,10 @@ import {
   Trophy,
   Building2,
   Activity,
+  CalendarDays,
   FileBarChart,
   ShieldCheck,
   Newspaper,
-  ScanLine,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@inasportdb/shared-types";
@@ -29,10 +29,10 @@ const ADMIN_ROLES: Role[] = ["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"];
 export const ADMIN_NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, mobile: true, roles: ADMIN_ROLES },
   { to: "/atlet", label: "Atlet", icon: Users, mobile: true, roles: ADMIN_ROLES },
-  { to: "/scan", label: "Scan", icon: ScanLine, mobile: true, center: true, roles: ADMIN_ROLES },
   { to: "/monitoring", label: "Monitoring", icon: Activity, mobile: true, roles: ADMIN_ROLES },
   { to: "/reports", label: "Pelaporan", icon: FileBarChart, mobile: true, roles: ADMIN_ROLES },
   { to: "/prestasi", label: "Prestasi", icon: Trophy, roles: ADMIN_ROLES },
+  { to: "/events", label: "Event", icon: CalendarDays, roles: ADMIN_ROLES },
   { to: "/pelatih", label: "Pelatih", icon: UserCog, roles: ADMIN_ROLES },
   { to: "/cabor", label: "Cabang Olahraga", icon: Building2, roles: ADMIN_ROLES },
   { to: "/artikel", label: "Pengumuman", icon: Newspaper, roles: ["SUPER_ADMIN_KONI", "ADMIN_KONI"] },
@@ -42,7 +42,6 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
 export const ATLET_NAV_ITEMS: NavItem[] = [
   { to: "/me", label: "Profil Saya", icon: Users, mobile: true, roles: ["ATLET"] },
   { to: "/me/prestasi", label: "Prestasi", icon: Trophy, mobile: true, roles: ["ATLET"] },
-  { to: "/me/card", label: "Kartu Digital", icon: ShieldCheck, mobile: true, roles: ["ATLET"] },
 ];
 
 export function navItemsForRole(role: Role): NavItem[] {

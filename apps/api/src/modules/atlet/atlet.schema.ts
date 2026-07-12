@@ -6,8 +6,9 @@ export const createAtletSchema = z.object({
   nomorRegistrasi: z.string().min(1),
   namaLengkap: z.string().min(1),
   nik: z.string().regex(/^\d{16}$/, "NIK harus 16 digit angka"),
-  tempatLahir: z.string().min(1),
-  tanggalLahir: z.coerce.date(),
+  // Revisi 2026-07-12: tempat/tanggal lahir on hold — optional.
+  tempatLahir: z.string().optional(),
+  tanggalLahir: z.coerce.date().optional(),
   jenisKelamin: z.enum(GENDERS),
   alamat: z.string().min(1),
   kecamatan: z.string().optional(),
@@ -15,7 +16,8 @@ export const createAtletSchema = z.object({
   email: z.string().email().optional(),
   cabangOlahragaId: z.string().min(1),
   statusAtlet: z.enum(ATHLETE_STATUSES).optional(),
-  tingkatAtlet: z.enum(ATHLETE_LEVELS),
+  // Revisi 2026-07-12: tingkat atlet TBD — optional.
+  tingkatAtlet: z.enum(ATHLETE_LEVELS).optional(),
   pendidikan: z.string().optional(),
   pekerjaan: z.string().optional(),
   /** Additional cabor with optional per-cabor registration numbers. */
@@ -31,6 +33,19 @@ export const createAtletSchema = z.object({
 });
 
 export const updateAtletSchema = createAtletSchema.partial();
+
+// Revisi 2026-07-12: athletes self-input their own biodata (PATCH /atlet/me).
+// Identity/membership fields (NIK, nomor induk/registrasi, cabor, status) stay admin-only.
+export const updateAtletMeSchema = z.object({
+  namaLengkap: z.string().min(1).optional(),
+  jenisKelamin: z.enum(GENDERS).optional(),
+  alamat: z.string().min(1).optional(),
+  kecamatan: z.string().optional(),
+  nomorHp: z.string().regex(/^\d+$/, "Nomor HP harus berupa angka").optional(),
+  email: z.string().email().optional(),
+  pendidikan: z.string().optional(),
+  pekerjaan: z.string().optional(),
+});
 
 export const listAtletQuerySchema = z.object({
   cabor: z.string().optional(),

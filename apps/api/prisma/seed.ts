@@ -1,13 +1,10 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { nanoid } from "nanoid";
 
 const prisma = new PrismaClient();
 
 const SEED_PASSWORD = process.env.SEED_PASSWORD ?? "password123";
-const CARD_VERIFY_BASE_URL =
-  process.env.CARD_VERIFY_BASE_URL ?? "http://localhost:5173/verify";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -64,6 +61,60 @@ async function main() {
     { nama: "Bola Voli", ketuaCabor: "Maya Sari", sekretariat: "Jl. Ahmad Yani No. 15, Bengkong", organisasiNasional: "PBVSI" },
     { nama: "Sepak Bola", ketuaCabor: "Rudi Hermawan", sekretariat: "Jl. Laksamana Bintan No. 2, Batam Kota", organisasiNasional: "PSSI" },
   ];
+
+  // Revisi 2026-07-12: KONI Batam membawahi 48 cabor — tambahan 40 cabor
+  // di luar 8 cabor detail di atas. Data pengurus/ketua diisi placeholder
+  // dummy sebelum handover.
+  const extraCaborData: { nama: string; organisasiNasional: string }[] = [
+    { nama: "Aero Sport", organisasiNasional: "FASI" },
+    { nama: "Anggar", organisasiNasional: "IKASI" },
+    { nama: "Angkat Besi", organisasiNasional: "PABSI" },
+    { nama: "Baseball & Softball", organisasiNasional: "PERBASASI" },
+    { nama: "Berkuda", organisasiNasional: "PORDASI" },
+    { nama: "Biliar", organisasiNasional: "POBSI" },
+    { nama: "Binaraga", organisasiNasional: "PBFI" },
+    { nama: "Bola Basket", organisasiNasional: "PERBASI" },
+    { nama: "Boling", organisasiNasional: "PBI" },
+    { nama: "Bridge", organisasiNasional: "GABSI" },
+    { nama: "Catur", organisasiNasional: "PERCASI" },
+    { nama: "Dansa", organisasiNasional: "IODI" },
+    { nama: "Dayung", organisasiNasional: "PODSI" },
+    { nama: "Drum Band", organisasiNasional: "PDBI" },
+    { nama: "E-Sports", organisasiNasional: "PBESI" },
+    { nama: "Golf", organisasiNasional: "PGI" },
+    { nama: "Gulat", organisasiNasional: "PGSI" },
+    { nama: "Hoki", organisasiNasional: "FHI" },
+    { nama: "Judo", organisasiNasional: "PJSI" },
+    { nama: "Kabaddi", organisasiNasional: "FOKSI" },
+    { nama: "Kempo", organisasiNasional: "PERKEMI" },
+    { nama: "Kickboxing", organisasiNasional: "KBI" },
+    { nama: "Kriket", organisasiNasional: "PCI" },
+    { nama: "Layar", organisasiNasional: "PORLASI" },
+    { nama: "Menembak", organisasiNasional: "PERBAKIN" },
+    { nama: "Muaythai", organisasiNasional: "PBMI" },
+    { nama: "Olahraga Bermotor", organisasiNasional: "IMI" },
+    { nama: "Panahan", organisasiNasional: "PERPANI" },
+    { nama: "Panjat Tebing", organisasiNasional: "FPTI" },
+    { nama: "Selam", organisasiNasional: "POSSI" },
+    { nama: "Senam", organisasiNasional: "PERSANI" },
+    { nama: "Sepak Takraw", organisasiNasional: "PSTI" },
+    { nama: "Sepatu Roda", organisasiNasional: "PERSEROSI" },
+    { nama: "Ski Air & Wakeboard", organisasiNasional: "PSAWI" },
+    { nama: "Squash", organisasiNasional: "PSI" },
+    { nama: "Tarung Derajat", organisasiNasional: "KODRAT" },
+    { nama: "Tenis", organisasiNasional: "PELTI" },
+    { nama: "Tenis Meja", organisasiNasional: "PTMSI" },
+    { nama: "Tinju", organisasiNasional: "PERTINA" },
+    { nama: "Wushu", organisasiNasional: "WI" },
+  ];
+  for (const [i, extra] of extraCaborData.entries()) {
+    caborData.push({
+      nama: extra.nama,
+      ketuaCabor: `Ketua ${extra.nama} (Dummy)`,
+      sekretariat: `Jl. Olahraga No. ${i + 10}, Batam Kota`,
+      organisasiNasional: extra.organisasiNasional,
+    });
+  }
 
   const caborMap: Record<string, string> = {};
   for (const data of caborData) {
@@ -243,7 +294,7 @@ async function main() {
     email: string;
     cabor: string;
     statusAtlet: "ACTIVE" | "INACTIVE" | "INJURED" | "TRAINING_CAMP" | "TRANSFERRED";
-    tingkatAtlet: "PEMULA" | "DAERAH" | "PROVINSI" | "NASIONAL" | "INTERNASIONAL";
+    tingkatAtlet: "KOTA" | "PROVINSI" | "NASIONAL" | "INTERNASIONAL";
     pendidikan: string;
     pekerjaan: string;
     extraCabor?: string;
@@ -254,36 +305,36 @@ async function main() {
     { nomorIndukAtlet: "ATL-2021-001", nomorRegistrasi: "REG-ATL-001", namaLengkap: "Rizky Pratama", nik: "2171010101980001", tempatLahir: "Batam", tanggalLahir: dateOf(2001, 3, 15), jenisKelamin: "L", alamat: "Jl. Cendana No. 5, Batam Kota", kecamatan: "Batam Kota", nomorHp: "082112340001", email: "rizky.pratama@email.com", cabor: "Atletik", statusAtlet: "ACTIVE", tingkatAtlet: "NASIONAL", pendidikan: "S1", pekerjaan: "Mahasiswa" },
     { nomorIndukAtlet: "ATL-2021-002", nomorRegistrasi: "REG-ATL-002", namaLengkap: "Sari Dewi Anggraini", nik: "2171010101990002", tempatLahir: "Batam", tanggalLahir: dateOf(1999, 7, 22), jenisKelamin: "P", alamat: "Jl. Mawar No. 10, Lubuk Baja", kecamatan: "Lubuk Baja", nomorHp: "082112340002", email: "sari.dewi@email.com", cabor: "Atletik", statusAtlet: "ACTIVE", tingkatAtlet: "PROVINSI", pendidikan: "SMA", pekerjaan: "Pelajar" },
     { nomorIndukAtlet: "ATL-2022-003", nomorRegistrasi: "REG-ATL-003", namaLengkap: "Dani Wijaksono", nik: "2171010101980003", tempatLahir: "Tanjungpinang", tanggalLahir: dateOf(2000, 11, 8), jenisKelamin: "L", alamat: "Jl. Nangka No. 3, Sagulung", kecamatan: "Sagulung", nomorHp: "082112340003", email: "dani.wija@email.com", cabor: "Atletik", statusAtlet: "TRAINING_CAMP", tingkatAtlet: "NASIONAL", pendidikan: "SMA", pekerjaan: "Atlet Profesional" },
-    { nomorIndukAtlet: "ATL-2022-004", nomorRegistrasi: "REG-ATL-004", namaLengkap: "Fitri Handayani", nik: "2171010102000004", tempatLahir: "Batam", tanggalLahir: dateOf(2003, 5, 30), jenisKelamin: "P", alamat: "Jl. Seroja No. 7, Bengkong", kecamatan: "Bengkong", nomorHp: "082112340004", email: "fitri.h@email.com", cabor: "Atletik", statusAtlet: "ACTIVE", tingkatAtlet: "DAERAH", pendidikan: "SMP", pekerjaan: "Pelajar" },
+    { nomorIndukAtlet: "ATL-2022-004", nomorRegistrasi: "REG-ATL-004", namaLengkap: "Fitri Handayani", nik: "2171010102000004", tempatLahir: "Batam", tanggalLahir: dateOf(2003, 5, 30), jenisKelamin: "P", alamat: "Jl. Seroja No. 7, Bengkong", kecamatan: "Bengkong", nomorHp: "082112340004", email: "fitri.h@email.com", cabor: "Atletik", statusAtlet: "ACTIVE", tingkatAtlet: "KOTA", pendidikan: "SMP", pekerjaan: "Pelajar" },
     // Renang
     { nomorIndukAtlet: "REN-2020-001", nomorRegistrasi: "REG-REN-001", namaLengkap: "Kevin Alamsyah", nik: "2171010101970005", tempatLahir: "Batam", tanggalLahir: dateOf(2002, 1, 14), jenisKelamin: "L", alamat: "Jl. Pelabuhan No. 2, Sekupang", kecamatan: "Sekupang", nomorHp: "082112340005", email: "kevin.a@email.com", cabor: "Renang", statusAtlet: "ACTIVE", tingkatAtlet: "NASIONAL", pendidikan: "SMA", pekerjaan: "Pelajar" },
     { nomorIndukAtlet: "REN-2021-002", nomorRegistrasi: "REG-REN-002", namaLengkap: "Linda Permata Sari", nik: "2171010102010006", tempatLahir: "Batam", tanggalLahir: dateOf(2001, 9, 5), jenisKelamin: "P", alamat: "Jl. Pantai Indah No. 11, Sekupang", kecamatan: "Sekupang", nomorHp: "082112340006", email: "linda.ps@email.com", cabor: "Renang", statusAtlet: "ACTIVE", tingkatAtlet: "PROVINSI", pendidikan: "SMA", pekerjaan: "Pelajar" },
-    { nomorIndukAtlet: "REN-2022-003", nomorRegistrasi: "REG-REN-003", namaLengkap: "Muhammad Farel", nik: "2171010102020007", tempatLahir: "Batam", tanggalLahir: dateOf(2004, 6, 20), jenisKelamin: "L", alamat: "Jl. Kolam Renang No. 4, Batu Ampar", kecamatan: "Batu Ampar", nomorHp: "082112340007", email: "m.farel@email.com", cabor: "Renang", statusAtlet: "ACTIVE", tingkatAtlet: "DAERAH", pendidikan: "SMP", pekerjaan: "Pelajar" },
-    { nomorIndukAtlet: "REN-2023-004", nomorRegistrasi: "REG-REN-004", namaLengkap: "Novia Ramadhani", nik: "2171010102040008", tempatLahir: "Batam", tanggalLahir: dateOf(2005, 3, 12), jenisKelamin: "P", alamat: "Jl. Telaga No. 8, Bengkong", kecamatan: "Bengkong", nomorHp: "082112340008", email: "novia.r@email.com", cabor: "Renang", statusAtlet: "INJURED", tingkatAtlet: "PEMULA", pendidikan: "SMP", pekerjaan: "Pelajar" },
+    { nomorIndukAtlet: "REN-2022-003", nomorRegistrasi: "REG-REN-003", namaLengkap: "Muhammad Farel", nik: "2171010102020007", tempatLahir: "Batam", tanggalLahir: dateOf(2004, 6, 20), jenisKelamin: "L", alamat: "Jl. Kolam Renang No. 4, Batu Ampar", kecamatan: "Batu Ampar", nomorHp: "082112340007", email: "m.farel@email.com", cabor: "Renang", statusAtlet: "ACTIVE", tingkatAtlet: "KOTA", pendidikan: "SMP", pekerjaan: "Pelajar" },
+    { nomorIndukAtlet: "REN-2023-004", nomorRegistrasi: "REG-REN-004", namaLengkap: "Novia Ramadhani", nik: "2171010102040008", tempatLahir: "Batam", tanggalLahir: dateOf(2005, 3, 12), jenisKelamin: "P", alamat: "Jl. Telaga No. 8, Bengkong", kecamatan: "Bengkong", nomorHp: "082112340008", email: "novia.r@email.com", cabor: "Renang", statusAtlet: "INJURED", tingkatAtlet: "KOTA", pendidikan: "SMP", pekerjaan: "Pelajar" },
     // Bulu Tangkis
     { nomorIndukAtlet: "BDM-2019-001", nomorRegistrasi: "REG-BDM-001", namaLengkap: "Oscar Firmansyah", nik: "2171010101990009", tempatLahir: "Batam", tanggalLahir: dateOf(1999, 4, 18), jenisKelamin: "L", alamat: "Jl. Badminton No. 6, Lubuk Baja", kecamatan: "Lubuk Baja", nomorHp: "082112340009", email: "oscar.f@email.com", cabor: "Bulu Tangkis", statusAtlet: "ACTIVE", tingkatAtlet: "NASIONAL", pendidikan: "S1", pekerjaan: "Atlet Profesional" },
     { nomorIndukAtlet: "BDM-2020-002", nomorRegistrasi: "REG-BDM-002", namaLengkap: "Putri Melati", nik: "2171010102000010", tempatLahir: "Batam", tanggalLahir: dateOf(2000, 12, 3), jenisKelamin: "P", alamat: "Jl. Seruni No. 9, Batam Kota", kecamatan: "Batam Kota", nomorHp: "082112340010", email: "putri.m@email.com", cabor: "Bulu Tangkis", statusAtlet: "ACTIVE", tingkatAtlet: "PROVINSI", pendidikan: "SMA", pekerjaan: "Pelajar", extraCabor: "Atletik" },
-    { nomorIndukAtlet: "BDM-2021-003", nomorRegistrasi: "REG-BDM-003", namaLengkap: "Qori Asyari", nik: "2171010102020011", tempatLahir: "Tanjungpinang", tanggalLahir: dateOf(2002, 8, 25), jenisKelamin: "L", alamat: "Jl. Enggang No. 14, Nongsa", kecamatan: "Nongsa", nomorHp: "082112340011", email: "qori.a@email.com", cabor: "Bulu Tangkis", statusAtlet: "ACTIVE", tingkatAtlet: "DAERAH", pendidikan: "SMA", pekerjaan: "Pelajar" },
+    { nomorIndukAtlet: "BDM-2021-003", nomorRegistrasi: "REG-BDM-003", namaLengkap: "Qori Asyari", nik: "2171010102020011", tempatLahir: "Tanjungpinang", tanggalLahir: dateOf(2002, 8, 25), jenisKelamin: "L", alamat: "Jl. Enggang No. 14, Nongsa", kecamatan: "Nongsa", nomorHp: "082112340011", email: "qori.a@email.com", cabor: "Bulu Tangkis", statusAtlet: "ACTIVE", tingkatAtlet: "KOTA", pendidikan: "SMA", pekerjaan: "Pelajar" },
     // Karate
     { nomorIndukAtlet: "KRT-2020-001", nomorRegistrasi: "REG-KRT-001", namaLengkap: "Reva Handika", nik: "2171010102000012", tempatLahir: "Batam", tanggalLahir: dateOf(2000, 2, 10), jenisKelamin: "L", alamat: "Jl. Dojo No. 1, Batu Ampar", kecamatan: "Batu Ampar", nomorHp: "082112340012", email: "reva.h@email.com", cabor: "Karate", statusAtlet: "ACTIVE", tingkatAtlet: "NASIONAL", pendidikan: "S1", pekerjaan: "Karyawan" },
     { nomorIndukAtlet: "KRT-2021-002", nomorRegistrasi: "REG-KRT-002", namaLengkap: "Shella Anggraeni", nik: "2171010102010013", tempatLahir: "Batam", tanggalLahir: dateOf(2001, 6, 28), jenisKelamin: "P", alamat: "Jl. Merak No. 3, Sagulung", kecamatan: "Sagulung", nomorHp: "082112340013", email: "shella.a@email.com", cabor: "Karate", statusAtlet: "ACTIVE", tingkatAtlet: "PROVINSI", pendidikan: "SMA", pekerjaan: "Pelajar" },
-    { nomorIndukAtlet: "KRT-2022-003", nomorRegistrasi: "REG-KRT-003", namaLengkap: "Teguh Wibowo", nik: "2171010102020014", tempatLahir: "Batam", tanggalLahir: dateOf(2003, 10, 15), jenisKelamin: "L", alamat: "Jl. Karang No. 5, Bengkong", kecamatan: "Bengkong", nomorHp: "082112340014", email: "teguh.w@email.com", cabor: "Karate", statusAtlet: "INACTIVE", tingkatAtlet: "DAERAH", pendidikan: "SMP", pekerjaan: "Pelajar" },
+    { nomorIndukAtlet: "KRT-2022-003", nomorRegistrasi: "REG-KRT-003", namaLengkap: "Teguh Wibowo", nik: "2171010102020014", tempatLahir: "Batam", tanggalLahir: dateOf(2003, 10, 15), jenisKelamin: "L", alamat: "Jl. Karang No. 5, Bengkong", kecamatan: "Bengkong", nomorHp: "082112340014", email: "teguh.w@email.com", cabor: "Karate", statusAtlet: "INACTIVE", tingkatAtlet: "KOTA", pendidikan: "SMP", pekerjaan: "Pelajar" },
     // Taekwondo
     { nomorIndukAtlet: "TKD-2021-001", nomorRegistrasi: "REG-TKD-001", namaLengkap: "Ulfa Nurdiana", nik: "2171010102000015", tempatLahir: "Batam", tanggalLahir: dateOf(2001, 4, 7), jenisKelamin: "P", alamat: "Jl. Bunga No. 12, Nongsa", kecamatan: "Nongsa", nomorHp: "082112340015", email: "ulfa.n@email.com", cabor: "Taekwondo", statusAtlet: "ACTIVE", tingkatAtlet: "NASIONAL", pendidikan: "S1", pekerjaan: "Mahasiswa" },
     { nomorIndukAtlet: "TKD-2022-002", nomorRegistrasi: "REG-TKD-002", namaLengkap: "Victor Siagian", nik: "2171010102020016", tempatLahir: "Medan", tanggalLahir: dateOf(2002, 11, 19), jenisKelamin: "L", alamat: "Jl. Pungkur No. 8, Batam Kota", kecamatan: "Batam Kota", nomorHp: "082112340016", email: "victor.s@email.com", cabor: "Taekwondo", statusAtlet: "ACTIVE", tingkatAtlet: "PROVINSI", pendidikan: "SMA", pekerjaan: "Pelajar" },
-    { nomorIndukAtlet: "TKD-2023-003", nomorRegistrasi: "REG-TKD-003", namaLengkap: "Wulan Pertiwi", nik: "2171010102040017", tempatLahir: "Batam", tanggalLahir: dateOf(2004, 2, 14), jenisKelamin: "P", alamat: "Jl. Anggrek No. 6, Sekupang", kecamatan: "Sekupang", nomorHp: "082112340017", email: "wulan.p@email.com", cabor: "Taekwondo", statusAtlet: "ACTIVE", tingkatAtlet: "DAERAH", pendidikan: "SMP", pekerjaan: "Pelajar" },
+    { nomorIndukAtlet: "TKD-2023-003", nomorRegistrasi: "REG-TKD-003", namaLengkap: "Wulan Pertiwi", nik: "2171010102040017", tempatLahir: "Batam", tanggalLahir: dateOf(2004, 2, 14), jenisKelamin: "P", alamat: "Jl. Anggrek No. 6, Sekupang", kecamatan: "Sekupang", nomorHp: "082112340017", email: "wulan.p@email.com", cabor: "Taekwondo", statusAtlet: "ACTIVE", tingkatAtlet: "KOTA", pendidikan: "SMP", pekerjaan: "Pelajar" },
     // Pencak Silat
     { nomorIndukAtlet: "PS-2020-001", nomorRegistrasi: "REG-PS-001", namaLengkap: "Xandra Kurnia", nik: "2171010102000018", tempatLahir: "Batam", tanggalLahir: dateOf(2001, 8, 23), jenisKelamin: "P", alamat: "Jl. Pahlawan No. 4, Lubuk Baja", kecamatan: "Lubuk Baja", nomorHp: "082112340018", email: "xandra.k@email.com", cabor: "Pencak Silat", statusAtlet: "ACTIVE", tingkatAtlet: "NASIONAL", pendidikan: "S1", pekerjaan: "Atlet Profesional" },
     { nomorIndukAtlet: "PS-2021-002", nomorRegistrasi: "REG-PS-002", namaLengkap: "Yahya Zulfan", nik: "2171010102020019", tempatLahir: "Batam", tanggalLahir: dateOf(2002, 5, 11), jenisKelamin: "L", alamat: "Jl. Satria No. 9, Batu Ampar", kecamatan: "Batu Ampar", nomorHp: "082112340019", email: "yahya.z@email.com", cabor: "Pencak Silat", statusAtlet: "ACTIVE", tingkatAtlet: "PROVINSI", pendidikan: "SMA", pekerjaan: "Pelajar" },
-    { nomorIndukAtlet: "PS-2022-003", nomorRegistrasi: "REG-PS-003", namaLengkap: "Zara Amalia", nik: "2171010102030020", tempatLahir: "Batam", tanggalLahir: dateOf(2003, 9, 4), jenisKelamin: "P", alamat: "Jl. Pesilat No. 2, Bengkong", kecamatan: "Bengkong", nomorHp: "082112340020", email: "zara.a@email.com", cabor: "Pencak Silat", statusAtlet: "TRANSFERRED", tingkatAtlet: "DAERAH", pendidikan: "SMA", pekerjaan: "Pelajar" },
+    { nomorIndukAtlet: "PS-2022-003", nomorRegistrasi: "REG-PS-003", namaLengkap: "Zara Amalia", nik: "2171010102030020", tempatLahir: "Batam", tanggalLahir: dateOf(2003, 9, 4), jenisKelamin: "P", alamat: "Jl. Pesilat No. 2, Bengkong", kecamatan: "Bengkong", nomorHp: "082112340020", email: "zara.a@email.com", cabor: "Pencak Silat", statusAtlet: "TRANSFERRED", tingkatAtlet: "KOTA", pendidikan: "SMA", pekerjaan: "Pelajar" },
     // Bola Voli
     { nomorIndukAtlet: "VLY-2020-001", nomorRegistrasi: "REG-VLY-001", namaLengkap: "Adi Nugroho", nik: "2171010101990021", tempatLahir: "Batam", tanggalLahir: dateOf(1999, 1, 17), jenisKelamin: "L", alamat: "Jl. Voli No. 3, Batam Kota", kecamatan: "Batam Kota", nomorHp: "082112340021", email: "adi.n@email.com", cabor: "Bola Voli", statusAtlet: "ACTIVE", tingkatAtlet: "NASIONAL", pendidikan: "S1", pekerjaan: "Karyawan" },
     { nomorIndukAtlet: "VLY-2021-002", nomorRegistrasi: "REG-VLY-002", namaLengkap: "Bella Kusuma", nik: "2171010102010022", tempatLahir: "Batam", tanggalLahir: dateOf(2001, 7, 9), jenisKelamin: "P", alamat: "Jl. Smash No. 7, Bengkong", kecamatan: "Bengkong", nomorHp: "082112340022", email: "bella.k@email.com", cabor: "Bola Voli", statusAtlet: "ACTIVE", tingkatAtlet: "PROVINSI", pendidikan: "SMA", pekerjaan: "Pelajar" },
-    { nomorIndukAtlet: "VLY-2022-003", nomorRegistrasi: "REG-VLY-003", namaLengkap: "Chandra Setiawan", nik: "2171010102030023", tempatLahir: "Batam", tanggalLahir: dateOf(2003, 4, 26), jenisKelamin: "L", alamat: "Jl. Spike No. 11, Sagulung", kecamatan: "Sagulung", nomorHp: "082112340023", email: "chandra.s@email.com", cabor: "Bola Voli", statusAtlet: "ACTIVE", tingkatAtlet: "DAERAH", pendidikan: "SMP", pekerjaan: "Pelajar" },
+    { nomorIndukAtlet: "VLY-2022-003", nomorRegistrasi: "REG-VLY-003", namaLengkap: "Chandra Setiawan", nik: "2171010102030023", tempatLahir: "Batam", tanggalLahir: dateOf(2003, 4, 26), jenisKelamin: "L", alamat: "Jl. Spike No. 11, Sagulung", kecamatan: "Sagulung", nomorHp: "082112340023", email: "chandra.s@email.com", cabor: "Bola Voli", statusAtlet: "ACTIVE", tingkatAtlet: "KOTA", pendidikan: "SMP", pekerjaan: "Pelajar" },
     // Sepak Bola
     { nomorIndukAtlet: "FB-2019-001", nomorRegistrasi: "REG-FB-001", namaLengkap: "Dimas Prasetyo", nik: "2171010101980024", tempatLahir: "Batam", tanggalLahir: dateOf(1998, 3, 21), jenisKelamin: "L", alamat: "Jl. Lapangan No. 1, Batam Kota", kecamatan: "Batam Kota", nomorHp: "082112340024", email: "dimas.p@email.com", cabor: "Sepak Bola", statusAtlet: "ACTIVE", tingkatAtlet: "NASIONAL", pendidikan: "S1", pekerjaan: "Atlet Profesional" },
     { nomorIndukAtlet: "FB-2020-002", nomorRegistrasi: "REG-FB-002", namaLengkap: "Eka Supriadi", nik: "2171010102000025", tempatLahir: "Batam", tanggalLahir: dateOf(2000, 10, 30), jenisKelamin: "L", alamat: "Jl. Tribun No. 5, Lubuk Baja", kecamatan: "Lubuk Baja", nomorHp: "082112340025", email: "eka.s@email.com", cabor: "Sepak Bola", statusAtlet: "ACTIVE", tingkatAtlet: "PROVINSI", pendidikan: "SMA", pekerjaan: "Pelajar" },
-    { nomorIndukAtlet: "FB-2021-003", nomorRegistrasi: "REG-FB-003", namaLengkap: "Farhan Al-Rasyid", nik: "2171010102020026", tempatLahir: "Batam", tanggalLahir: dateOf(2002, 6, 16), jenisKelamin: "L", alamat: "Jl. Gawang No. 8, Nongsa", kecamatan: "Nongsa", nomorHp: "082112340026", email: "farhan.r@email.com", cabor: "Sepak Bola", statusAtlet: "ACTIVE", tingkatAtlet: "DAERAH", pendidikan: "SMA", pekerjaan: "Pelajar" },
+    { nomorIndukAtlet: "FB-2021-003", nomorRegistrasi: "REG-FB-003", namaLengkap: "Farhan Al-Rasyid", nik: "2171010102020026", tempatLahir: "Batam", tanggalLahir: dateOf(2002, 6, 16), jenisKelamin: "L", alamat: "Jl. Gawang No. 8, Nongsa", kecamatan: "Nongsa", nomorHp: "082112340026", email: "farhan.r@email.com", cabor: "Sepak Bola", statusAtlet: "ACTIVE", tingkatAtlet: "KOTA", pendidikan: "SMA", pekerjaan: "Pelajar" },
   ];
 
   // Map nomorIndukAtlet → atlet id for later use
@@ -525,28 +576,36 @@ async function main() {
     }
   }
 
+  // Revisi 2026-07-12: kartu atlet digital dibatalkan — AtletCard tidak di-seed.
+
   // ---------------------------------------------------------------------------
-  // Atlet Cards (for active athletes)
+  // Events (kalender event — spec 017)
   // ---------------------------------------------------------------------------
 
-  console.log("Seeding atlet cards...");
+  console.log("Seeding events...");
 
-  const activeAtlets = ["ATL-2021-001", "ATL-2021-002", "REN-2020-001", "REN-2021-002", "BDM-2019-001", "KRT-2020-001", "TKD-2021-001", "PS-2020-001", "VLY-2020-001", "VLY-2021-002", "FB-2019-001"];
+  const eventData = [
+    { namaKejuaraan: "Porprov Kepri 2026", tingkat: "PROVINSI", lokasi: "Tanjungpinang", tanggalMulai: dateOf(2026, 9, 12), tanggalSelesai: dateOf(2026, 9, 20), status: "ON_TRACK" },
+    { namaKejuaraan: "Kejuaraan Kota Batam Cup 2026", tingkat: "KOTA_KABUPATEN", lokasi: "Sport Hall Temenggung Abdul Jamal", tanggalMulai: dateOf(2026, 5, 2), tanggalSelesai: dateOf(2026, 5, 4), status: "SELESAI" },
+    { namaKejuaraan: "Batam Open Badminton Championship", tingkat: "OPEN", lokasi: "GOR Bulu Tangkis Batam Kota", cabor: "Bulu Tangkis", tanggalMulai: dateOf(2026, 8, 15), tanggalSelesai: dateOf(2026, 8, 17), status: "DIUNDUR" },
+    { namaKejuaraan: "Kejurnas Karate Piala KONI 2026", tingkat: "NASIONAL", lokasi: "Jakarta", cabor: "Karate", tanggalMulai: dateOf(2026, 11, 5), tanggalSelesai: dateOf(2026, 11, 8), status: "ON_TRACK" },
+    { namaKejuaraan: "Batam International Triathlon", tingkat: "INTERNASIONAL", lokasi: "Pantai Nongsa", tanggalMulai: dateOf(2026, 6, 20), status: "DIBATALKAN" },
+  ] as const;
 
-  for (const nomorInduk of activeAtlets) {
-    const atletId = atletIdMap[nomorInduk];
-    if (!atletId) continue;
-    const existing = await prisma.atletCard.findFirst({
-      where: { atletId, isRevoked: false },
+  for (const e of eventData) {
+    const existing = await prisma.event.findFirst({
+      where: { namaKejuaraan: e.namaKejuaraan },
     });
     if (!existing) {
-      const cardCode = nanoid();
-      await prisma.atletCard.create({
+      await prisma.event.create({
         data: {
-          atletId,
-          cardCode,
-          qrPayloadUrl: `${CARD_VERIFY_BASE_URL}/${cardCode}`,
-          expiresAt: dateOf(2026, 12, 31),
+          namaKejuaraan: e.namaKejuaraan,
+          tingkat: e.tingkat,
+          lokasi: e.lokasi,
+          tanggalMulai: e.tanggalMulai,
+          tanggalSelesai: "tanggalSelesai" in e ? e.tanggalSelesai : null,
+          status: e.status,
+          cabangOlahragaId: "cabor" in e ? caborMap[e.cabor] : null,
         },
       });
     }

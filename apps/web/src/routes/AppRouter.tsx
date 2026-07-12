@@ -20,7 +20,6 @@ import { ResetPasswordPage } from "../pages/ResetPasswordPage";
 
 // Lazy pages — each becomes its own JS chunk
 const DashboardPage = page(() => import("../pages/DashboardPage"), "DashboardPage");
-const VerifyCardPage = page(() => import("../pages/VerifyCardPage"), "VerifyCardPage");
 const ProfilePage = page(() => import("../pages/ProfilePage"), "ProfilePage");
 
 const CaborListPage = page(() => import("../pages/cabor/CaborListPage"), "CaborListPage");
@@ -33,14 +32,18 @@ const AtletFormPage = page(() => import("../pages/atlet/AtletFormPage"), "AtletF
 const AtletRecordPage = page(() => import("../pages/atlet/AtletRecordPage"), "AtletRecordPage");
 const MePage = page(() => import("../pages/atlet/MePage"), "MePage");
 
-const ScannerPage = page(() => import("../pages/ScannerPage"), "ScannerPage");
-
 const PelatihListPage = page(() => import("../pages/pelatih/PelatihListPage"), "PelatihListPage");
 const PelatihDetailPage = page(() => import("../pages/pelatih/PelatihDetailPage"), "PelatihDetailPage");
 const PelatihFormPage = page(() => import("../pages/pelatih/PelatihFormPage"), "PelatihFormPage");
 
 const PrestasiListPage = page(() => import("../pages/prestasi/PrestasiListPage"), "PrestasiListPage");
 const MonitoringPage = page(() => import("../pages/monitoring/MonitoringPage"), "MonitoringPage");
+
+// Revisi 2026-07-12 — event calendar (admin + public) and public data/berita menus
+const EventListPage = page(() => import("../pages/event/EventListPage"), "EventListPage");
+const EventPublicPage = page(() => import("../pages/public/EventPublicPage"), "EventPublicPage");
+const DataPublicPage = page(() => import("../pages/public/DataPublicPage"), "DataPublicPage");
+const BeritaPage = page(() => import("../pages/public/BeritaPage"), "BeritaPage");
 
 const ReportsIndexPage = page(() => import("../pages/reports/ReportsIndexPage"), "ReportsIndexPage");
 const AtletPerCaborReportPage = page(() => import("../pages/reports/AtletPerCaborReportPage"), "AtletPerCaborReportPage");
@@ -68,11 +71,28 @@ function PageLoader() {
 
 const router = createBrowserRouter([
   { path: "/", element: <LandingPage /> },
+  // Public menus (revisi 2026-07-12) — no auth required
   {
-    path: "/scan",
+    path: "/event",
     element: (
       <Suspense fallback={<PageLoader />}>
-        <ScannerPage />
+        <EventPublicPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/data",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <DataPublicPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/berita",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <BeritaPage />
       </Suspense>
     ),
   },
@@ -95,14 +115,6 @@ const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
   { path: "/forgot-password", element: <ForgotPasswordPage /> },
   { path: "/reset-password", element: <ResetPasswordPage /> },
-  {
-    path: "/verify/:cardCode",
-    element: (
-      <Suspense fallback={<PageLoader />}>
-        <VerifyCardPage />
-      </Suspense>
-    ),
-  },
   {
     element: <AppLayout />,
     children: [
@@ -132,6 +144,9 @@ const router = createBrowserRouter([
 
       // Module G
       { path: "monitoring", element: <Suspense fallback={<PageLoader />}><MonitoringPage /></Suspense> },
+
+      // Kalender Event (spec 017)
+      { path: "events", element: <Suspense fallback={<PageLoader />}><EventListPage /></Suspense> },
 
       // Module H
       { path: "reports", element: <Suspense fallback={<PageLoader />}><ReportsIndexPage /></Suspense> },
@@ -199,7 +214,6 @@ const router = createBrowserRouter([
       // Atlet self-service
       { path: "me", element: <Suspense fallback={<PageLoader />}><MePage /></Suspense> },
       { path: "me/prestasi", element: <Navigate to="/me" replace /> },
-      { path: "me/card", element: <Navigate to="/me" replace /> },
 
       { path: "*", element: <NotFoundPage /> },
     ],

@@ -43,7 +43,7 @@ export function BiodataTab({ atlet }: { atlet: AtletDetail }) {
 
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone={STATUS_TONE[atlet.statusAtlet]}>{ATHLETE_STATUS_LABELS[atlet.statusAtlet]}</Badge>
-        <Badge tone="neutral">{ATHLETE_LEVEL_LABELS[atlet.tingkatAtlet]}</Badge>
+        {atlet.tingkatAtlet && <Badge tone="neutral">{ATHLETE_LEVEL_LABELS[atlet.tingkatAtlet]}</Badge>}
         <Badge tone="info">{atlet.cabangOlahraga.nama}</Badge>
         {atlet.caborTambahan.map((c) => (
           <Badge key={c.id} tone="neutral">
@@ -90,12 +90,15 @@ export function BiodataTab({ atlet }: { atlet: AtletDetail }) {
           <dt className="text-neutral-500">Jenis Kelamin</dt>
           <dd className="font-medium text-neutral-900">{GENDER_LABELS[atlet.jenisKelamin]}</dd>
         </div>
-        <div>
-          <dt className="text-neutral-500">Tempat, Tanggal Lahir</dt>
-          <dd className="font-medium text-neutral-900">
-            {atlet.tempatLahir}, {formatDate(atlet.tanggalLahir)}
-          </dd>
-        </div>
+        {(atlet.tempatLahir || atlet.tanggalLahir) && (
+          <div>
+            <dt className="text-neutral-500">Tempat, Tanggal Lahir</dt>
+            <dd className="font-medium text-neutral-900">
+              {atlet.tempatLahir ?? "-"}
+              {atlet.tanggalLahir ? `, ${formatDate(atlet.tanggalLahir)}` : ""}
+            </dd>
+          </div>
+        )}
         <div>
           <dt className="text-neutral-500">Kecamatan</dt>
           <dd className="font-medium text-neutral-900">{atlet.kecamatan ?? "-"}</dd>
@@ -113,7 +116,7 @@ export function BiodataTab({ atlet }: { atlet: AtletDetail }) {
           <dd className="font-medium text-neutral-900">{atlet.email ?? "-"}</dd>
         </div>
         <div>
-          <dt className="text-neutral-500">Pendidikan</dt>
+          <dt className="text-neutral-500">Pendidikan Terakhir</dt>
           <dd className="font-medium text-neutral-900">{atlet.pendidikan ?? "-"}</dd>
         </div>
         <div>
