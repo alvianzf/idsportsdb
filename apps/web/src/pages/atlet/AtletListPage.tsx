@@ -392,7 +392,7 @@ export function AtletListPage() {
                 ) : (
                   <li>Seluruh baris diimpor ke cabor Anda — kolom Cabang Olahraga diabaikan.</li>
                 )}
-                <li>Baris yang tidak valid dilewati dan dilaporkan setelah impor selesai.</li>
+                <li>Semua baris harus valid. Jika ada baris bermasalah (mis. nama cabor salah), seluruh impor ditolak — perbaiki dahulu lalu unggah ulang.</li>
               </ul>
               <div className="space-y-2 pt-2">
                 <p>Gunakan template agar format tidak salah:</p>
@@ -423,7 +423,7 @@ export function AtletListPage() {
                   Pratinjau: <span className="font-semibold text-success">{importPreview.valid} baris valid</span>
                   {importPreview.invalid > 0 && (
                     <>
-                      , <span className="font-semibold text-danger">{importPreview.invalid} bermasalah</span> (dilewati saat impor)
+                      , <span className="font-semibold text-danger">{importPreview.invalid} bermasalah</span> — perbaiki dahulu, impor akan ditolak
                     </>
                   )}
                 </p>
@@ -461,14 +461,23 @@ export function AtletListPage() {
 
             <div className="flex gap-2">
               <Button
-                disabled={!importFile || importing || previewing || !importPreview || importPreview.valid === 0}
+                disabled={
+                  !importFile ||
+                  importing ||
+                  previewing ||
+                  !importPreview ||
+                  importPreview.invalid > 0 ||
+                  importPreview.valid === 0
+                }
                 onClick={() => void handleImportSubmit()}
               >
                 <Upload size={16} />
                 {importing
                   ? "Mengimpor..."
                   : importPreview
-                    ? `Impor ${importPreview.valid} Baris`
+                    ? importPreview.invalid > 0
+                      ? "Perbaiki baris bermasalah"
+                      : `Impor ${importPreview.valid} Baris`
                     : "Impor"}
               </Button>
               <Button variant="outline" onClick={closeImport}>

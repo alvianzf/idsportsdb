@@ -232,6 +232,43 @@ function parseStatus(value: string): AthleteStatus | null {
   return null;
 }
 
+/** Lowercase, trim, and collapse internal whitespace — for lenient name matching. */
+function normalizeName(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/** Levenshtein edit distance between two strings. */
+function editDistance(a: string, b: string): number {
+  const row = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    let prev = row[0];
+    row[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = row[j];
+      row[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, row[j], row[j - 1]);
+      prev = tmp;
+    }
+  }
+  return row[b.length];
+}
+
+/** Closest valid cabor name to a typo'd input, or null if nothing is close enough. */
+function suggestCabor(input: string, names: string[]): string | null {
+  const norm = normalizeName(input);
+  if (!norm) return null;
+  let best: string | null = null;
+  let bestDist = Infinity;
+  for (const name of names) {
+    const dist = editDistance(norm, normalizeName(name));
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = name;
+    }
+  }
+  // Only suggest when reasonably close: <=2 edits, or within ~40% of the length.
+  return best && bestDist <= Math.max(2, Math.floor(norm.length * 0.4)) ? best : null;
+}
+
 const importRowSchema = createAtletSchema.omit({
   cabangOlahragaId: true,
   cabangOlahragaLain: true,
@@ -284,14 +321,13 @@ atletBulkRouter.post(
       return;
     }
 
-    // Cache cabor lookup by lowercase name.
+    // Cache cabor lookup by normalized (whitespace-collapsed, lowercased) name.
     const caborList = await prisma.cabangOlahraga.findMany({ select: { id: true, nama: true } });
-    const caborByName = new Map(caborList.map((c) => [c.nama.toLowerCase(), c.id]));
+    const caborNames = caborList.map((c) => c.nama);
+    const caborByName = new Map(caborList.map((c) => [normalizeName(c.nama), c.id]));
     const caborNameById = new Map(caborList.map((c) => [c.id, c.nama]));
 
-    let imported = 0;
-    const rejected: { row: number; error: string }[] = [];
-    const preview: {
+    type PreviewRow = {
       row: number;
       namaLengkap: string;
       nik: string;
@@ -299,7 +335,21 @@ atletBulkRouter.post(
       jenisKelamin: string;
       statusAtlet: string;
       error?: string;
-    }[] = [];
+    };
+    type Candidate = {
+      row: number;
+      data: Prisma.AtletUncheckedCreateInput;
+      preview: PreviewRow;
+      duplicate?: boolean;
+    };
+
+    const rejected: { row: number; error: string }[] = [];
+    const preview: PreviewRow[] = [];
+    const candidates: Candidate[] = [];
+    // Within-file duplicate tracking for the unique columns → first row seen.
+    const seenNik = new Map<string, number>();
+    const seenInduk = new Map<string, number>();
+    const seenReg = new Map<string, number>();
 
     for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++) {
       const row = sheet.getRow(rowNumber);
@@ -312,25 +362,27 @@ atletBulkRouter.post(
 
       const reject = (error: string) => {
         rejected.push({ row: rowNumber, error });
-        if (dryRun) {
-          preview.push({
-            row: rowNumber,
-            namaLengkap: raw.namaLengkap ?? "",
-            nik: raw.nik ?? "",
-            cabor: raw.cabor ?? "",
-            jenisKelamin: raw.jenisKelamin ?? "",
-            statusAtlet: raw.statusAtlet ?? "",
-            error,
-          });
-        }
+        preview.push({
+          row: rowNumber,
+          namaLengkap: raw.namaLengkap ?? "",
+          nik: raw.nik ?? "",
+          cabor: raw.cabor ?? "",
+          jenisKelamin: raw.jenisKelamin ?? "",
+          statusAtlet: raw.statusAtlet ?? "",
+          error,
+        });
       };
 
       // Resolve cabor: ADMIN_CABOR always imports into their own cabor.
       let cabangOlahragaId = req.scopedCaborId;
       if (!cabangOlahragaId) {
-        cabangOlahragaId = raw.cabor ? caborByName.get(raw.cabor.toLowerCase()) : undefined;
+        cabangOlahragaId = raw.cabor ? caborByName.get(normalizeName(raw.cabor)) : undefined;
         if (!cabangOlahragaId) {
-          reject(`Cabang olahraga "${raw.cabor ?? ""}" tidak ditemukan`);
+          const suggestion = suggestCabor(raw.cabor ?? "", caborNames);
+          reject(
+            `Cabang olahraga "${raw.cabor ?? ""}" tidak ditemukan` +
+              (suggestion ? `. Mungkin maksud Anda "${suggestion}"?` : ""),
+          );
           continue;
         }
       }
@@ -366,37 +418,98 @@ atletBulkRouter.post(
         continue;
       }
 
-      if (dryRun) {
-        preview.push({
+      // Reject rows that duplicate an earlier row in the same file.
+      const firstDupRow =
+        seenNik.get(parsed.data.nik) ??
+        seenInduk.get(parsed.data.nomorIndukAtlet) ??
+        seenReg.get(parsed.data.nomorRegistrasi);
+      if (firstDupRow !== undefined) {
+        const label = seenNik.has(parsed.data.nik)
+          ? "NIK"
+          : seenInduk.has(parsed.data.nomorIndukAtlet)
+            ? "Nomor induk"
+            : "Nomor registrasi";
+        reject(`${label} duplikat dengan baris ${firstDupRow} dalam berkas`);
+        continue;
+      }
+      seenNik.set(parsed.data.nik, rowNumber);
+      seenInduk.set(parsed.data.nomorIndukAtlet, rowNumber);
+      seenReg.set(parsed.data.nomorRegistrasi, rowNumber);
+
+      candidates.push({
+        row: rowNumber,
+        data: { ...parsed.data, cabangOlahragaId },
+        preview: {
           row: rowNumber,
           namaLengkap: parsed.data.namaLengkap,
           nik: parsed.data.nik,
           cabor: caborNameById.get(cabangOlahragaId) ?? "",
           jenisKelamin,
           statusAtlet,
-        });
-        imported++;
-        continue;
-      }
+        },
+      });
+    }
 
-      try {
-        await prisma.atlet.create({ data: { ...parsed.data, cabangOlahragaId } });
-        imported++;
-      } catch (err) {
-        if (isUniqueConstraintError(err)) {
-          rejected.push({ row: rowNumber, error: "Nomor induk, nomor registrasi, atau NIK sudah digunakan" });
-          continue;
+    // Reject rows whose unique fields already exist in the database.
+    if (candidates.length) {
+      const existing = await prisma.atlet.findMany({
+        where: {
+          OR: [
+            { nik: { in: candidates.map((c) => c.data.nik) } },
+            { nomorIndukAtlet: { in: candidates.map((c) => c.data.nomorIndukAtlet) } },
+            { nomorRegistrasi: { in: candidates.map((c) => c.data.nomorRegistrasi) } },
+          ],
+        },
+        select: { nik: true, nomorIndukAtlet: true, nomorRegistrasi: true },
+      });
+      const existNik = new Set(existing.map((e) => e.nik));
+      const existInduk = new Set(existing.map((e) => e.nomorIndukAtlet));
+      const existReg = new Set(existing.map((e) => e.nomorRegistrasi));
+      for (const c of candidates) {
+        const label = existNik.has(c.data.nik)
+          ? "NIK"
+          : existInduk.has(c.data.nomorIndukAtlet)
+            ? "Nomor induk"
+            : existReg.has(c.data.nomorRegistrasi)
+              ? "Nomor registrasi"
+              : null;
+        if (label) {
+          c.duplicate = true;
+          rejected.push({ row: c.row, error: `${label} sudah terdaftar di sistem` });
+          preview.push({ ...c.preview, error: `${label} sudah terdaftar di sistem` });
         }
-        throw err;
       }
     }
 
+    const toCreate = candidates.filter((c) => !c.duplicate);
+    for (const c of toCreate) preview.push(c.preview);
+    preview.sort((a, b) => a.row - b.row);
+
     if (dryRun) {
-      res.json({ rows: preview, valid: imported, invalid: rejected.length });
+      res.json({ rows: preview, valid: toCreate.length, invalid: rejected.length });
       return;
     }
 
-    if (imported > 0) emit("atlet:change");
-    res.json({ imported, rejected });
+    // All-or-nothing: any problem rejects the entire upload — nothing is written.
+    if (rejected.length > 0) {
+      res.status(400).json({
+        error: `Impor ditolak: ${rejected.length} baris bermasalah. Perbaiki lalu unggah ulang.`,
+        rejected,
+      });
+      return;
+    }
+
+    try {
+      await prisma.$transaction(toCreate.map((c) => prisma.atlet.create({ data: c.data })));
+    } catch (err) {
+      if (isUniqueConstraintError(err)) {
+        res.status(409).json({ error: "Sebagian data menjadi duplikat saat impor. Coba lagi." });
+        return;
+      }
+      throw err;
+    }
+
+    if (toCreate.length > 0) emit("atlet:change");
+    res.json({ imported: toCreate.length, rejected: [] });
   }),
 );
