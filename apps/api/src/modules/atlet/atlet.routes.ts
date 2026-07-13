@@ -153,7 +153,14 @@ atletRouter.get(
   asyncHandler(async (req, res) => {
     const atlet = await prisma.atlet.findUnique({
       where: { id: req.params.id },
-      include: { cabangOlahraga: caborSummary, ...caborTambahanInclude, documents: true },
+      include: {
+        cabangOlahraga: caborSummary,
+        ...caborTambahanInclude,
+        documents: true,
+        // #68 — surface whether this athlete already has a login so the detail
+        // page can offer (or hide) the "Buatkan Akun" shortcut.
+        user: { select: { id: true } },
+      },
     });
     if (!atlet) {
       res.status(404).json({ error: "Not found" });

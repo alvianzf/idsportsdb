@@ -225,9 +225,11 @@ const router = createBrowserRouter([
         ),
       },
       {
+        // #68 — ADMIN_KONI and ADMIN_CABOR may provision logins (the API enforces
+        // role/cabor limits); user list & edit stay SUPER_ADMIN_KONI-only.
         path: "users/new",
         element: (
-          <RequireRole roles={["SUPER_ADMIN_KONI"]}>
+          <RequireRole roles={["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"]}>
             <Suspense fallback={<PageLoader />}><UsersFormPage /></Suspense>
           </RequireRole>
         ),

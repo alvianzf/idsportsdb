@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Pencil, ScanLine, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, ScanLine, Trash2, UserPlus } from "lucide-react";
 import toast from "react-hot-toast";
 import { DATA_ADMIN_ROLES, UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
 import { PageHeader, Button } from "../../components/ui";
@@ -74,6 +74,13 @@ export function AtletDetailPage() {
                 <ScanLine size={16} /> Rekam Atlet
               </Button>
             </Link>
+            {canEdit && !atlet.user && (
+              <Link to={`/users/new?athleteId=${atlet.id}`}>
+                <Button variant="outline">
+                  <UserPlus size={16} /> Buatkan Akun
+                </Button>
+              </Link>
+            )}
             {canEdit && (
               <Link to={`/atlet/${atlet.id}/edit`}>
                 <Button variant="outline">

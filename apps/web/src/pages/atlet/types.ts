@@ -34,4 +34,6 @@ export interface AtletDetail {
   pendidikan: string | null;
   pekerjaan: string | null;
   documents?: AtletDocument[];
+  // Present when this athlete already has a login account (#68).
+  user?: { id: string } | null;
 }
