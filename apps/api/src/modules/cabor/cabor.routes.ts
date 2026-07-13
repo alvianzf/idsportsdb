@@ -137,7 +137,10 @@ caborRouter.delete(
   asyncHandler(async (req, res) => {
     const cabor = await prisma.cabangOlahraga.findUnique({
       where: { id: req.params.id },
-      include: { _count: { select: { atlets: true, pelatihs: true, users: true, pengurus: true } } },
+      include: {
+        _count: { select: { atlets: true, pelatihs: true, users: true, pengurus: true } },
+        documents: { select: { fileUrl: true } },
+      },
     });
     if (!cabor) {
       res.status(404).json({ error: "Not found" });
@@ -160,6 +163,11 @@ caborRouter.delete(
 
     try {
       await prisma.cabangOlahraga.delete({ where: { id: req.params.id } });
+      // The DB cascade drops the CaborDocument rows; unlink their files too.
+      const fs = await import("node:fs/promises");
+      for (const doc of cabor.documents) {
+        fs.unlink(path.join(uploadRoot, doc.fileUrl.replace("/uploads/", ""))).catch(() => undefined);
+      }
       res.status(204).send();
     } catch (err) {
       if (isForeignKeyConstraintError(err)) {

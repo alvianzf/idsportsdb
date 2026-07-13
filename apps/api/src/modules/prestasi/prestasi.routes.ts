@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { Router, type Request } from "express";
 import type { Prisma } from "@prisma/client";
 import { DATA_ADMIN_ROLES } from "@inasportdb/shared-types";
@@ -5,7 +7,7 @@ import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole, scopeToCabor } from "../../middleware/auth.js";
 import { isNotFoundError } from "../../lib/prismaErrors.js";
-import { uploader, publicUrl, documentFileFilter } from "../../lib/storage.js";
+import { uploader, publicUrl, uploadRoot, documentFileFilter } from "../../lib/storage.js";
 import { atletInCaborFilter, caborTambahanInclude, canAccessAtlet } from "../atlet/atlet.service.js";
 import { emit } from "../../lib/socket.js";
 import { createPrestasiSchema, updatePrestasiSchema, listPrestasiQuerySchema } from "./prestasi.schema.js";
@@ -183,12 +185,20 @@ prestasiRouter.post(
   requireRole(DATA_ADMIN_ROLES),
   certUpload.single("file"),
   asyncHandler(async (req, res) => {
+    // multer has already written the upload to disk; clean it up on any early exit
+    // so a failed existence/access check never orphans the file.
+    const cleanupUpload = () => {
+      if (req.file) fs.unlink(req.file.path, () => undefined);
+    };
+
     const { prestasi, allowed } = await loadPrestasiWithAccessCheck(req);
     if (!prestasi) {
+      cleanupUpload();
       res.status(404).json({ error: "Not found" });
       return;
     }
     if (!allowed) {
+      cleanupUpload();
       res.status(403).json({ error: "Forbidden" });
       return;
     }
@@ -202,6 +212,9 @@ prestasiRouter.post(
       where: { id: req.params.id },
       data: { sertifikatUrl },
     });
+    if (prestasi.sertifikatUrl) {
+      fs.unlink(path.join(uploadRoot, prestasi.sertifikatUrl.replace("/uploads/", "")), () => undefined);
+    }
     res.json(updated);
   }),
 );

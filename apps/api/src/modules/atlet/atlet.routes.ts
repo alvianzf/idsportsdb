@@ -273,6 +273,13 @@ atletRouter.delete(
   "/:id",
   requireRole(["SUPER_ADMIN_KONI"]),
   asyncHandler(async (req, res) => {
+    // Capture the athlete's files before deletion so we can unlink them once the
+    // row (and its cascaded documents) are gone. fotoUrl mirrors a PAS_FOTO
+    // document, so dedupe to avoid unlinking the same path twice.
+    const existing = await prisma.atlet.findUnique({
+      where: { id: req.params.id },
+      select: { fotoUrl: true, documents: { select: { fileUrl: true } } },
+    });
     try {
       await prisma.$transaction(async (tx) => {
         // Deactivate any linked ATLET login so no active account keeps a JWT
@@ -284,6 +291,11 @@ atletRouter.delete(
         await tx.atlet.delete({ where: { id: req.params.id } });
       });
       emit("atlet:change");
+      const urls = new Set(existing?.documents.map((d) => d.fileUrl) ?? []);
+      if (existing?.fotoUrl) urls.add(existing.fotoUrl);
+      for (const url of urls) {
+        fs.unlink(path.join(uploadRoot, url.replace("/uploads/", "")), () => undefined);
+      }
       res.status(204).send();
     } catch (err) {
       if (isNotFoundError(err)) {
