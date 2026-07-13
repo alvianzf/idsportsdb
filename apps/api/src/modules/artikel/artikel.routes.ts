@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { randomBytes } from "node:crypto";
 import { Router } from "express";
 import { UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
@@ -5,7 +7,7 @@ import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole } from "../../middleware/auth.js";
 import { isNotFoundError, isUniqueConstraintError } from "../../lib/prismaErrors.js";
-import { uploader, publicUrl, imageFileFilter } from "../../lib/storage.js";
+import { uploader, publicUrl, uploadRoot, imageFileFilter } from "../../lib/storage.js";
 import { createArtikelSchema, updateArtikelSchema, listArtikelQuerySchema } from "./artikel.schema.js";
 import { emit } from "../../lib/socket.js";
 
@@ -179,8 +181,24 @@ artikelRouter.post(
   "/:id/cover",
   coverUpload.single("file"),
   asyncHandler(async (req, res) => {
+    // multer has already written the upload to disk; clean it up on any early exit
+    // so a missing article never orphans the file.
+    const cleanupUpload = () => {
+      if (req.file) fs.unlink(req.file.path, () => undefined);
+    };
+
     if (!req.file) {
       res.status(400).json({ error: "File tidak ditemukan" });
+      return;
+    }
+
+    const existing = await prisma.article.findUnique({
+      where: { id: req.params.id },
+      select: { coverImageUrl: true },
+    });
+    if (!existing) {
+      cleanupUpload();
+      res.status(404).json({ error: "Not found" });
       return;
     }
 
@@ -191,9 +209,13 @@ artikelRouter.post(
         data: { coverImageUrl },
         include: { author: authorSummary },
       });
+      if (existing.coverImageUrl) {
+        fs.unlink(path.join(uploadRoot, existing.coverImageUrl.replace("/uploads/", "")), () => undefined);
+      }
       res.status(201).json(article);
     } catch (err) {
       if (isNotFoundError(err)) {
+        cleanupUpload();
         res.status(404).json({ error: "Not found" });
         return;
       }
