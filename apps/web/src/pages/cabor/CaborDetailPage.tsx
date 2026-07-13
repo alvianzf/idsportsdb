@@ -138,73 +138,8 @@ export function CaborDetailPage() {
 
   async function handleSwapPengurus(idA: string, idB: string) {
     if (!cabor) return;
-    const a = cabor.pengurus.find((p) => p.id === idA);
-    const b = cabor.pengurus.find((p) => p.id === idB);
-    if (!a || !b) return;
-
-    // For direct parent↔child swap we can't blindly exchange reportsToId because
-    // that creates a cycle (B.reportsToId = A.id → A would report to itself).
-    // Instead we swap jabatan and assign both to share the same reportsToId level.
-    const aIsParentOfB = b.reportsToId === idA;
-    const bIsParentOfA = a.reportsToId === idB;
-
-    // Check for deeper cycles (non-direct ancestor/descendant)
-    function isDeepAncestor(ancestorId: string, nodeId: string): boolean {
-      const node = cabor!.pengurus.find((p) => p.id === nodeId);
-      if (!node?.reportsToId) return false;
-      if (node.reportsToId === ancestorId) return true;
-      return isDeepAncestor(ancestorId, node.reportsToId);
-    }
-
-    const deepCycle =
-      (!aIsParentOfB && !bIsParentOfA) &&
-      (isDeepAncestor(idA, idB) || isDeepAncestor(idB, idA));
-
-    if (deepCycle) {
-      toast.error("Tidak dapat menukar pengurus yang memiliki hubungan hierarki tidak langsung.");
-      return;
-    }
-
-    // Resolve reportsToId for each after the swap:
-    // - Direct parent↔child: both nodes end up at the same hierarchy level
-    //   (the original parent's parent, or null if parent was a root)
-    let newReportsToA: string | null;
-    let newReportsToB: string | null;
-
-    if (aIsParentOfB) {
-      // A is B's parent. B takes A's senior slot (reports to A's original parent).
-      // A takes B's junior slot (now reports to B, the new senior).
-      newReportsToA = idB;          // A → reports to B
-      newReportsToB = a.reportsToId; // B → reports to A's original parent (or null)
-    } else if (bIsParentOfA) {
-      // B is A's parent. A takes B's senior slot (reports to B's original parent).
-      // B takes A's junior slot (now reports to A, the new senior).
-      newReportsToA = b.reportsToId; // A → reports to B's original parent (or null)
-      newReportsToB = idA;           // B → reports to A
-    } else {
-      // Siblings or unrelated — plain exchange.
-      newReportsToA = b.reportsToId;
-      newReportsToB = a.reportsToId;
-    }
-
-    // Collect direct reports of A and B (excluding each other in parent↔child case)
-    const reportsOfA = cabor.pengurus.filter(
-      (p) => p.reportsToId === idA && p.id !== idB,
-    );
-    const reportsOfB = cabor.pengurus.filter(
-      (p) => p.reportsToId === idB && p.id !== idA,
-    );
-
     try {
-      await Promise.all([
-        // Swap A and B themselves (jabatan + reportsToId)
-        api.patch(`/pengurus/${idA}`, { jabatan: b.jabatan, reportsToId: newReportsToA }),
-        api.patch(`/pengurus/${idB}`, { jabatan: a.jabatan, reportsToId: newReportsToB }),
-        // Redirect A's direct reports to B (they now report to B's position)
-        ...reportsOfA.map((p) => api.patch(`/pengurus/${p.id}`, { reportsToId: idB })),
-        // Redirect B's direct reports to A (they now report to A's position)
-        ...reportsOfB.map((p) => api.patch(`/pengurus/${p.id}`, { reportsToId: idA })),
-      ]);
+      await api.post(`/cabor/${cabor.id}/pengurus/swap`, { aId: idA, bId: idB });
       toast.success("Posisi berhasil ditukar.");
       load();
     } catch (err) {

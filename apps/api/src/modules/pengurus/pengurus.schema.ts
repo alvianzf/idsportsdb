@@ -24,5 +24,10 @@ export const listPengurusQuerySchema = z.object({
   active: z.coerce.boolean().optional(),
 });
 
+export const swapPengurusSchema = z.object({
+  aId: z.string().uuid(),
+  bId: z.string().uuid(),
+});
+
 export type CreatePengurusInput = z.infer<typeof createPengurusSchema>;
 export type UpdatePengurusInput = z.infer<typeof updatePengurusSchema>;
