@@ -229,6 +229,31 @@ monitoringRouter.patch(
       return;
     }
 
+    // Only a PENDING mutation may be acted on — prevents re-approval and the
+    // APPROVED->REJECTED drift where the event and the athlete's actual cabor
+    // fall permanently out of sync.
+    if (event.mutationStatus !== "PENDING") {
+      res.status(409).json({ error: "Mutasi ini sudah diproses" });
+      return;
+    }
+
+    // toValue is a free string at creation; validate the target cabor exists
+    // before applying, otherwise the P2003 FK error 500s and blocks approval.
+    if (parsed.data.status === "APPROVED") {
+      if (!event.toValue) {
+        res.status(400).json({ error: "Cabang olahraga tujuan mutasi tidak valid" });
+        return;
+      }
+      const cabor = await prisma.cabangOlahraga.findUnique({
+        where: { id: event.toValue },
+        select: { id: true },
+      });
+      if (!cabor) {
+        res.status(404).json({ error: "Cabang olahraga tujuan tidak ditemukan" });
+        return;
+      }
+    }
+
     const updated = await prisma.$transaction(async (tx) => {
       const updatedEvent = await tx.monitoringEvent.update({
         where: { id: req.params.id },
