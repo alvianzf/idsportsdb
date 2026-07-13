@@ -6,6 +6,7 @@ import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import {
   ATHLETE_STATUS_LABELS,
+  ATHLETE_STATUSES,
   DATA_ADMIN_ROLES,
   GENDER_LABELS,
   type AthleteStatus,
@@ -225,9 +226,24 @@ function parseGender(value: string): Gender | null {
   return null;
 }
 
+/**
+ * Lookup of every recognized status string → AthleteStatus, so that a plain
+ * export→import round-trip preserves status. Includes both the Indonesian
+ * display labels (e.g. "Cedera", "TC", "Mutasi") written by exports and the
+ * raw enum values (e.g. "INJURED"), all lowercased for case-insensitive match.
+ */
+const STATUS_LOOKUP: Record<string, AthleteStatus> = Object.fromEntries([
+  ...ATHLETE_STATUSES.map((s) => [s.toLowerCase(), s]),
+  ...ATHLETE_STATUSES.map((s) => [ATHLETE_STATUS_LABELS[s].toLowerCase(), s]),
+]);
+
 function parseStatus(value: string): AthleteStatus | null {
   const v = value.trim().toLowerCase();
-  if (!v || v === "aktif" || v === "active") return "ACTIVE";
+  if (!v) return "ACTIVE";
+  const mapped = STATUS_LOOKUP[v];
+  if (mapped) return mapped;
+  // Lenient synonyms for hand-authored imports.
+  if (v === "active") return "ACTIVE";
   if (v.includes("tidak") || v.includes("non") || v === "inactive") return "INACTIVE";
   return null;
 }
