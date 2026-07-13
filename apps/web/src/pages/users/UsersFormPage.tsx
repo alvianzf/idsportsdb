@@ -41,9 +41,20 @@ export function UsersFormPage() {
   const athleteIdParam = searchParams.get("athleteId") ?? "";
   const athleteLocked = !isEdit && Boolean(athleteIdParam);
 
-  // ADMIN_CABOR may only provision ATLET logins (the API enforces this too).
-  const allowedRoles: readonly Role[] = currentRole === "ADMIN_CABOR" ? (["ATLET"] as const) : ROLES;
-  const defaultRole: Role = athleteLocked || currentRole === "ADMIN_CABOR" ? "ATLET" : "ADMIN_KONI";
+  // Assignable roles by actor (the API enforces these limits too):
+  // ADMIN_CABOR → ATLET only; ADMIN_KONI → ADMIN_CABOR + ATLET (never SUPER/ADMIN_KONI).
+  const allowedRoles: readonly Role[] =
+    currentRole === "ADMIN_CABOR"
+      ? (["ATLET"] as const)
+      : currentRole === "ADMIN_KONI"
+        ? (["ADMIN_CABOR", "ATLET"] as const)
+        : ROLES;
+  const defaultRole: Role =
+    athleteLocked || currentRole === "ADMIN_CABOR"
+      ? "ATLET"
+      : currentRole === "ADMIN_KONI"
+        ? "ADMIN_CABOR"
+        : "ADMIN_KONI";
 
   const [form, setForm] = useState<UserForm>({
     email: "",
@@ -60,6 +71,8 @@ export function UsersFormPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<CreatedAccount | null>(null);
+  // ADMIN_KONI may not act on SUPER_ADMIN_KONI / ADMIN_KONI accounts (API 403s too).
+  const [forbidden, setForbidden] = useState(false);
 
   useEffect(() => {
     api.get<CaborOption[]>("/cabor").then((res) => setCabors(res.data));
@@ -101,6 +114,13 @@ export function UsersFormPage() {
       .get(`/users/${id}`)
       .then((res) => {
         const u = res.data;
+        if (
+          currentRole === "ADMIN_KONI" &&
+          (u.role === "SUPER_ADMIN_KONI" || u.role === "ADMIN_KONI")
+        ) {
+          setForbidden(true);
+          return;
+        }
         setForm({
           email: u.email ?? "",
           fullName: u.fullName ?? "",
@@ -111,7 +131,7 @@ export function UsersFormPage() {
       })
       .catch(() => setError("Gagal memuat data pengguna."))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, currentRole]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -187,6 +207,22 @@ export function UsersFormPage() {
 
   if (loading) {
     return <Card className="text-sm text-neutral-500">Memuat data...</Card>;
+  }
+
+  if (forbidden) {
+    return (
+      <div>
+        <PageHeader title="Ubah Pengguna" />
+        <Card className="space-y-4">
+          <p className="text-sm text-danger">
+            Anda tidak memiliki izin untuk mengubah akun Super Admin atau Admin KONI.
+          </p>
+          <Button type="button" variant="outline" onClick={() => navigate("/users")}>
+            Kembali
+          </Button>
+        </Card>
+      </div>
+    );
   }
 
   if (created) {
