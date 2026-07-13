@@ -1,0 +1,21 @@
+# KONI Batam
+
+> Official athlete-management information system of KONI Kota Batam (Komite Olahraga Nasional Indonesia — Batam City, Riau Islands, Indonesia). It publishes public statistics and announcements about the city's registered athletes, coaches, sport disciplines (cabang olahraga), achievements (prestasi), and events.
+
+## Public pages
+- [Beranda / Home](https://konibatam.alvianzf.id/): overview, highlights, latest announcements and events.
+- [Data & Statistik](https://konibatam.alvianzf.id/data): public statistics — athlete, coach, and sport-discipline counts, plus achievement (medal) tallies.
+- [Pengumuman / Announcements](https://konibatam.alvianzf.id/artikel/): news and official announcements (each article at `/artikel/{slug}`).
+
+## About
+KONI Batam is the city-level Indonesian National Sports Committee. This application manages the registry of athletes and coaches across sport disciplines and reports their achievements. Public visitors can view aggregate statistics and announcements; individual administrative records are access-controlled and not public.
+
+## Key terms (Indonesian → English)
+- Atlet — athlete
+- Pelatih — coach
+- Cabang Olahraga (cabor) — sport discipline
+- Prestasi — achievement / medal record
+- Pengumuman — announcement
+
+## Sitemap
+https://konibatam.alvianzf.id/sitemap.xml
