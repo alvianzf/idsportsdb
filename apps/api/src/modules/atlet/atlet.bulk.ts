@@ -343,7 +343,7 @@ atletBulkRouter.post(
       duplicate?: boolean;
     };
 
-    const rejected: { row: number; error: string }[] = [];
+    const rejected: { row: number; error: string; issue: string }[] = [];
     const preview: PreviewRow[] = [];
     const candidates: Candidate[] = [];
     // Within-file duplicate tracking for the unique columns → first row seen.
@@ -360,8 +360,8 @@ atletBulkRouter.post(
       });
       if (!Object.values(raw).some((v) => v !== "")) continue; // skip blank rows
 
-      const reject = (error: string) => {
-        rejected.push({ row: rowNumber, error });
+      const reject = (issue: string, error: string) => {
+        rejected.push({ row: rowNumber, error, issue });
         preview.push({
           row: rowNumber,
           namaLengkap: raw.namaLengkap ?? "",
@@ -380,6 +380,7 @@ atletBulkRouter.post(
         if (!cabangOlahragaId) {
           const suggestion = suggestCabor(raw.cabor ?? "", caborNames);
           reject(
+            "Nama cabang olahraga tidak ditemukan",
             `Cabang olahraga "${raw.cabor ?? ""}" tidak ditemukan` +
               (suggestion ? `. Mungkin maksud Anda "${suggestion}"?` : ""),
           );
@@ -389,12 +390,12 @@ atletBulkRouter.post(
 
       const jenisKelamin = parseGender(raw.jenisKelamin ?? "");
       if (!jenisKelamin) {
-        reject("Jenis kelamin harus L atau P");
+        reject("Jenis kelamin tidak valid", "Jenis kelamin harus L atau P");
         continue;
       }
       const statusAtlet = parseStatus(raw.statusAtlet ?? "");
       if (!statusAtlet) {
-        reject(`Status "${raw.statusAtlet}" tidak dikenal (Aktif/Tidak Aktif)`);
+        reject("Status tidak valid", `Status "${raw.statusAtlet}" tidak dikenal (Aktif/Tidak Aktif)`);
         continue;
       }
 
@@ -414,7 +415,7 @@ atletBulkRouter.post(
       });
       if (!parsed.success) {
         const first = parsed.error.issues[0];
-        reject(`${first.path.join(".")}: ${first.message}`);
+        reject("Data tidak valid", `${first.path.join(".")}: ${first.message}`);
         continue;
       }
 
@@ -429,7 +430,7 @@ atletBulkRouter.post(
           : seenInduk.has(parsed.data.nomorIndukAtlet)
             ? "Nomor induk"
             : "Nomor registrasi";
-        reject(`${label} duplikat dengan baris ${firstDupRow} dalam berkas`);
+        reject("Duplikat dalam berkas", `${label} duplikat dengan baris ${firstDupRow} dalam berkas`);
         continue;
       }
       seenNik.set(parsed.data.nik, rowNumber);
@@ -475,7 +476,7 @@ atletBulkRouter.post(
               : null;
         if (label) {
           c.duplicate = true;
-          rejected.push({ row: c.row, error: `${label} sudah terdaftar di sistem` });
+          rejected.push({ row: c.row, error: `${label} sudah terdaftar di sistem`, issue: "Sudah terdaftar di sistem" });
           preview.push({ ...c.preview, error: `${label} sudah terdaftar di sistem` });
         }
       }
@@ -485,8 +486,21 @@ atletBulkRouter.post(
     for (const c of toCreate) preview.push(c.preview);
     preview.sort((a, b) => a.row - b.row);
 
+    // Group the problems by issue type so users get a fix-list (what to fix,
+    // how many rows, and a few concrete examples) rather than a flat row dump.
+    const summaryMap = new Map<string, { count: number; examples: string[] }>();
+    for (const r of rejected) {
+      const entry = summaryMap.get(r.issue) ?? { count: 0, examples: [] };
+      entry.count += 1;
+      if (entry.examples.length < 3) entry.examples.push(`Baris ${r.row}: ${r.error}`);
+      summaryMap.set(r.issue, entry);
+    }
+    const summary = [...summaryMap.entries()]
+      .map(([issue, v]) => ({ issue, count: v.count, examples: v.examples }))
+      .sort((a, b) => b.count - a.count);
+
     if (dryRun) {
-      res.json({ rows: preview, valid: toCreate.length, invalid: rejected.length });
+      res.json({ rows: preview, valid: toCreate.length, invalid: rejected.length, summary });
       return;
     }
 
@@ -495,6 +509,7 @@ atletBulkRouter.post(
       res.status(400).json({
         error: `Impor ditolak: ${rejected.length} baris bermasalah. Perbaiki lalu unggah ulang.`,
         rejected,
+        summary,
       });
       return;
     }

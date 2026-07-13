@@ -65,6 +65,7 @@ export function AtletListPage() {
     rows: { row: number; namaLengkap: string; nik: string; cabor: string; jenisKelamin: string; statusAtlet: string; error?: string }[];
     valid: number;
     invalid: number;
+    summary?: { issue: string; count: number; examples: string[] }[];
   } | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -427,6 +428,24 @@ export function AtletListPage() {
                     </>
                   )}
                 </p>
+                {importPreview.summary && importPreview.summary.length > 0 && (
+                  <div className="mb-2 space-y-2 rounded-lg border border-danger/30 bg-danger-light/30 p-3 text-xs">
+                    <p className="font-semibold text-danger">Yang perlu diperbaiki:</p>
+                    <ul className="space-y-2">
+                      {importPreview.summary.map((s) => (
+                        <li key={s.issue}>
+                          <span className="font-medium text-neutral-800">{s.issue}</span>{" "}
+                          <span className="text-danger">({s.count} baris)</span>
+                          <ul className="mt-0.5 list-disc pl-5 text-neutral-600">
+                            {s.examples.map((ex, i) => (
+                              <li key={i}>{ex}</li>
+                            ))}
+                          </ul>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <div className="max-h-56 overflow-auto rounded-lg border border-neutral-200">
                   <table className="w-full min-w-[560px] text-xs">
                     <thead className="sticky top-0 bg-neutral-50">
