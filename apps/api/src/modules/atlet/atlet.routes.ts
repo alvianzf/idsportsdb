@@ -17,6 +17,7 @@ import {
 } from "./atlet.schema.js";
 import { atletInCaborFilter, atletNotDeleted, caborTambahanInclude, canAccessAtlet } from "./atlet.service.js";
 import { emit } from "../../lib/socket.js";
+import { writeAudit } from "../../lib/audit.js";
 
 export const atletRouter = Router();
 
@@ -210,6 +211,7 @@ atletRouter.post(
         include: { cabangOlahraga: caborSummary, ...caborTambahanInclude },
       });
       emit("atlet:change");
+      writeAudit(req.user!.id, "CREATE", "Atlet", atlet.id);
       res.status(201).json(atlet);
     } catch (err) {
       if (isUniqueConstraintError(err)) {
@@ -277,6 +279,7 @@ atletRouter.patch(
         include: { cabangOlahraga: caborSummary, ...caborTambahanInclude, documents: true },
       });
       emit("atlet:change");
+      writeAudit(req.user!.id, "UPDATE", "Atlet", atlet.id);
       res.json(atlet);
     } catch (err) {
       if (isNotFoundError(err)) {
@@ -318,6 +321,7 @@ atletRouter.delete(
         return;
       }
       emit("atlet:change");
+      writeAudit(req.user!.id, "DELETE", "Atlet", req.params.id);
       res.status(204).send();
     } catch (err) {
       if (isNotFoundError(err)) {
@@ -343,6 +347,7 @@ atletRouter.post(
       return;
     }
     emit("atlet:change");
+    writeAudit(req.user!.id, "RESTORE", "Atlet", req.params.id);
     res.status(204).send();
   }),
 );
@@ -371,6 +376,7 @@ atletRouter.delete(
         await tx.atlet.delete({ where: { id: req.params.id } });
       });
       emit("atlet:change");
+      writeAudit(req.user!.id, "PERMANENT_DELETE", "Atlet", req.params.id);
       const urls = new Set(existing?.documents.map((d) => d.fileUrl) ?? []);
       if (existing?.fotoUrl) urls.add(existing.fotoUrl);
       for (const url of urls) {

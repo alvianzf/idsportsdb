@@ -14,6 +14,7 @@ import {
   mutasiActionSchema,
   mutasiQueueQuerySchema,
 } from "./monitoring.schema.js";
+import { writeAudit } from "../../lib/audit.js";
 
 const atletSummary = {
   select: { id: true, namaLengkap: true, cabangOlahragaId: true, cabangOlahraga: { select: { id: true, nama: true } } },
@@ -311,6 +312,7 @@ monitoringRouter.patch(
     }
 
     emit("monitoring:change");
+    writeAudit(req.user!.id, parsed.data.status, "MonitoringMutation", req.params.id);
     res.json(updated);
   }),
 );
