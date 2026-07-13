@@ -1,19 +1,46 @@
 import fs from "node:fs";
 import path from "node:path";
-import { Router } from "express";
+import { Router, type Response } from "express";
 import rateLimit from "express-rate-limit";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 import { prisma } from "../../lib/prisma.js";
+import { env } from "../../config/env.js";
 import { uploader, publicUrl, uploadRoot } from "../../lib/storage.js";
 import { authenticate } from "../../middleware/auth.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
-import { loginSchema, refreshSchema, updateUserSchema } from "./auth.schema.js";
+import { loginSchema, updateUserSchema } from "./auth.schema.js";
 import * as authService from "./auth.service.js";
 import { toSafeUser } from "../users/users.service.js";
 import { sendPasswordResetEmail } from "../../lib/email.js";
 
 export const authRouter = Router();
+
+// Refresh token lives in an httpOnly cookie scoped to the auth routes so JS
+// (and any XSS) can't read it. Path matches this router's mount point so the
+// browser only sends it to /refresh and /logout. See issue #4.
+const REFRESH_COOKIE = "refreshToken";
+const REFRESH_COOKIE_PATH = "/api/v1/auth";
+const REFRESH_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+function setRefreshCookie(res: Response, token: string) {
+  res.cookie(REFRESH_COOKIE, token, {
+    httpOnly: true,
+    secure: env.isProduction,
+    sameSite: "lax",
+    path: REFRESH_COOKIE_PATH,
+    maxAge: REFRESH_MAX_AGE_MS,
+  });
+}
+
+function clearRefreshCookie(res: Response) {
+  res.clearCookie(REFRESH_COOKIE, {
+    httpOnly: true,
+    secure: env.isProduction,
+    sameSite: "lax",
+    path: REFRESH_COOKIE_PATH,
+  });
+}
 
 // Throttle brute-force / mail-bomb surfaces: login, forgot-password, reset-password.
 const authLimiter = rateLimit({
@@ -40,33 +67,42 @@ authRouter.post(
       return;
     }
 
-    res.json(result);
+    const { refreshToken, ...body } = result;
+    setRefreshCookie(res, refreshToken);
+    res.json(body);
   }),
 );
 
 authRouter.post(
   "/refresh",
   asyncHandler(async (req, res) => {
-    const parsed = refreshSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.flatten() });
+    // Prefer the httpOnly cookie; fall back to the body for backward compat.
+    const token =
+      (req.cookies?.[REFRESH_COOKIE] as string | undefined) ??
+      (typeof req.body?.refreshToken === "string" ? req.body.refreshToken : undefined);
+
+    if (!token) {
+      res.status(401).json({ error: "Invalid or expired refresh token" });
       return;
     }
 
-    const result = await authService.refresh(parsed.data.refreshToken);
+    const result = await authService.refresh(token);
     if (!result) {
       res.status(401).json({ error: "Invalid or expired refresh token" });
       return;
     }
 
-    res.json(result);
+    const { refreshToken, ...body } = result;
+    setRefreshCookie(res, refreshToken);
+    res.json(body);
   }),
 );
 
 // Stateless JWT refresh tokens (no server-side revocation list) for v1 — see
-// specs/001-auth-rbac/spec.md §7. Logout simply tells the client to discard
-// its tokens.
+// specs/001-auth-rbac/spec.md §7. Logout clears the refresh cookie and tells
+// the client to discard its in-memory access token.
 authRouter.post("/logout", authenticate, (_req, res) => {
+  clearRefreshCookie(res);
   res.status(204).send();
 });
 

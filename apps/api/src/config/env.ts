@@ -9,6 +9,7 @@ function required(name: string): string {
 }
 
 export const env = {
+  isProduction: process.env.NODE_ENV === "production",
   port: Number(process.env.PORT ?? 4000),
   databaseUrl: required("DATABASE_URL"),
   jwtAccessSecret: required("JWT_ACCESS_SECRET"),

@@ -26,7 +26,7 @@ export function LoginPage() {
     setLoading(true);
     try {
       const { data } = await api.post("/auth/login", { email, password });
-      setSession(data.accessToken, data.refreshToken, data.user);
+      setSession(data.accessToken, data.user);
       navigate(data.user.role === "ATLET" ? "/me" : "/dashboard");
     } catch {
       setError("Email atau kata sandi salah.");

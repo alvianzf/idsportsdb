@@ -6,7 +6,7 @@ import { api, resolveFileUrl } from "../lib/api";
 import { useAuthStore } from "../store/authStore";
 
 export function ProfileModal({ onClose }: { onClose: () => void }) {
-  const { user, setSession, accessToken, refreshToken } = useAuthStore();
+  const { user, setSession, accessToken } = useAuthStore();
   const [fullName, setFullName] = useState(user?.fullName ?? "");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [removeAvatar, setRemoveAvatar] = useState(false);
@@ -36,8 +36,8 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
         fullName,
         ...(password ? { password } : {}),
       });
-      if (user && accessToken && refreshToken) {
-        setSession(accessToken, refreshToken, { ...user, fullName: res.data.fullName, avatarUrl });
+      if (user && accessToken) {
+        setSession(accessToken, { ...user, fullName: res.data.fullName, avatarUrl });
       }
       toast.success("Profil berhasil diperbarui.");
       onClose();
