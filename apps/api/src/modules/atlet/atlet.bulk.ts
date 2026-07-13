@@ -33,6 +33,39 @@ const exportQuerySchema = listAtletQuerySchema.omit({ page: true, pageSize: true
   format: z.enum(["xlsx", "csv", "pdf"]).default("xlsx"),
 });
 
+// #73 — bulk status change for a selected cohort of athletes.
+const bulkStatusSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1),
+  status: z.enum(ATHLETE_STATUSES),
+});
+
+// Registered on atletBulkRouter (mounted before atletRouter) so this PATCH is
+// not swallowed by the "/:id" route.
+atletBulkRouter.patch(
+  "/bulk-status",
+  requireRole(DATA_ADMIN_ROLES),
+  asyncHandler(async (req, res) => {
+    const parsed = bulkStatusSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+    const { ids, status } = parsed.data;
+
+    // Scope: an ADMIN_CABOR may only touch athletes in their own cabor (primary
+    // or additional). updateMany applies the filter atomically, so ids outside
+    // the caller's scope are silently skipped rather than updated.
+    const where: Prisma.AtletWhereInput = req.scopedCaborId
+      ? { AND: [{ id: { in: ids } }, atletInCaborFilter(req.scopedCaborId)] }
+      : { id: { in: ids } };
+
+    const result = await prisma.atlet.updateMany({ where, data: { statusAtlet: status } });
+
+    if (result.count > 0) emit("atlet:change");
+    res.json({ updated: result.count });
+  }),
+);
+
 const EXPORT_COLUMNS = [
   { header: "Nomor Induk", key: "nomorIndukAtlet", width: 16 },
   { header: "Nomor Registrasi", key: "nomorRegistrasi", width: 18 },
