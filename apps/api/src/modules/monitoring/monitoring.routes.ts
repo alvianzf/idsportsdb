@@ -185,7 +185,6 @@ monitoringRouter.get(
       where,
       include: { atlet: atletSummary },
       orderBy: { eventDate: "desc" },
-      take: 200,
     });
     res.json(events);
   }),
@@ -210,8 +209,6 @@ monitoringRouter.get(
       where,
       include: { atlet: atletSummary },
       orderBy: { eventDate: "desc" },
-      skip: (parsed.data.page - 1) * parsed.data.pageSize,
-      take: parsed.data.pageSize,
     });
     res.json(events);
   }),

@@ -17,8 +17,6 @@ export const updateEventSchema = createEventSchema.partial();
 export const listEventQuerySchema = z.object({
   status: z.enum(EVENT_STATUSES).optional(),
   cabor: z.string().optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(100),
 });
 
 export type CreateEventInput = z.infer<typeof createEventSchema>;

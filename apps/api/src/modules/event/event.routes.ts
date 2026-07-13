@@ -22,7 +22,7 @@ eventRouter.get(
       res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
-    const { status, cabor, page, pageSize } = parsed.data;
+    const { status, cabor } = parsed.data;
 
     const events = await prisma.event.findMany({
       where: {
@@ -31,8 +31,6 @@ eventRouter.get(
       },
       include: { cabangOlahraga: caborSummary },
       orderBy: { tanggalMulai: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
     });
     res.json(events);
   }),
