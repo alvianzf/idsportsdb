@@ -292,20 +292,24 @@ atletRouter.delete(
   requireRole(["SUPER_ADMIN_KONI"]),
   asyncHandler(async (req, res) => {
     try {
-      const { count } = await prisma.atlet.updateMany({
-        where: { id: req.params.id, ...atletNotDeleted },
-        data: { deletedAt: new Date() },
+      // Archive the athlete and deactivate any linked ATLET login together, so
+      // no active account is ever left pointing at an archived athlete.
+      const count = await prisma.$transaction(async (tx) => {
+        const { count } = await tx.atlet.updateMany({
+          where: { id: req.params.id, ...atletNotDeleted },
+          data: { deletedAt: new Date() },
+        });
+        if (count === 0) return 0;
+        await tx.user.updateMany({
+          where: { athleteId: req.params.id },
+          data: { isActive: false, athleteId: null },
+        });
+        return count;
       });
       if (count === 0) {
         res.status(404).json({ error: "Not found" });
         return;
       }
-      // Deactivate any linked ATLET login so no active account keeps a JWT
-      // pointing at an archived athlete.
-      await prisma.user.updateMany({
-        where: { athleteId: req.params.id },
-        data: { isActive: false, athleteId: null },
-      });
       emit("atlet:change");
       res.status(204).send();
     } catch (err) {
