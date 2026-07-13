@@ -24,7 +24,7 @@ export const updatePelatihSchema = refineMasaBerlaku(pelatihFields.partial());
 export const listPelatihQuerySchema = z.object({
   cabor: z.string().optional(),
   search: z.string().optional(),
-  expiring: z.coerce.boolean().optional(),
+  expiring: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });

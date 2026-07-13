@@ -11,7 +11,7 @@ export const updateArtikelSchema = createArtikelSchema.partial();
 
 export const listArtikelQuerySchema = z.object({
   search: z.string().optional(),
-  published: z.coerce.boolean().optional(),
+  published: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
 });
 
 export const publicArtikelQuerySchema = z.object({
