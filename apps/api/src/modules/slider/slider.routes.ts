@@ -58,6 +58,39 @@ sliderRouter.post(
   }),
 );
 
+const reorderSliderSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1),
+});
+
+sliderRouter.patch(
+  "/reorder",
+  asyncHandler(async (req, res) => {
+    const parsed = reorderSliderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+
+    try {
+      await prisma.$transaction(
+        parsed.data.ids.map((id, index) =>
+          prisma.sliderImage.update({ where: { id }, data: { order: index } }),
+        ),
+      );
+    } catch (err) {
+      if (isNotFoundError(err)) {
+        res.status(404).json({ error: "Not found" });
+        return;
+      }
+      throw err;
+    }
+
+    emit("slider:change");
+    const slides = await prisma.sliderImage.findMany({ orderBy: { order: "asc" } });
+    res.json(slides);
+  }),
+);
+
 sliderRouter.patch(
   "/:id",
   asyncHandler(async (req, res) => {

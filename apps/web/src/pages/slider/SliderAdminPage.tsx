@@ -74,14 +74,16 @@ export function SliderAdminPage() {
 
   async function move(index: number, dir: -1 | 1) {
     if (!slides) return;
-    const target = slides[index + dir];
-    const current = slides[index];
-    if (!target) return;
-    await Promise.all([
-      api.patch(`/slider/${current.id}`, { order: target.order }),
-      api.patch(`/slider/${target.id}`, { order: current.order }),
-    ]).catch(() => toast.error("Gagal mengubah urutan."));
-    load();
+    const targetIndex = index + dir;
+    if (targetIndex < 0 || targetIndex >= slides.length) return;
+    const reordered = [...slides];
+    [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+    try {
+      await api.patch("/slider/reorder", { ids: reordered.map((s) => s.id) });
+      load();
+    } catch {
+      toast.error("Gagal mengubah urutan.");
+    }
   }
 
   async function handleDelete(slide: Slide) {
