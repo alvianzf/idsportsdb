@@ -11,15 +11,19 @@ function page<T extends Record<string, React.ComponentType>>(
   loader: () => Promise<T>,
   name: keyof T,
 ): React.LazyExoticComponent<React.ComponentType> {
+  // Key the reload flag per-chunk so a permanently-404 chunk can't loop: a
+  // successful load only clears its own flag, leaving a genuinely broken chunk's
+  // flag set after its one retry.
+  const flag = `chunk-reload:${String(name)}`;
   return lazy(() =>
     loader().then(
       (m) => {
-        sessionStorage.removeItem("chunk-reload");
+        sessionStorage.removeItem(flag);
         return { default: m[name] as React.ComponentType };
       },
       (err) => {
-        if (!sessionStorage.getItem("chunk-reload")) {
-          sessionStorage.setItem("chunk-reload", "1");
+        if (!sessionStorage.getItem(flag)) {
+          sessionStorage.setItem(flag, "1");
           window.location.reload();
           return new Promise<never>(() => undefined); // reloading — never resolve
         }

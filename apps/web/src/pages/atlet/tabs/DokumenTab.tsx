@@ -76,14 +76,21 @@ export function DokumenTab({ atletId, documents, canManage, onChange }: DokumenT
   }
 
   async function openDocument(doc: AtletDocument) {
+    // Open the tab synchronously (still inside the click gesture) so it isn't
+    // popup-blocked; we point it at the blob URL once the fetch resolves.
+    const win = window.open("", "_blank");
     try {
       // Resolve to absolute URL (avoids axios prepending /api/v1 to /uploads/... paths)
       const res = await api.get(resolveFileUrl(doc.fileUrl), { responseType: "blob" });
       const url = URL.createObjectURL(res.data as Blob);
-      window.open(url, "_blank");
-      // Revoke after a short delay so the tab has time to load
-      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      if (win) win.location.href = url;
+      else window.open(url, "_blank"); // popup was blocked despite the sync open
+      // Revoke once the viewer has loaded the blob; a generous fallback covers
+      // slow PDFs and viewers that never fire `load`.
+      win?.addEventListener("load", () => URL.revokeObjectURL(url), { once: true });
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch {
+      win?.close();
       toast.error("Gagal membuka dokumen.");
     }
   }
