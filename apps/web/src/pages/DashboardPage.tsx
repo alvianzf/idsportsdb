@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Users, UserCog, Building2, Trophy, Medal, ArrowLeftRight } from "lucide-react";
-import { MEDAL_LABELS, type Medal as MedalType } from "@inasportdb/shared-types";
+import { Users, UserCog, Building2, Trophy, Medal, ArrowLeftRight, UserPlus, Upload, CalendarPlus } from "lucide-react";
+import { MEDAL_LABELS, DATA_ADMIN_ROLES, type Medal as MedalType } from "@inasportdb/shared-types";
 import { Card, PageHeader, Badge } from "../components/ui";
 import { api } from "../lib/api";
 import { getSocket } from "../lib/socket";
@@ -48,6 +48,20 @@ function StatCard({ label, value, icon: Icon }: StatCardProps) {
   );
 }
 
+// #73 — dashboard quick action tile linking to a common create/import flow.
+function QuickAction({ to, label, icon: Icon }: { to: string; label: string; icon: typeof Users }) {
+  return (
+    <Link to={to}>
+      <Card className="flex items-center gap-3 transition-colors hover:bg-neutral-50">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary">
+          <Icon size={18} />
+        </div>
+        <span className="text-sm font-medium text-neutral-800">{label}</span>
+      </Card>
+    </Link>
+  );
+}
+
 const MEDAL_BADGE_TONE: Record<MedalType, "gold" | "silver" | "bronze" | "neutral"> = {
   GOLD: "gold",
   SILVER: "silver",
@@ -63,6 +77,7 @@ const MEDAL_BADGE_TONE: Record<MedalType, "gold" | "silver" | "bronze" | "neutra
 export function DashboardPage() {
   const role = useAuthStore((state) => state.user?.role);
   const isUnscopedAdmin = role === "SUPER_ADMIN_KONI" || role === "ADMIN_KONI";
+  const canManageAtlet = role ? DATA_ADMIN_ROLES.includes(role) : false;
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
@@ -163,6 +178,17 @@ export function DashboardPage() {
             <Badge tone="warning">{pendingMutasi}</Badge>
           </Card>
         </Link>
+      )}
+
+      {(canManageAtlet || isUnscopedAdmin) && (
+        <div className="mb-4">
+          <p className="mb-2 text-sm text-neutral-500">Aksi Cepat</p>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+            {canManageAtlet && <QuickAction to="/atlet/new" label="Tambah Atlet" icon={UserPlus} />}
+            {canManageAtlet && <QuickAction to="/atlet?import=1" label="Impor Atlet" icon={Upload} />}
+            {isUnscopedAdmin && <QuickAction to="/events" label="Buat Event" icon={CalendarPlus} />}
+          </div>
+        </div>
       )}
 
       <div className="mb-3 flex items-center justify-between">

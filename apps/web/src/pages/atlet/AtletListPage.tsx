@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Archive, ArchiveRestore, Download, Plus, Search, Trash2, Upload } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Archive, ArchiveRestore, Download, Plus, Search, Tag, Trash2, Upload } from "lucide-react";
 import {
   ATHLETE_STATUSES,
   ATHLETE_STATUS_LABELS,
@@ -75,8 +75,23 @@ export function AtletListPage() {
   const [previewing, setPreviewing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ imported: number; rejected: { row: number; error: string }[] } | null>(null);
+  // #73 — bulk status change. Selected ids are captured when the action fires,
+  // since the DataTable clears its selection right after onClick.
+  const [statusTargetIds, setStatusTargetIds] = useState<string[] | null>(null);
+  const [bulkStatus, setBulkStatus] = useState<AthleteStatus>("ACTIVE");
+  const [savingStatus, setSavingStatus] = useState(false);
 
   const pageSize = 20;
+
+  // #73 — the dashboard "Impor Atlet" quick action deep-links here with ?import=1.
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    if (canCreate && searchParams.get("import") === "1") {
+      setShowImport(true);
+      searchParams.delete("import");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [canCreate, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (isUnscopedAdmin) {
@@ -168,6 +183,29 @@ export function AtletListPage() {
       toast.error(`${failed} dari ${ids.length} atlet gagal dihapus.`);
     }
     setReloadKey((k) => k + 1);
+  }
+
+  function handleBulkStatus(ids: string[]) {
+    setBulkStatus("ACTIVE");
+    setStatusTargetIds(ids);
+  }
+
+  async function submitBulkStatus() {
+    if (!statusTargetIds) return;
+    setSavingStatus(true);
+    try {
+      const res = await api.patch<{ updated: number }>("/atlet/bulk-status", {
+        ids: statusTargetIds,
+        status: bulkStatus,
+      });
+      toast.success(`Status ${res.data.updated} atlet berhasil diubah.`);
+      setStatusTargetIds(null);
+      setReloadKey((k) => k + 1);
+    } catch {
+      toast.error("Gagal mengubah status atlet.");
+    } finally {
+      setSavingStatus(false);
+    }
   }
 
   // Revisi 2026-07-12: bulk download to Excel/CSV/PDF (replaces card ZIP).
@@ -325,6 +363,7 @@ export function AtletListPage() {
         ...(canHardDelete ? [{ label: "Hapus Permanen", icon: Trash2, variant: "danger" as const, onClick: handleHardDelete }] : []),
       ]
     : [
+        ...(canCreate ? [{ label: "Ubah Status", icon: Tag, onClick: handleBulkStatus }] : []),
         ...(canDelete ? [{ label: "Hapus", icon: Trash2, variant: "danger" as const, onClick: handleBulkDelete }] : []),
       ];
 
@@ -557,6 +596,30 @@ export function AtletListPage() {
                     : "Impor"}
               </Button>
               <Button variant="outline" onClick={closeImport}>
+                Batal
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {statusTargetIds && (
+        <Modal title="Ubah Status Atlet" onClose={() => setStatusTargetIds(null)}>
+          <div className="space-y-4 text-sm">
+            <p className="text-neutral-700">
+              Ubah status untuk <span className="font-semibold">{statusTargetIds.length} atlet</span> terpilih.
+            </p>
+            <Select
+              value={bulkStatus}
+              onChange={(v) => setBulkStatus(v as AthleteStatus)}
+              options={ATHLETE_STATUSES.map((s) => ({ value: s, label: ATHLETE_STATUS_LABELS[s] }))}
+              className="w-full"
+            />
+            <div className="flex gap-2">
+              <Button disabled={savingStatus} onClick={() => void submitBulkStatus()}>
+                {savingStatus ? "Menyimpan..." : "Ubah Status"}
+              </Button>
+              <Button variant="outline" onClick={() => setStatusTargetIds(null)}>
                 Batal
               </Button>
             </div>

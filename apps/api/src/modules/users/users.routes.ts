@@ -25,8 +25,99 @@ import { toSafeUser } from "./users.service.js";
 
 export const usersRouter = Router();
 
-// All /users endpoints are SUPER_ADMIN_KONI only (specs/001-auth-rbac/spec.md §3, §5).
-usersRouter.use(authenticate, requireRole(["SUPER_ADMIN_KONI"]));
+usersRouter.use(authenticate);
+
+// Provisioning logins is broadened for #68: ADMIN_KONI may create any non-super
+// account, and ADMIN_CABOR may create ATLET logins for athletes in their own
+// cabor. Registered before the SUPER-only guard so the broader roles reach it.
+usersRouter.post(
+  "/",
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"]),
+  asyncHandler(async (req, res) => {
+    const parsed = createUserSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+
+    // Password is auto-generated on the server; ignore any client-sent value (see auth.schema.ts).
+    const { role, cabangOlahragaId, athleteId, password: _ignored, ...rest } = parsed.data;
+    const creator = req.user!;
+
+    // Role-escalation guard: only a SUPER admin can mint another SUPER admin.
+    if (role === "SUPER_ADMIN_KONI" && creator.role !== "SUPER_ADMIN_KONI") {
+      res.status(403).json({ error: "Hanya Super Admin yang dapat membuat akun Super Admin" });
+      return;
+    }
+
+    // ADMIN_CABOR is limited to ATLET logins for athletes in their own cabor.
+    if (creator.role === "ADMIN_CABOR") {
+      if (role !== "ATLET") {
+        res.status(403).json({ error: "Admin Cabor hanya dapat membuat akun atlet" });
+        return;
+      }
+      if (!creator.cabangOlahragaId) {
+        res.status(403).json({ error: "Akun admin cabor tidak terhubung ke cabang olahraga" });
+        return;
+      }
+      // #70 — don't provision a login for a soft-deleted (archived) athlete.
+      const atlet = await prisma.atlet.findFirst({
+        where: { id: athleteId!, deletedAt: null },
+        select: { cabangOlahragaId: true },
+      });
+      if (!atlet) {
+        res.status(400).json({ error: "athleteId does not exist" });
+        return;
+      }
+      if (atlet.cabangOlahragaId !== creator.cabangOlahragaId) {
+        res.status(403).json({ error: "Atlet tersebut bukan bagian dari cabang olahraga Anda" });
+        return;
+      }
+    }
+
+    const password = generatePassword();
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    try {
+      const user = await prisma.user.create({
+        data: {
+          ...rest,
+          role,
+          passwordHash,
+          cabangOlahragaId: role === "ADMIN_CABOR" ? cabangOlahragaId : null,
+          athleteId: role === "ATLET" ? athleteId : null,
+        },
+      });
+
+      // Await the welcome email so we can report delivery status. The generated
+      // password is returned once regardless, so a SMTP misfire never strands
+      // the account (#68) — the admin can hand the password over manually.
+      let emailSent = false;
+      try {
+        await sendWelcomeEmail({ to: user.email, fullName: user.fullName, password });
+        emailSent = true;
+        console.log(`[email] welcome sent → ${user.email}`);
+      } catch (err) {
+        console.error(`[email] welcome FAILED → ${user.email}:`, (err as Error)?.message ?? err);
+      }
+
+      res.status(201).json({ ...toSafeUser(user), generatedPassword: password, emailSent });
+    } catch (err) {
+      if (isUniqueConstraintError(err)) {
+        res.status(409).json({ error: "Email or athleteId already in use" });
+        return;
+      }
+      if (isForeignKeyConstraintError(err)) {
+        res.status(400).json({ error: "cabangOlahragaId or athleteId does not exist" });
+        return;
+      }
+      throw err;
+    }
+  }),
+);
+
+// All remaining /users endpoints are SUPER_ADMIN_KONI only (specs/001-auth-rbac/spec.md §3, §5).
+usersRouter.use(requireRole(["SUPER_ADMIN_KONI"]));
 
 usersRouter.get(
   "/",
@@ -42,51 +133,6 @@ usersRouter.get(
       orderBy: { createdAt: "asc" },
     });
     res.json(users.map(toSafeUser));
-  }),
-);
-
-usersRouter.post(
-  "/",
-  asyncHandler(async (req, res) => {
-    const parsed = createUserSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.flatten() });
-      return;
-    }
-
-    // Password is auto-generated on the server; ignore any client-sent value (see auth.schema.ts).
-    const { role, cabangOlahragaId, athleteId, password: _ignored, ...rest } = parsed.data;
-    const password = generatePassword();
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    try {
-      const user = await prisma.user.create({
-        data: {
-          ...rest,
-          role,
-          passwordHash,
-          cabangOlahragaId: role === "ADMIN_CABOR" ? cabangOlahragaId : null,
-          athleteId: role === "ATLET" ? athleteId : null,
-        },
-      });
-
-      // Send welcome email with credentials — fire-and-forget (don't block response)
-      sendWelcomeEmail({ to: user.email, fullName: user.fullName, password })
-        .then(() => console.log(`[email] welcome sent → ${user.email}`))
-        .catch((err) => console.error(`[email] welcome FAILED → ${user.email}:`, err?.message ?? err));
-
-      res.status(201).json(toSafeUser(user));
-    } catch (err) {
-      if (isUniqueConstraintError(err)) {
-        res.status(409).json({ error: "Email or athleteId already in use" });
-        return;
-      }
-      if (isForeignKeyConstraintError(err)) {
-        res.status(400).json({ error: "cabangOlahragaId or athleteId does not exist" });
-        return;
-      }
-      throw err;
-    }
   }),
 );
 

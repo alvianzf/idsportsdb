@@ -5,7 +5,7 @@ import type { Prisma } from "@prisma/client";
 import { DATA_ADMIN_ROLES } from "@inasportdb/shared-types";
 import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
-import { authenticate, requireRole, scopeToCabor } from "../../middleware/auth.js";
+import { authenticate, requireRole, requireSelfOrAdmin, scopeToCabor } from "../../middleware/auth.js";
 import { isForeignKeyConstraintError, isNotFoundError, isUniqueConstraintError } from "../../lib/prismaErrors.js";
 import { uploader, publicUrl, uploadRoot, documentFileFilter } from "../../lib/storage.js";
 import {
@@ -155,7 +155,14 @@ atletRouter.get(
   asyncHandler(async (req, res) => {
     const atlet = await prisma.atlet.findFirst({
       where: { id: req.params.id, ...atletNotDeleted },
-      include: { cabangOlahraga: caborSummary, ...caborTambahanInclude, documents: true },
+      include: {
+        cabangOlahraga: caborSummary,
+        ...caborTambahanInclude,
+        documents: true,
+        // #68 — surface whether this athlete already has a login so the detail
+        // page can offer (or hide) the "Buatkan Akun" shortcut.
+        user: { select: { id: true } },
+      },
     });
     if (!atlet) {
       res.status(404).json({ error: "Not found" });
@@ -406,9 +413,11 @@ atletRouter.get(
   }),
 );
 
+// #71 — an ATLET may upload documents (incl. PAS_FOTO) to their own record;
+// requireSelfOrAdmin gates by athleteId and canAccessAtlet re-checks self below.
 atletRouter.post(
   "/:id/documents",
-  requireRole(DATA_ADMIN_ROLES),
+  requireSelfOrAdmin((req) => req.params.id),
   documentUpload.single("file"),
   asyncHandler(async (req, res) => {
     // multer has already written the upload to disk; clean it up on any early exit.
@@ -460,9 +469,10 @@ atletRouter.post(
   }),
 );
 
+// #71 — an ATLET may remove documents from their own record (self-gated).
 atletRouter.delete(
   "/:id/documents/:docId",
-  requireRole(DATA_ADMIN_ROLES),
+  requireSelfOrAdmin((req) => req.params.id),
   asyncHandler(async (req, res) => {
     const atlet = await prisma.atlet.findFirst({
       where: { id: req.params.id, ...atletNotDeleted },
