@@ -38,17 +38,26 @@ export function UsersFormPage() {
   const [form, setForm] = useState<UserForm>(empty);
   const [cabors, setCabors] = useState<CaborOption[]>([]);
   const [atlets, setAtlets] = useState<AtletOption[]>([]);
+  const [atletSearch, setAtletSearch] = useState("");
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api.get<CaborOption[]>("/cabor").then((res) => setCabors(res.data));
-    api
-      .get<{ items: AtletOption[] }>("/atlet", { params: { pageSize: 200 } })
-      .then((res) => setAtlets(res.data.items))
-      .catch(() => undefined);
   }, []);
+
+  // Server-side search so athletes beyond the first page are reachable.
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get<{ items: AtletOption[] }>("/atlet", {
+        params: { search: atletSearch || undefined, pageSize: 200 },
+      })
+      .then((res) => { if (!cancelled) setAtlets(res.data.items); })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [atletSearch]);
 
   useEffect(() => {
     if (!id) return;
@@ -151,6 +160,12 @@ export function UsersFormPage() {
 
           {form.role === "ATLET" && (
             <Field label="Akun Atlet" required htmlFor="athleteId">
+              <Input
+                placeholder="Cari nama atau nomor induk atlet..."
+                value={atletSearch}
+                onChange={(e) => setAtletSearch(e.target.value)}
+                className="mb-2"
+              />
               <Select
                 id="athleteId"
                 required

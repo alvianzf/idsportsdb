@@ -68,26 +68,33 @@ export function MonitoringPage() {
 
   const loadRef = useRef<() => void>(() => undefined);
 
-  function load() {
+  // `isActive` guards against a stale response rendering under the wrong tab
+  // after a fast tab switch (see the effect below). Defaults to always-active
+  // for direct callers (actions, socket refresh) that have no stale-tab race.
+  function load(isActive: () => boolean = () => true) {
     setEvents(null);
     setError(null);
 
     if (activeTab === "MUTATION" && isApprover) {
       api
         .get<MonitoringEvent[]>("/monitoring/mutasi", { params: { status: mutasiStatus } })
-        .then((res) => setEvents(res.data))
-        .catch(() => setError("Gagal memuat data mutasi."));
+        .then((res) => { if (isActive()) setEvents(res.data); })
+        .catch(() => { if (isActive()) setError("Gagal memuat data mutasi."); });
     } else {
       api
         .get<MonitoringEvent[]>("/monitoring", { params: { type: activeTab } })
-        .then((res) => setEvents(res.data))
-        .catch(() => setError("Gagal memuat data monitoring."));
+        .then((res) => { if (isActive()) setEvents(res.data); })
+        .catch(() => { if (isActive()) setError("Gagal memuat data monitoring."); });
     }
   }
 
   loadRef.current = load;
 
-  useEffect(load, [activeTab, mutasiStatus, isApprover]);
+  useEffect(() => {
+    let cancelled = false;
+    load(() => !cancelled);
+    return () => { cancelled = true; };
+  }, [activeTab, mutasiStatus, isApprover]);
 
   useEffect(() => {
     api
