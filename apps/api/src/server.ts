@@ -28,6 +28,10 @@ import { prisma } from "./lib/prisma.js";
 
 const app = express();
 
+// Behind one reverse proxy (nginx) — trust it so req.ip reflects the real
+// client for rate limiting rather than the proxy's loopback address.
+app.set("trust proxy", 1);
+
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(compression());
 app.use(cors({ origin: process.env.CLIENT_URL ?? true, credentials: true }));
