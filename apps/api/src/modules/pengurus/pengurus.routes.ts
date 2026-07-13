@@ -2,7 +2,7 @@ import { Router } from "express";
 import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole } from "../../middleware/auth.js";
-import { isNotFoundError } from "../../lib/prismaErrors.js";
+import { isForeignKeyConstraintError, isNotFoundError } from "../../lib/prismaErrors.js";
 import { createPengurusSchema, updatePengurusSchema, listPengurusQuerySchema, swapPengurusSchema } from "./pengurus.schema.js";
 
 /** Mounted at /api/v1/cabor — `/:caborId/pengurus` (specs/006-pengurus-cabor/spec.md §3). */
@@ -47,10 +47,18 @@ caborPengurusRouter.post(
       }
     }
 
-    const pengurus = await prisma.pengurusCabor.create({
-      data: { ...parsed.data, cabangOlahragaId: req.params.caborId },
-    });
-    res.status(201).json(pengurus);
+    try {
+      const pengurus = await prisma.pengurusCabor.create({
+        data: { ...parsed.data, cabangOlahragaId: req.params.caborId },
+      });
+      res.status(201).json(pengurus);
+    } catch (err) {
+      if (isForeignKeyConstraintError(err)) {
+        res.status(400).json({ error: "Cabang olahraga tidak valid" });
+        return;
+      }
+      throw err;
+    }
   }),
 );
 

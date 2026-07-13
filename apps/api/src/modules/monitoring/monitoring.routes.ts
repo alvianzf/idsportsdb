@@ -5,7 +5,7 @@ import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole, scopeToCabor } from "../../middleware/auth.js";
 import { isNotFoundError } from "../../lib/prismaErrors.js";
-import { caborTambahanInclude, canAccessAtlet } from "../atlet/atlet.service.js";
+import { atletInCaborFilter, caborTambahanInclude, canAccessAtlet } from "../atlet/atlet.service.js";
 import { emit } from "../../lib/socket.js";
 import {
   createMonitoringEventSchema,
@@ -176,7 +176,9 @@ monitoringRouter.get(
     const caborId = req.scopedCaborId;
     const where: Prisma.MonitoringEventWhereInput = {
       ...(parsed.data.type ? { type: parsed.data.type } : {}),
-      ...(caborId ? { atlet: { cabangOlahragaId: caborId } } : {}),
+      // Match canAccessAtlet: include events of multi-cabor athletes whose
+      // primary OR additional cabor is the scoped one.
+      ...(caborId ? { atlet: atletInCaborFilter(caborId) } : {}),
     };
 
     const events = await prisma.monitoringEvent.findMany({
@@ -208,6 +210,8 @@ monitoringRouter.get(
       where,
       include: { atlet: atletSummary },
       orderBy: { eventDate: "desc" },
+      skip: (parsed.data.page - 1) * parsed.data.pageSize,
+      take: parsed.data.pageSize,
     });
     res.json(events);
   }),

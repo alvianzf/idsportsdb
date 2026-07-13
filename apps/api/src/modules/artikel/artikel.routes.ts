@@ -1,9 +1,10 @@
+import { randomBytes } from "node:crypto";
 import { Router } from "express";
 import { UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
 import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole } from "../../middleware/auth.js";
-import { isNotFoundError } from "../../lib/prismaErrors.js";
+import { isNotFoundError, isUniqueConstraintError } from "../../lib/prismaErrors.js";
 import { uploader, publicUrl, imageFileFilter } from "../../lib/storage.js";
 import { createArtikelSchema, updateArtikelSchema, listArtikelQuerySchema } from "./artikel.schema.js";
 import { emit } from "../../lib/socket.js";
@@ -73,6 +74,8 @@ artikelRouter.get(
       },
       include: { author: authorSummary },
       orderBy: { createdAt: "desc" },
+      skip: (parsed.data.page - 1) * parsed.data.pageSize,
+      take: parsed.data.pageSize,
     });
     res.json(articles);
   }),
@@ -102,21 +105,35 @@ artikelRouter.post(
       return;
     }
 
-    const slug = await generateUniqueSlug(parsed.data.title);
     const published = parsed.data.published ?? false;
 
-    const article = await prisma.article.create({
-      data: {
-        ...parsed.data,
-        slug,
-        published,
-        publishedAt: published ? new Date() : null,
-        authorId: req.user!.id,
-      },
-      include: { author: authorSummary },
-    });
-    emit("artikel:change");
-    res.status(201).json(article);
+    // generateUniqueSlug reads-then-writes, so two concurrent same-title creates
+    // can both pick the same free slug and one hits the unique constraint. Retry
+    // with a randomised suffix instead of surfacing a 500.
+    let slug = await generateUniqueSlug(parsed.data.title);
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const article = await prisma.article.create({
+          data: {
+            ...parsed.data,
+            slug,
+            published,
+            publishedAt: published ? new Date() : null,
+            authorId: req.user!.id,
+          },
+          include: { author: authorSummary },
+        });
+        emit("artikel:change");
+        res.status(201).json(article);
+        return;
+      } catch (err) {
+        if (isUniqueConstraintError(err) && attempt < 5) {
+          slug = `${await generateUniqueSlug(parsed.data.title)}-${randomBytes(3).toString("hex")}`;
+          continue;
+        }
+        throw err;
+      }
+    }
   }),
 );
 

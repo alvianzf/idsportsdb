@@ -44,6 +44,8 @@ caborRouter.get(
         : undefined,
       include: { _count: { select: { atlets: true, pelatihs: true } } },
       orderBy: { nama: "asc" },
+      skip: (parsed.data.page - 1) * parsed.data.pageSize,
+      take: parsed.data.pageSize,
     });
 
     res.json(
@@ -282,17 +284,25 @@ caborRouter.post(
 
     const fileUrl = `/uploads/cabor-documents/${req.file.filename}`;
 
-    const doc = await prisma.caborDocument.create({
-      data: {
-        caborId: req.params.id,
-        jenis,
-        nomorDokumen: nomorDokumen || null,
-        tanggalDokumen: tanggalDokumen ? new Date(tanggalDokumen) : null,
-        deskripsi: deskripsi || null,
-        fileUrl,
-      },
-    });
-    res.status(201).json(doc);
+    try {
+      const doc = await prisma.caborDocument.create({
+        data: {
+          caborId: req.params.id,
+          jenis,
+          nomorDokumen: nomorDokumen || null,
+          tanggalDokumen: tanggalDokumen ? new Date(tanggalDokumen) : null,
+          deskripsi: deskripsi || null,
+          fileUrl,
+        },
+      });
+      res.status(201).json(doc);
+    } catch (err) {
+      if (isForeignKeyConstraintError(err)) {
+        res.status(400).json({ error: "Cabang olahraga tidak valid" });
+        return;
+      }
+      throw err;
+    }
   }),
 );
 

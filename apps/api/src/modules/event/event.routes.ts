@@ -3,7 +3,7 @@ import { UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
 import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole } from "../../middleware/auth.js";
-import { isNotFoundError } from "../../lib/prismaErrors.js";
+import { isForeignKeyConstraintError, isNotFoundError } from "../../lib/prismaErrors.js";
 import { createEventSchema, updateEventSchema, listEventQuerySchema } from "./event.schema.js";
 import { emit } from "../../lib/socket.js";
 
@@ -22,7 +22,7 @@ eventRouter.get(
       res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
-    const { status, cabor } = parsed.data;
+    const { status, cabor, page, pageSize } = parsed.data;
 
     const events = await prisma.event.findMany({
       where: {
@@ -31,6 +31,8 @@ eventRouter.get(
       },
       include: { cabangOlahraga: caborSummary },
       orderBy: { tanggalMulai: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     });
     res.json(events);
   }),
@@ -46,12 +48,20 @@ eventRouter.post(
       return;
     }
 
-    const event = await prisma.event.create({
-      data: parsed.data,
-      include: { cabangOlahraga: caborSummary },
-    });
-    emit("event:change");
-    res.status(201).json(event);
+    try {
+      const event = await prisma.event.create({
+        data: parsed.data,
+        include: { cabangOlahraga: caborSummary },
+      });
+      emit("event:change");
+      res.status(201).json(event);
+    } catch (err) {
+      if (isForeignKeyConstraintError(err)) {
+        res.status(400).json({ error: "Cabang olahraga tidak valid" });
+        return;
+      }
+      throw err;
+    }
   }),
 );
 

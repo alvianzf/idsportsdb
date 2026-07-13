@@ -21,7 +21,10 @@ function refinePeringkat<T extends z.ZodTypeAny>(schema: T) {
 }
 
 export const createPrestasiSchema = refinePeringkat(prestasiFields);
-export const updatePrestasiSchema = refinePeringkat(prestasiFields.partial());
+// Partial updates can't enforce the medali↔peringkat invariant at the schema
+// level: a PATCH { medali: "NONE" } may rely on a peringkat already stored on
+// the record. Keep the rule on create; leave it off the partial update schema.
+export const updatePrestasiSchema = prestasiFields.partial();
 
 export const listPrestasiQuerySchema = z.object({
   cabor: z.string().optional(),
