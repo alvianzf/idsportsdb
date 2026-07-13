@@ -13,7 +13,7 @@ export const listArtikelQuerySchema = z.object({
   search: z.string().optional(),
   published: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(100),
+  pageSize: z.coerce.number().int().min(1).max(2000).default(2000),
 });
 
 export const publicArtikelQuerySchema = z.object({

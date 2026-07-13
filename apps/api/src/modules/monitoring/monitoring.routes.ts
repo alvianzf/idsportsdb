@@ -185,7 +185,7 @@ monitoringRouter.get(
       where,
       include: { atlet: atletSummary },
       orderBy: { eventDate: "desc" },
-      take: 200,
+      take: 2000,
     });
     res.json(events);
   }),
