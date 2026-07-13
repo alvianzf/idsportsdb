@@ -9,6 +9,7 @@
  * same canonical value it reports them and changes NOTHING — those are real
  * duplicate people to resolve by hand, not something a script should merge.
  */
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { canonicalIdentifier } from "../src/lib/identifiers.js";
 
