@@ -28,8 +28,9 @@ export const createAtletSchema = z.object({
     .array(
       z.object({
         cabangOlahragaId: z.string().min(1),
-        nomorIndukAtlet: z.string().trim().min(1).transform(canonicalIdentifier).optional(),
-        nomorRegistrasi: z.string().trim().min(1).transform(canonicalIdentifier).optional(),
+        // Keep the original optional/empty semantics; canonicalize when present.
+        nomorIndukAtlet: z.string().transform(canonicalIdentifier).optional(),
+        nomorRegistrasi: z.string().transform(canonicalIdentifier).optional(),
       }),
     )
     .optional(),
