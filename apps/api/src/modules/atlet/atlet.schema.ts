@@ -1,9 +1,12 @@
 import { z } from "zod";
 import { GENDERS, ATHLETE_STATUSES, ATHLETE_LEVELS, DOCUMENT_TYPES } from "@inasportdb/shared-types";
+import { canonicalIdentifier } from "../../lib/identifiers.js";
 
 export const createAtletSchema = z.object({
-  nomorIndukAtlet: z.string().min(1),
-  nomorRegistrasi: z.string().min(1),
+  // Identifiers are canonicalized on write (trim + strip whitespace + uppercase)
+  // so the DB @unique constraint bars formatting-variant duplicates everywhere.
+  nomorIndukAtlet: z.string().trim().min(1).transform(canonicalIdentifier),
+  nomorRegistrasi: z.string().trim().min(1).transform(canonicalIdentifier),
   namaLengkap: z.string().min(1),
   nik: z.string().regex(/^\d{16}$/, "NIK harus 16 digit angka"),
   // Revisi 2026-07-12: tempat/tanggal lahir on hold — optional.
@@ -25,8 +28,9 @@ export const createAtletSchema = z.object({
     .array(
       z.object({
         cabangOlahragaId: z.string().min(1),
-        nomorIndukAtlet: z.string().optional(),
-        nomorRegistrasi: z.string().optional(),
+        // Keep the original optional/empty semantics; canonicalize when present.
+        nomorIndukAtlet: z.string().transform(canonicalIdentifier).optional(),
+        nomorRegistrasi: z.string().transform(canonicalIdentifier).optional(),
       }),
     )
     .optional(),
