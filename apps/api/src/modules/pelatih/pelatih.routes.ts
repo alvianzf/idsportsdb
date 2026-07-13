@@ -10,6 +10,7 @@ import {
   isUniqueConstraintError,
 } from "../../lib/prismaErrors.js";
 import { createPelatihSchema, updatePelatihSchema, listPelatihQuerySchema } from "./pelatih.schema.js";
+import { writeAudit } from "../../lib/audit.js";
 
 export const pelatihRouter = Router();
 
@@ -100,6 +101,7 @@ pelatihRouter.post(
         data: { ...parsed.data, cabangOlahragaId },
         include: { cabangOlahraga: caborSummary },
       });
+      writeAudit(req.user!.id, "CREATE", "Pelatih", pelatih.id);
       res.status(201).json(pelatih);
     } catch (err) {
       if (isUniqueConstraintError(err)) {
@@ -147,6 +149,7 @@ pelatihRouter.patch(
         data,
         include: { cabangOlahraga: caborSummary },
       });
+      writeAudit(req.user!.id, "UPDATE", "Pelatih", pelatih.id);
       res.json(pelatih);
     } catch (err) {
       if (isNotFoundError(err)) {
@@ -168,6 +171,7 @@ pelatihRouter.delete(
   asyncHandler(async (req, res) => {
     try {
       await prisma.pelatih.delete({ where: { id: req.params.id } });
+      writeAudit(req.user!.id, "DELETE", "Pelatih", req.params.id);
       res.status(204).send();
     } catch (err) {
       if (isNotFoundError(err)) {

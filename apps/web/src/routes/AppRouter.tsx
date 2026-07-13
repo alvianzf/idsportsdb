@@ -81,6 +81,7 @@ const ArtikelPublicPage = page(() => import("../pages/artikel/ArtikelPublicPage"
 const SliderAdminPage = page(() => import("../pages/slider/SliderAdminPage"), "SliderAdminPage");
 const UsersListPage = page(() => import("../pages/users/UsersListPage"), "UsersListPage");
 const UsersFormPage = page(() => import("../pages/users/UsersFormPage"), "UsersFormPage");
+const AuditLogPage = page(() => import("../pages/audit/AuditLogPage"), "AuditLogPage");
 
 function PageLoader() {
   return (
@@ -237,6 +238,16 @@ const router = createBrowserRouter([
         element: (
           <RequireRole roles={["SUPER_ADMIN_KONI"]}>
             <Suspense fallback={<PageLoader />}><UsersFormPage /></Suspense>
+          </RequireRole>
+        ),
+      },
+
+      // Audit trail (Super Admin only, issue #69)
+      {
+        path: "audit",
+        element: (
+          <RequireRole roles={["SUPER_ADMIN_KONI"]}>
+            <Suspense fallback={<PageLoader />}><AuditLogPage /></Suspense>
           </RequireRole>
         ),
       },

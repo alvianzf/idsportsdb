@@ -22,6 +22,7 @@ import {
 } from "../auth/auth.schema.js";
 import { listUsersQuerySchema } from "./users.schema.js";
 import { toSafeUser } from "./users.service.js";
+import { writeAudit } from "../../lib/audit.js";
 
 export const usersRouter = Router();
 
@@ -69,6 +70,7 @@ usersRouter.post(
           athleteId: role === "ATLET" ? athleteId : null,
         },
       });
+      writeAudit(req.user!.id, "CREATE", "User", user.id);
 
       // Send welcome email with credentials — fire-and-forget (don't block response)
       sendWelcomeEmail({ to: user.email, fullName: user.fullName, password })
@@ -121,6 +123,7 @@ usersRouter.patch(
           ...(password ? { passwordHash: await bcrypt.hash(password, 10) } : {}),
         },
       });
+      writeAudit(req.user!.id, "UPDATE", "User", user.id);
       res.json(toSafeUser(user));
     } catch (err) {
       if (isNotFoundError(err)) {
@@ -158,6 +161,7 @@ usersRouter.patch(
           athleteId: role === "ATLET" ? athleteId ?? null : null,
         },
       });
+      writeAudit(req.user!.id, "UPDATE_ROLE", "User", user.id);
       res.json(toSafeUser(user));
     } catch (err) {
       if (isNotFoundError(err)) {
@@ -187,6 +191,7 @@ usersRouter.delete(
     }
     try {
       await prisma.user.update({ where: { id: req.params.id }, data: { isActive: false } });
+      writeAudit(req.user!.id, "DEACTIVATE", "User", req.params.id);
       res.status(204).send();
     } catch (err) {
       if (isNotFoundError(err)) {
@@ -208,6 +213,7 @@ usersRouter.delete(
     }
     try {
       await prisma.user.delete({ where: { id: req.params.id } });
+      writeAudit(req.user!.id, "DELETE", "User", req.params.id);
       res.status(204).send();
     } catch (err) {
       if (isNotFoundError(err)) {
@@ -247,6 +253,7 @@ usersRouter.post(
           passwordResetExpiry: null,
         },
       });
+      writeAudit(req.user!.id, "RESET_PASSWORD", "User", req.params.id);
 
       sendPasswordResetByAdminEmail({ to: user.email, fullName: user.fullName, password: newPassword })
         .then(() => console.log(`[email] admin-reset sent → ${user.email}`))

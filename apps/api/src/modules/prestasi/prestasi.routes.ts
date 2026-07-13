@@ -11,6 +11,7 @@ import { uploader, publicUrl, uploadRoot, documentFileFilter } from "../../lib/s
 import { atletInCaborFilter, caborTambahanInclude, canAccessAtlet } from "../atlet/atlet.service.js";
 import { emit } from "../../lib/socket.js";
 import { createPrestasiSchema, updatePrestasiSchema, listPrestasiQuerySchema } from "./prestasi.schema.js";
+import { writeAudit } from "../../lib/audit.js";
 
 const atletSummary = {
   select: { id: true, namaLengkap: true, cabangOlahragaId: true, cabangOlahraga: { select: { id: true, nama: true } } },
@@ -74,6 +75,7 @@ atletPrestasiRouter.post(
       data: { ...parsed.data, atletId: req.params.atletId },
     });
     emit("prestasi:change");
+    writeAudit(req.user!.id, "CREATE", "Prestasi", prestasi.id);
     res.status(201).json(prestasi);
   }),
 );
@@ -149,6 +151,7 @@ prestasiRouter.patch(
     try {
       const updated = await prisma.prestasi.update({ where: { id: req.params.id }, data: parsed.data });
       emit("prestasi:change");
+      writeAudit(req.user!.id, "UPDATE", "Prestasi", updated.id);
       res.json(updated);
     } catch (err) {
       if (isNotFoundError(err)) {
@@ -176,6 +179,7 @@ prestasiRouter.delete(
 
     await prisma.prestasi.delete({ where: { id: req.params.id } });
     emit("prestasi:change");
+    writeAudit(req.user!.id, "DELETE", "Prestasi", req.params.id);
     res.status(204).send();
   }),
 );

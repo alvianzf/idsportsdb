@@ -11,6 +11,7 @@ import {
 } from "../../lib/prismaErrors.js";
 import { uploadRoot } from "../../lib/storage.js";
 import { createCaborSchema, updateCaborSchema, listCaborQuerySchema } from "./cabor.schema.js";
+import { writeAudit } from "../../lib/audit.js";
 
 const logoUpload = multer({
   dest: path.join(uploadRoot, "cabor-logos"),
@@ -88,6 +89,7 @@ caborRouter.post(
 
     try {
       const cabor = await prisma.cabangOlahraga.create({ data: parsed.data });
+      writeAudit(req.user!.id, "CREATE", "Cabor", cabor.id);
       res.status(201).json({ ...cabor, jumlahAtlet: 0, jumlahPelatih: 0 });
     } catch (err) {
       if (isUniqueConstraintError(err)) {
@@ -115,6 +117,7 @@ caborRouter.patch(
         data: parsed.data,
         include: { _count: { select: { atlets: true, pelatihs: true } } },
       });
+      writeAudit(req.user!.id, "UPDATE", "Cabor", cabor.id);
       const { _count, ...rest } = cabor;
       res.json({ ...rest, jumlahAtlet: _count.atlets, jumlahPelatih: _count.pelatihs });
     } catch (err) {
@@ -163,6 +166,7 @@ caborRouter.delete(
 
     try {
       await prisma.cabangOlahraga.delete({ where: { id: req.params.id } });
+      writeAudit(req.user!.id, "DELETE", "Cabor", req.params.id);
       // The DB cascade drops the CaborDocument rows; unlink their files too.
       const fs = await import("node:fs/promises");
       for (const doc of cabor.documents) {
