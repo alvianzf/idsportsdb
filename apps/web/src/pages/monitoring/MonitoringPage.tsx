@@ -66,13 +66,15 @@ export function MonitoringPage() {
   const [editEvent, setEditEvent] = useState<MonitoringEvent | null>(null);
   const [editStatus, setEditStatus] = useState<MutationStatus>("PENDING");
 
-  const loadRef = useRef<() => void>(() => undefined);
+  const loadRef = useRef<(silent?: boolean) => void>(() => undefined);
 
   // `isActive` guards against a stale response rendering under the wrong tab
   // after a fast tab switch (see the effect below). Defaults to always-active
   // for direct callers (actions, socket refresh) that have no stale-tab race.
-  function load(isActive: () => boolean = () => true) {
-    setEvents(null);
+  // `silent` refetches in the background without blanking to the spinner —
+  // used by the socket refresh so the list doesn't flicker on every change.
+  function load(isActive: () => boolean = () => true, silent = false) {
+    if (!silent) setEvents(null);
     setError(null);
 
     if (activeTab === "MUTATION" && isApprover) {
@@ -88,7 +90,7 @@ export function MonitoringPage() {
     }
   }
 
-  loadRef.current = load;
+  loadRef.current = (silent) => load(undefined, silent);
 
   useEffect(() => {
     let cancelled = false;
@@ -105,7 +107,7 @@ export function MonitoringPage() {
 
   useEffect(() => {
     const socket = getSocket();
-    const refresh = () => loadRef.current();
+    const refresh = () => loadRef.current(true);
     socket.on("monitoring:change", refresh);
     return () => { socket.off("monitoring:change", refresh); };
   }, []);

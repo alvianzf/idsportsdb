@@ -78,7 +78,18 @@ atletMonitoringRouter.post(
     }
     const { type, description, fromValue, toValue, eventDate } = parsed.data;
 
+    // A STATUS_CHANGE to TRANSFERRED must go through the mutasi approval flow
+    // (/monitoring/:id/mutasi), which also moves the athlete's cabor. Allowing
+    // it here would set the status while sidestepping that approval.
+    if (type === "STATUS_CHANGE" && toValue === "TRANSFERRED") {
+      res.status(400).json({ error: "Status TRANSFERRED harus melalui proses mutasi" });
+      return;
+    }
+
     // specs/008-monitoring-atlet/spec.md §3
+    // NOTE: STATUS_CHANGE writes the athlete's statusAtlet one-way — editing or
+    // deleting the event later does NOT revert statusAtlet. Reverting is out of
+    // scope (issue #74).
     const event = await prisma.$transaction(async (tx) => {
       const created = await tx.monitoringEvent.create({
         data: {

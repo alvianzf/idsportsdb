@@ -72,14 +72,18 @@ export function streamPdf(
   build: (doc: PDFKit.PDFDocument) => void,
   meta: PdfMeta = {},
 ) {
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-
   const doc = new PDFDocument({ size: "A4", margins: { top: 84, bottom: 68, left: 40, right: 40 } });
+
+  // Build the whole document before touching `res`. If `build` throws, no
+  // headers or body have been sent yet, so the error handler can still emit a
+  // clean 500 instead of double-sending onto a half-written PDF stream.
   doc.on("pageAdded", () => decoratePage(doc, meta));
-  doc.pipe(res);
   decoratePage(doc, meta);
   build(doc);
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  doc.pipe(res);
   doc.end();
 }
 
