@@ -8,6 +8,9 @@ function required(name: string): string {
   return value;
 }
 
+const clientUrl = process.env.CLIENT_URL ?? "http://localhost:5173";
+const appBaseUrl = process.env.APP_BASE_URL ?? "http://localhost:5173";
+
 export const env = {
   port: Number(process.env.PORT ?? 4000),
   databaseUrl: required("DATABASE_URL"),
@@ -17,7 +20,11 @@ export const env = {
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
   uploadDir: process.env.UPLOAD_DIR ?? "./uploads",
   cardVerifyBaseUrl: process.env.CARD_VERIFY_BASE_URL ?? "http://localhost:5173/verify",
-  appBaseUrl: process.env.APP_BASE_URL ?? "http://localhost:5173",
+  clientUrl,
+  appBaseUrl,
+  // Explicit CORS/Socket.IO allowlist derived from env; deduped so a single
+  // shared value doesn't produce duplicate entries.
+  corsOrigins: [...new Set([clientUrl, appBaseUrl])],
   smtp: {
     host: process.env.SMTP_HOST ?? "smtp.sumopod.com",
     port: Number(process.env.SMTP_PORT ?? 465),
