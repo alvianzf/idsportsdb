@@ -65,6 +65,7 @@ export function AtletListPage() {
     rows: { row: number; namaLengkap: string; nik: string; cabor: string; jenisKelamin: string; statusAtlet: string; error?: string }[];
     valid: number;
     invalid: number;
+    summary?: { issue: string; count: number; examples: string[] }[];
   } | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -392,7 +393,7 @@ export function AtletListPage() {
                 ) : (
                   <li>Seluruh baris diimpor ke cabor Anda — kolom Cabang Olahraga diabaikan.</li>
                 )}
-                <li>Baris yang tidak valid dilewati dan dilaporkan setelah impor selesai.</li>
+                <li>Semua baris harus valid. Jika ada baris bermasalah (mis. nama cabor salah), seluruh impor ditolak — perbaiki dahulu lalu unggah ulang.</li>
               </ul>
               <div className="space-y-2 pt-2">
                 <p>Gunakan template agar format tidak salah:</p>
@@ -423,10 +424,28 @@ export function AtletListPage() {
                   Pratinjau: <span className="font-semibold text-success">{importPreview.valid} baris valid</span>
                   {importPreview.invalid > 0 && (
                     <>
-                      , <span className="font-semibold text-danger">{importPreview.invalid} bermasalah</span> (dilewati saat impor)
+                      , <span className="font-semibold text-danger">{importPreview.invalid} bermasalah</span> — perbaiki dahulu, impor akan ditolak
                     </>
                   )}
                 </p>
+                {importPreview.summary && importPreview.summary.length > 0 && (
+                  <div className="mb-2 space-y-2 rounded-lg border border-danger/30 bg-danger-light/30 p-3 text-xs">
+                    <p className="font-semibold text-danger">Yang perlu diperbaiki:</p>
+                    <ul className="space-y-2">
+                      {importPreview.summary.map((s) => (
+                        <li key={s.issue}>
+                          <span className="font-medium text-neutral-800">{s.issue}</span>{" "}
+                          <span className="text-danger">({s.count} baris)</span>
+                          <ul className="mt-0.5 list-disc pl-5 text-neutral-600">
+                            {s.examples.map((ex, i) => (
+                              <li key={i}>{ex}</li>
+                            ))}
+                          </ul>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <div className="max-h-56 overflow-auto rounded-lg border border-neutral-200">
                   <table className="w-full min-w-[560px] text-xs">
                     <thead className="sticky top-0 bg-neutral-50">
@@ -461,14 +480,23 @@ export function AtletListPage() {
 
             <div className="flex gap-2">
               <Button
-                disabled={!importFile || importing || previewing || !importPreview || importPreview.valid === 0}
+                disabled={
+                  !importFile ||
+                  importing ||
+                  previewing ||
+                  !importPreview ||
+                  importPreview.invalid > 0 ||
+                  importPreview.valid === 0
+                }
                 onClick={() => void handleImportSubmit()}
               >
                 <Upload size={16} />
                 {importing
                   ? "Mengimpor..."
                   : importPreview
-                    ? `Impor ${importPreview.valid} Baris`
+                    ? importPreview.invalid > 0
+                      ? "Perbaiki baris bermasalah"
+                      : `Impor ${importPreview.valid} Baris`
                     : "Impor"}
               </Button>
               <Button variant="outline" onClick={closeImport}>
