@@ -33,8 +33,6 @@ export const listMonitoringQuerySchema = z.object({
 
 export const mutasiQueueQuerySchema = z.object({
   status: z.enum(MUTATION_STATUSES).optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(2000).default(2000),
 });
 
 export type CreateMonitoringEventInput = z.infer<typeof createMonitoringEventSchema>;

@@ -44,8 +44,6 @@ caborRouter.get(
         : undefined,
       include: { _count: { select: { atlets: true, pelatihs: true } } },
       orderBy: { nama: "asc" },
-      skip: (parsed.data.page - 1) * parsed.data.pageSize,
-      take: parsed.data.pageSize,
     });
 
     res.json(

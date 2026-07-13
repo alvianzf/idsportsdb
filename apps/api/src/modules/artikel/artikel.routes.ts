@@ -74,8 +74,6 @@ artikelRouter.get(
       },
       include: { author: authorSummary },
       orderBy: { createdAt: "desc" },
-      skip: (parsed.data.page - 1) * parsed.data.pageSize,
-      take: parsed.data.pageSize,
     });
     res.json(articles);
   }),

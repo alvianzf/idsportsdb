@@ -11,8 +11,6 @@ export const updateCaborSchema = createCaborSchema.partial();
 
 export const listCaborQuerySchema = z.object({
   search: z.string().optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(2000).default(2000),
 });
 
 export type CreateCaborInput = z.infer<typeof createCaborSchema>;
