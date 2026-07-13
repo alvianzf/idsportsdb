@@ -4,7 +4,11 @@ import { DATA_ADMIN_ROLES } from "@inasportdb/shared-types";
 import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole, scopeToCabor } from "../../middleware/auth.js";
-import { isNotFoundError, isUniqueConstraintError } from "../../lib/prismaErrors.js";
+import {
+  isForeignKeyConstraintError,
+  isNotFoundError,
+  isUniqueConstraintError,
+} from "../../lib/prismaErrors.js";
 import { createPelatihSchema, updatePelatihSchema, listPelatihQuerySchema } from "./pelatih.schema.js";
 
 export const pelatihRouter = Router();
@@ -100,6 +104,10 @@ pelatihRouter.post(
     } catch (err) {
       if (isUniqueConstraintError(err)) {
         res.status(409).json({ error: "Nomor lisensi sudah digunakan" });
+        return;
+      }
+      if (isForeignKeyConstraintError(err)) {
+        res.status(400).json({ error: "Cabang olahraga tidak valid" });
         return;
       }
       throw err;

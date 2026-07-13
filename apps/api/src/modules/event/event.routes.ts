@@ -86,6 +86,10 @@ eventRouter.patch(
         res.status(404).json({ error: "Not found" });
         return;
       }
+      if (isForeignKeyConstraintError(err)) {
+        res.status(400).json({ error: "Cabang olahraga tidak valid" });
+        return;
+      }
       throw err;
     }
   }),
