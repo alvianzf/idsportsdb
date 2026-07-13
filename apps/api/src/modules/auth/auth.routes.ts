@@ -9,6 +9,7 @@ import { env } from "../../config/env.js";
 import { uploader, publicUrl, uploadRoot } from "../../lib/storage.js";
 import { authenticate } from "../../middleware/auth.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
+import { isUniqueConstraintError } from "../../lib/prismaErrors.js";
 import { loginSchema, updateUserSchema } from "./auth.schema.js";
 import * as authService from "./auth.service.js";
 import { toSafeUser } from "../users/users.service.js";
@@ -196,14 +197,22 @@ authRouter.patch(
     }
 
     const { password, isActive, ...rest } = parsed.data;
-    const user = await prisma.user.update({
-      where: { id: req.user!.id },
-      data: {
-        ...rest,
-        ...(password ? { passwordHash: await bcrypt.hash(password, 10) } : {}),
-      },
-    });
-    res.json(toSafeUser(user));
+    try {
+      const user = await prisma.user.update({
+        where: { id: req.user!.id },
+        data: {
+          ...rest,
+          ...(password ? { passwordHash: await bcrypt.hash(password, 10) } : {}),
+        },
+      });
+      res.json(toSafeUser(user));
+    } catch (err) {
+      if (isUniqueConstraintError(err)) {
+        res.status(409).json({ error: "Email already in use" });
+        return;
+      }
+      throw err;
+    }
   }),
 );
 

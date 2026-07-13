@@ -6,7 +6,7 @@ import { DATA_ADMIN_ROLES } from "@inasportdb/shared-types";
 import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole, scopeToCabor } from "../../middleware/auth.js";
-import { isNotFoundError, isUniqueConstraintError } from "../../lib/prismaErrors.js";
+import { isForeignKeyConstraintError, isNotFoundError, isUniqueConstraintError } from "../../lib/prismaErrors.js";
 import { uploader, publicUrl, uploadRoot, documentFileFilter } from "../../lib/storage.js";
 import {
   createAtletSchema,
@@ -124,18 +124,26 @@ atletRouter.patch(
       return;
     }
 
-    const atlet = await prisma.atlet.update({
-      where: { id: req.user!.athleteId },
-      data: parsed.data,
-      include: {
-        cabangOlahraga: caborSummary,
-        ...caborTambahanInclude,
-        documents: true,
-        prestasis: { orderBy: { tahun: "desc" } },
-      },
-    });
-    emit("atlet:change");
-    res.json(atlet);
+    try {
+      const atlet = await prisma.atlet.update({
+        where: { id: req.user!.athleteId },
+        data: parsed.data,
+        include: {
+          cabangOlahraga: caborSummary,
+          ...caborTambahanInclude,
+          documents: true,
+          prestasis: { orderBy: { tahun: "desc" } },
+        },
+      });
+      emit("atlet:change");
+      res.json(atlet);
+    } catch (err) {
+      if (isNotFoundError(err)) {
+        res.status(404).json({ error: "Not found" });
+        return;
+      }
+      throw err;
+    }
   }),
 );
 
@@ -189,6 +197,10 @@ atletRouter.post(
     } catch (err) {
       if (isUniqueConstraintError(err)) {
         res.status(409).json({ error: "Nomor induk, nomor registrasi, atau NIK sudah digunakan" });
+        return;
+      }
+      if (isForeignKeyConstraintError(err)) {
+        res.status(400).json({ error: "Cabang olahraga tidak valid" });
         return;
       }
       throw err;
@@ -314,21 +326,29 @@ atletRouter.post(
   requireRole(DATA_ADMIN_ROLES),
   documentUpload.single("file"),
   asyncHandler(async (req, res) => {
+    // multer has already written the upload to disk; clean it up on any early exit.
+    const cleanupUpload = () => {
+      if (req.file) fs.unlink(req.file.path, () => undefined);
+    };
+
     const atlet = await prisma.atlet.findUnique({
       where: { id: req.params.id },
       include: caborTambahanInclude,
     });
     if (!atlet) {
+      cleanupUpload();
       res.status(404).json({ error: "Not found" });
       return;
     }
     if (!canAccessAtlet(req, atlet)) {
+      cleanupUpload();
       res.status(403).json({ error: "Forbidden" });
       return;
     }
 
     const parsed = uploadDocumentSchema.safeParse(req.body);
     if (!parsed.success) {
+      cleanupUpload();
       res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
@@ -339,14 +359,17 @@ atletRouter.post(
 
     const fileUrl = publicUrl("atlet-documents", req.file.filename);
 
-    const document = await prisma.atletDocument.create({
-      data: { atletId: req.params.id, type: parsed.data.type, fileUrl },
+    // specs/004-atlet/spec.md §7 — keep fotoUrl in sync with the PAS_FOTO document;
+    // the document row and the fotoUrl update must land together.
+    const document = await prisma.$transaction(async (tx) => {
+      const doc = await tx.atletDocument.create({
+        data: { atletId: req.params.id, type: parsed.data.type, fileUrl },
+      });
+      if (parsed.data.type === "PAS_FOTO") {
+        await tx.atlet.update({ where: { id: req.params.id }, data: { fotoUrl: fileUrl } });
+      }
+      return doc;
     });
-
-    // specs/004-atlet/spec.md §7 — keep fotoUrl in sync with the PAS_FOTO document.
-    if (parsed.data.type === "PAS_FOTO") {
-      await prisma.atlet.update({ where: { id: req.params.id }, data: { fotoUrl: fileUrl } });
-    }
 
     res.status(201).json(document);
   }),

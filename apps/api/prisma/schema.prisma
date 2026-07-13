@@ -185,6 +185,7 @@ model Event {
 
   @@index([tanggalMulai])
   @@index([status])
+  @@index([cabangOlahragaId])
 }
 
 // SK (Surat Keputusan / decree) and other official documents for a CabangOlahraga.
@@ -292,6 +293,7 @@ model Pelatih {
   updatedAt          DateTime @updatedAt
 
   @@index([cabangOlahragaId])
+  @@index([masaBerlakuAkhir])
 }
 
 model PengurusCabor {
@@ -358,6 +360,7 @@ model MonitoringEvent {
 
   @@index([atletId, type])
   @@index([type, mutationStatus])
+  @@index([createdById])
 }
 
 // Digital athlete card (Modul I). QR encodes a public verify URL containing cardCode.
