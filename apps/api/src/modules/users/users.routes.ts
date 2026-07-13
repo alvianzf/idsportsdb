@@ -54,7 +54,8 @@ usersRouter.post(
       return;
     }
 
-    const { role, cabangOlahragaId, athleteId, ...rest } = parsed.data;
+    // Password is auto-generated on the server; ignore any client-sent value (see auth.schema.ts).
+    const { role, cabangOlahragaId, athleteId, password: _ignored, ...rest } = parsed.data;
     const password = generatePassword();
     const passwordHash = await bcrypt.hash(password, 10);
 
@@ -78,6 +79,10 @@ usersRouter.post(
     } catch (err) {
       if (isUniqueConstraintError(err)) {
         res.status(409).json({ error: "Email or athleteId already in use" });
+        return;
+      }
+      if (isForeignKeyConstraintError(err)) {
+        res.status(400).json({ error: "cabangOlahragaId or athleteId does not exist" });
         return;
       }
       throw err;
@@ -161,6 +166,10 @@ usersRouter.patch(
       }
       if (isUniqueConstraintError(err)) {
         res.status(409).json({ error: "athleteId already in use" });
+        return;
+      }
+      if (isForeignKeyConstraintError(err)) {
+        res.status(400).json({ error: "cabangOlahragaId or athleteId does not exist" });
         return;
       }
       throw err;
