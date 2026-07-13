@@ -21,7 +21,7 @@ export const createPengurusSchema = refineMasaBakti(pengurusFields);
 export const updatePengurusSchema = refineMasaBakti(pengurusFields.partial());
 
 export const listPengurusQuerySchema = z.object({
-  active: z.coerce.boolean().optional(),
+  active: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
 });
 
 export type CreatePengurusInput = z.infer<typeof createPengurusSchema>;
