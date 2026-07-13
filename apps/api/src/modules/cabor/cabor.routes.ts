@@ -176,24 +176,67 @@ caborRouter.post(
   requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI"]),
   logoUpload.single("file"),
   asyncHandler(async (req, res) => {
+    const fs = await import("node:fs/promises");
     if (!req.file) {
       res.status(400).json({ error: "File gambar diperlukan." });
       return;
     }
-    const ext = path.extname(req.file.originalname).toLowerCase() || ".png";
-    const filename = `${req.params.id}${ext}`;
+
+    // The id becomes part of the on-disk filename, so reject anything that
+    // could escape the cabor-logos directory (e.g. "..%2F..%2Fx").
+    const id = req.params.id;
+    if (/[/\\]/.test(id) || id.includes("..")) {
+      await fs.unlink(req.file.path).catch(() => undefined);
+      res.status(400).json({ error: "ID cabor tidak valid." });
+      return;
+    }
+
+    // Whitelist the extension instead of trusting originalname.
+    const allowedExt: Record<string, string> = {
+      ".png": ".png",
+      ".jpg": ".jpg",
+      ".jpeg": ".jpeg",
+      ".webp": ".webp",
+    };
+    const ext = allowedExt[path.extname(req.file.originalname).toLowerCase()];
+    if (!ext) {
+      await fs.unlink(req.file.path).catch(() => undefined);
+      res.status(400).json({ error: "Format gambar harus png, jpg, jpeg, atau webp." });
+      return;
+    }
+
+    // Verify the cabor exists before writing so a bogus id cannot leave an
+    // orphaned file (and P2025 below stays a defensive guard against races).
+    const existing = await prisma.cabangOlahraga.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) {
+      await fs.unlink(req.file.path).catch(() => undefined);
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    const filename = `${id}${ext}`;
     const destPath = path.join(uploadRoot, "cabor-logos", filename);
 
     // Rename from multer temp file to stable name keyed by cabor id
-    const fs = await import("node:fs/promises");
     await fs.rename(req.file.path, destPath);
 
     const logoOrganisasiUrl = `/uploads/cabor-logos/${filename}`;
-    const cabor = await prisma.cabangOlahraga.update({
-      where: { id: req.params.id },
-      data: { logoOrganisasiUrl },
-    });
-    res.json({ logoOrganisasiUrl: cabor.logoOrganisasiUrl });
+    try {
+      const cabor = await prisma.cabangOlahraga.update({
+        where: { id },
+        data: { logoOrganisasiUrl },
+      });
+      res.json({ logoOrganisasiUrl: cabor.logoOrganisasiUrl });
+    } catch (err) {
+      if (isNotFoundError(err)) {
+        res.status(404).json({ error: "Not found" });
+        return;
+      }
+      throw err;
+    }
   }),
 );
 
