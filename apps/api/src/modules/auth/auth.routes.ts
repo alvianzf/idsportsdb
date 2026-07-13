@@ -131,16 +131,20 @@ authRouter.post(
     // Always return 204 regardless of whether the email exists (anti-enumeration)
     if (!email || typeof email !== "string") { res.status(204).send(); return; }
 
-    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    const normalized = email.toLowerCase().trim();
+    const token = randomBytes(32).toString("hex");
+    const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // Always run the same awaited work (findUnique + write) whether or not the
+    // account exists, so the response time doesn't leak account existence. The
+    // updateMany touches 1 row for an active match and 0 rows otherwise.
+    const user = await prisma.user.findUnique({ where: { email: normalized } });
+    await prisma.user.updateMany({
+      where: { email: normalized, isActive: true },
+      data: { passwordResetToken: token, passwordResetExpiry: expiry },
+    });
+
     if (user && user.isActive) {
-      const token = randomBytes(32).toString("hex");
-      const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { passwordResetToken: token, passwordResetExpiry: expiry },
-      });
-
       sendPasswordResetEmail({ to: user.email, fullName: user.fullName, resetToken: token })
         .then(() => console.log(`[email] reset sent → ${user.email}`))
         .catch((err) => console.error(`[email] reset FAILED → ${user.email}:`, err?.message ?? err));

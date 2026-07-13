@@ -18,7 +18,7 @@ const imageUpload = uploader("slider");
 
 const updateSliderSchema = z.object({
   caption: z.string().nullable().optional(),
-  linkUrl: z.string().nullable().optional(),
+  linkUrl: z.string().url().nullable().optional(),
   order: z.coerce.number().int().optional(),
   isActive: z.boolean().optional(),
 });
@@ -68,6 +68,16 @@ sliderRouter.patch(
     const parsed = reorderSliderSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+
+    // A partial reorder leaves the omitted slides on their old `order`, which
+    // collides with the freshly-assigned 0..n-1 values. Require every slide
+    // exactly once so the sequential assignment stays a unique permutation.
+    const uniqueIds = new Set(parsed.data.ids);
+    const total = await prisma.sliderImage.count();
+    if (uniqueIds.size !== parsed.data.ids.length || uniqueIds.size !== total) {
+      res.status(400).json({ error: "Reorder harus menyertakan seluruh slide tepat satu kali" });
       return;
     }
 

@@ -172,6 +172,10 @@ usersRouter.patch(
 usersRouter.delete(
   "/:id",
   asyncHandler(async (req, res) => {
+    if (req.params.id === req.user!.id) {
+      res.status(400).json({ error: "Tidak dapat menonaktifkan akun Anda sendiri" });
+      return;
+    }
     try {
       await prisma.user.update({ where: { id: req.params.id }, data: { isActive: false } });
       res.status(204).send();
@@ -189,6 +193,10 @@ usersRouter.delete(
 usersRouter.delete(
   "/:id/permanent",
   asyncHandler(async (req, res) => {
+    if (req.params.id === req.user!.id) {
+      res.status(400).json({ error: "Tidak dapat menghapus akun Anda sendiri" });
+      return;
+    }
     try {
       await prisma.user.delete({ where: { id: req.params.id } });
       res.status(204).send();
