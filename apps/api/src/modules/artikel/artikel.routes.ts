@@ -4,15 +4,15 @@ import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole } from "../../middleware/auth.js";
 import { isNotFoundError } from "../../lib/prismaErrors.js";
-import { uploader, publicUrl } from "../../lib/storage.js";
+import { uploader, publicUrl, imageFileFilter } from "../../lib/storage.js";
 import { createArtikelSchema, updateArtikelSchema, listArtikelQuerySchema } from "./artikel.schema.js";
 import { emit } from "../../lib/socket.js";
 
 export const artikelRouter = Router();
 artikelRouter.use(authenticate, requireRole(UNSCOPED_ADMIN_ROLES));
 
-const coverUpload = uploader("artikel");
-const imageUpload = uploader("artikel-images", 15 * 1024 * 1024); // 15MB for inline editor images
+const coverUpload = uploader("artikel", undefined, imageFileFilter);
+const imageUpload = uploader("artikel-images", 15 * 1024 * 1024, imageFileFilter); // 15MB for inline editor images
 
 const authorSummary = { select: { id: true, fullName: true } } as const;
 

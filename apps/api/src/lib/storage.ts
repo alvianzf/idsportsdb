@@ -8,8 +8,22 @@ export const uploadRoot = path.resolve(env.uploadDir);
 
 const DEFAULT_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
+/** Accepts image files only. */
+export const imageFileFilter: multer.Options["fileFilter"] = (_req, file, cb) => {
+  cb(null, /^image\//.test(file.mimetype));
+};
+
+/** Accepts image files and PDFs (documents/certificates). */
+export const documentFileFilter: multer.Options["fileFilter"] = (_req, file, cb) => {
+  cb(null, /^image\//.test(file.mimetype) || file.mimetype === "application/pdf");
+};
+
 /** Multer instance storing uploaded files under `uploads/<subdir>/`. */
-export function uploader(subdir: string, maxFileSize = DEFAULT_MAX_FILE_SIZE) {
+export function uploader(
+  subdir: string,
+  maxFileSize = DEFAULT_MAX_FILE_SIZE,
+  fileFilter?: multer.Options["fileFilter"],
+) {
   const storage = multer.diskStorage({
     destination: (_req, _file, cb) => {
       const dir = path.join(uploadRoot, subdir);
@@ -21,7 +35,7 @@ export function uploader(subdir: string, maxFileSize = DEFAULT_MAX_FILE_SIZE) {
     },
   });
 
-  return multer({ storage, limits: { fileSize: maxFileSize } });
+  return multer({ storage, limits: { fileSize: maxFileSize }, fileFilter });
 }
 
 /** Public URL for a file stored via `uploader`, served from `/uploads`. */

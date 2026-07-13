@@ -21,6 +21,7 @@ const logoUpload = multer({
 const docUpload = multer({
   dest: path.join(uploadRoot, "cabor-documents"),
   limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+  fileFilter: (_req, file, cb) => { cb(null, /^image\//.test(file.mimetype) || file.mimetype === "application/pdf"); },
 });
 
 export const caborRouter = Router();
