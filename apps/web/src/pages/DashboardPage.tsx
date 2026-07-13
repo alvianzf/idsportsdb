@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Users, UserCog, Building2, Trophy, Medal } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Users, UserCog, Building2, Trophy, Medal, ArrowLeftRight } from "lucide-react";
 import { MEDAL_LABELS, type Medal as MedalType } from "@inasportdb/shared-types";
 import { Card, PageHeader, Badge } from "../components/ui";
 import { api } from "../lib/api";
@@ -68,6 +69,7 @@ export function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [perCabor, setPerCabor] = useState<PerCaborStat[] | null>(null);
   const [prestasiStats, setPrestasiStats] = useState<PrestasiStat[] | null>(null);
+  const [pendingMutasi, setPendingMutasi] = useState(0);
   const [error, setError] = useState(false);
 
   const loadRef = useRef<() => void>(() => undefined);
@@ -111,6 +113,26 @@ export function DashboardPage() {
     };
   }, []);
 
+  // Pending-mutasi count for approvers — surfaces the approval backlog that
+  // otherwise piles up silently. Refreshes live on any mutasi decision.
+  useEffect(() => {
+    if (!isUnscopedAdmin) return;
+    let cancelled = false;
+    const load = () => {
+      api
+        .get<{ count: number }>("/monitoring/mutasi/pending-count")
+        .then((res) => { if (!cancelled) setPendingMutasi(res.data.count); })
+        .catch(() => undefined);
+    };
+    load();
+    const socket = getSocket();
+    socket.on("monitoring:change", load);
+    return () => {
+      cancelled = true;
+      socket.off("monitoring:change", load);
+    };
+  }, [isUnscopedAdmin]);
+
   const yearOptions = Array.from({ length: currentYear - 2019 }, (_, i) => currentYear - i);
 
   return (
@@ -124,6 +146,23 @@ export function DashboardPage() {
         <Card className="mb-4 text-sm text-danger">
           Gagal memuat data dashboard. Coba muat ulang halaman.
         </Card>
+      )}
+
+      {isUnscopedAdmin && pendingMutasi > 0 && (
+        <Link to="/monitoring" className="mb-4 block">
+          <Card className="flex items-center gap-4 border-warning/30 bg-warning-light/50 transition-colors hover:bg-warning-light">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white text-warning">
+              <ArrowLeftRight size={20} />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-neutral-900">Mutasi Menunggu Persetujuan</p>
+              <p className="text-xs text-neutral-600">
+                {pendingMutasi} permohonan mutasi atlet perlu ditinjau.
+              </p>
+            </div>
+            <Badge tone="warning">{pendingMutasi}</Badge>
+          </Card>
+        </Link>
       )}
 
       <div className="mb-3 flex items-center justify-between">
