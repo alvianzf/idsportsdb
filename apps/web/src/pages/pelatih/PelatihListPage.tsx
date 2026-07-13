@@ -32,6 +32,7 @@ export function PelatihListPage() {
   const [items, setItems] = useState<PelatihRow[] | null>(null);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [cabor, setCabor] = useState("");
   const [expiring, setExpiring] = useState(false);
   const [page, setPage] = useState(1);
@@ -46,6 +47,12 @@ export function PelatihListPage() {
     api.get<CaborOption[]>("/cabor").then((res) => setCabors(res.data));
   }, [isUnscopedAdmin]);
 
+  // Debounce free-text search so typing fires one request, not one per keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 250);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   useEffect(() => {
     let cancelled = false;
     setItems(null);
@@ -53,7 +60,7 @@ export function PelatihListPage() {
     api
       .get("/pelatih", {
         params: {
-          search: search || undefined,
+          search: debouncedSearch || undefined,
           cabor: cabor || undefined,
           expiring: expiring || undefined,
           page,
@@ -71,7 +78,7 @@ export function PelatihListPage() {
     return () => {
       cancelled = true;
     };
-  }, [search, cabor, expiring, page, reloadKey]);
+  }, [debouncedSearch, cabor, expiring, page, reloadKey]);
 
   function isExpiringSoon(date: string | null) {
     if (!date) return false;

@@ -245,7 +245,7 @@ const router = createBrowserRouter([
 
       // Atlet self-service
       { path: "me", element: <Suspense fallback={<PageLoader />}><MePage /></Suspense> },
-      { path: "me/prestasi", element: <Navigate to="/me" replace /> },
+      { path: "me/prestasi", element: <Suspense fallback={<PageLoader />}><MePage /></Suspense> },
 
       { path: "*", element: <NotFoundPage /> },
     ],

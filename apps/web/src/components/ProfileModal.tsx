@@ -21,16 +21,19 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
       return;
     }
     setSaving(true);
+    let avatarUrl = user?.avatarUrl ?? null;
+    let avatarChanged = false;
     try {
-      let avatarUrl = user?.avatarUrl ?? null;
       if (avatarFile) {
         const form = new FormData();
         form.append("file", avatarFile);
         const avatarRes = await api.post("/auth/me/avatar", form);
         avatarUrl = avatarRes.data.avatarUrl;
+        avatarChanged = true;
       } else if (removeAvatar && avatarUrl) {
         await api.delete("/auth/me/avatar");
         avatarUrl = null;
+        avatarChanged = true;
       }
       const res = await api.patch("/auth/me", {
         fullName,
@@ -42,6 +45,11 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
       toast.success("Profil berhasil diperbarui.");
       onClose();
     } catch {
+      // The avatar call may have already changed the avatar on the server; keep
+      // the store in sync with it even though the profile PATCH failed.
+      if (avatarChanged && user && accessToken) {
+        setSession(accessToken, { ...user, avatarUrl });
+      }
       toast.error("Gagal memperbarui profil.");
     } finally {
       setSaving(false);

@@ -18,7 +18,7 @@ import {
   monthLabel,
   monthWeeks,
   shiftMonth,
-  ymd,
+  todayYmd,
   type EventFilters,
 } from "./calendarUtils";
 
@@ -183,7 +183,7 @@ export function EventMonthCalendar({
   onEventDrop?: (event: PublicEvent, newStart: string) => void;
   jumpTo?: string;
 }) {
-  const today = ymd(new Date());
+  const today = todayYmd();
   const [month, setMonth] = useState(firstOfMonth(today));
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
@@ -443,7 +443,7 @@ export function EventGantt({ events, onEventClick }: { events: PublicEvent[]; on
   const ticks: string[] = [];
   for (let i = 0; i < total; i += tickStep) ticks.push(addDays(min, i));
 
-  const todayStr = ymd(new Date());
+  const todayStr = todayYmd();
   const todayOffset = eventCoversDayRange(todayStr, min, max) ? (diffDays(min, todayStr) / total) * 100 : null;
 
   return (

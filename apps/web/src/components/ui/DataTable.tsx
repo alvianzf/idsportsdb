@@ -61,11 +61,12 @@ export function DataTable<T extends { id: string }>({
 
   function handleSort(col: Column<T>) {
     if (!col.sortable) return;
-    setSortKey((k) => {
-      if (k === col.key) { setSortDir((d) => d === "asc" ? "desc" : "asc"); return k; }
+    if (sortKey === col.key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(col.key);
       setSortDir("asc");
-      return col.key;
-    });
+    }
     setSelected(new Set());
   }
 

@@ -54,6 +54,7 @@ export function PrestasiListPage() {
   const [total, setTotal] = useState(0);
   const [cabor, setCabor] = useState("");
   const [tahun, setTahun] = useState("");
+  const [debouncedTahun, setDebouncedTahun] = useState("");
   const [tingkat, setTingkat] = useState("");
   const [medali, setMedali] = useState("");
   const [page, setPage] = useState(1);
@@ -68,6 +69,12 @@ export function PrestasiListPage() {
     api.get<CaborOption[]>("/cabor").then((res) => setCabors(res.data));
   }, [isUnscopedAdmin]);
 
+  // Debounce the year input so typing fires one request, not one per keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedTahun(tahun), 250);
+    return () => clearTimeout(timer);
+  }, [tahun]);
+
   useEffect(() => {
     let cancelled = false;
     setItems(null);
@@ -76,7 +83,7 @@ export function PrestasiListPage() {
       .get("/prestasi", {
         params: {
           cabor: cabor || undefined,
-          tahun: tahun || undefined,
+          tahun: debouncedTahun || undefined,
           tingkat: tingkat || undefined,
           medali: medali || undefined,
           page,
@@ -94,7 +101,7 @@ export function PrestasiListPage() {
     return () => {
       cancelled = true;
     };
-  }, [cabor, tahun, tingkat, medali, page, reloadKey]);
+  }, [cabor, debouncedTahun, tingkat, medali, page, reloadKey]);
 
   async function handleBulkDelete(ids: string[]) {
     const confirmed = await confirmAction({
