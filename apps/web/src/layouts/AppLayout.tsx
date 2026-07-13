@@ -8,6 +8,7 @@ import { navItemsForRole } from "./navConfig";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import { ProfileModal } from "../components/ProfileModal";
 import { resolveFileUrl } from "../lib/api";
+import { useDocumentTitle } from "../lib/useDocumentTitle";
 import { useAuthStore } from "../store/authStore";
 
 export function AppLayout() {
@@ -16,6 +17,7 @@ export function AppLayout() {
   const location = useLocation();
   const [showProfile, setShowProfile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  useDocumentTitle();
 
   if (!user) {
     return <Navigate to="/login" replace />;

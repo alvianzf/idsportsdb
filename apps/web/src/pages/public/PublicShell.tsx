@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { Button } from "../../components/ui";
 import { useAuthStore } from "../../store/authStore";
@@ -7,6 +7,9 @@ import { PublicBottomNav } from "./PublicBottomNav";
 
 /** Shared header/footer shell for public (no-auth) pages. Revisi 2026-07-12. */
 export function PublicShell({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+  useEffect(() => {
+    document.title = `KONI Batam — ${title}`;
+  }, [title]);
   const user = useAuthStore((state) => state.user);
 
   return (
@@ -17,7 +20,6 @@ export function PublicShell({ title, description, children }: { title: string; d
             <img src="/logo-koni-batam.png" alt="KONI Batam" className="h-10 w-10 object-contain" />
             <div>
               <p className="text-sm font-semibold leading-tight text-neutral-900">KONI Batam</p>
-              <p className="text-xs leading-tight text-neutral-500">Sistem Informasi Manajemen Atlet</p>
             </div>
           </Link>
           <div className="flex items-center gap-1">

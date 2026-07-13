@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuthStore } from "../store/authStore";
+import { useDocumentTitle } from "../lib/useDocumentTitle";
 import { Button, PasswordInput } from "../components/ui";
 
 export function LoginPage() {
@@ -11,6 +12,7 @@ export function LoginPage() {
   const [searchParams] = useSearchParams();
   const resetSuccess = searchParams.get("reset") === "1";
 
+  useDocumentTitle();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +50,6 @@ export function LoginPage() {
           <div className="mb-6 flex flex-col items-center gap-2 text-center">
             <img src="/logo-koni-batam.png" alt="KONI Batam" className="h-16 w-16 object-contain md:hidden" />
             <h1 className="text-lg font-semibold text-neutral-900">KONI Batam</h1>
-            <p className="text-sm text-neutral-500">Sistem Informasi Manajemen Atlet</p>
           </div>
 
           {resetSuccess && (

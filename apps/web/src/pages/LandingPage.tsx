@@ -14,6 +14,7 @@ import {
 import { EVENT_LEVEL_LABELS, EVENT_STATUS_LABELS } from "@inasportdb/shared-types";
 import { Button } from "../components/ui";
 import { api, resolveFileUrl } from "../lib/api";
+import { useDocumentTitle } from "../lib/useDocumentTitle";
 import { getSocket } from "../lib/socket";
 import { useAuthStore } from "../store/authStore";
 import { PUBLIC_NAV } from "./public/publicNav";
@@ -52,6 +53,7 @@ const fadeUp = {
  * gradients, sharp colors, framer-motion) with Data/Berita/Event menus. */
 export function LandingPage() {
   const user = useAuthStore((state) => state.user);
+  useDocumentTitle();
   const [stats, setStats] = useState<PublicStats | null>(null);
   const [articles, setArticles] = useState<PublicArtikel[]>([]);
   const [events, setEvents] = useState<PublicEvent[]>([]);
@@ -97,7 +99,6 @@ export function LandingPage() {
             <img src="/logo-koni-batam.png" alt="KONI Batam" className="h-10 w-10 object-contain" />
             <div>
               <p className="text-sm font-bold leading-tight text-neutral-900">KONI Batam</p>
-              <p className="text-[11px] leading-tight text-neutral-500">Sistem Informasi Manajemen Atlet</p>
             </div>
           </Link>
           <div className="flex items-center gap-1">
