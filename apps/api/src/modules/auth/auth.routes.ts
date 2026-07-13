@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 import { prisma } from "../../lib/prisma.js";
@@ -14,8 +15,18 @@ import { sendPasswordResetEmail } from "../../lib/email.js";
 
 export const authRouter = Router();
 
+// Throttle brute-force / mail-bomb surfaces: login, forgot-password, reset-password.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Terlalu banyak percobaan. Coba lagi nanti." },
+});
+
 authRouter.post(
   "/login",
+  authLimiter,
   asyncHandler(async (req, res) => {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -77,6 +88,7 @@ authRouter.get(
 
 authRouter.post(
   "/forgot-password",
+  authLimiter,
   asyncHandler(async (req, res) => {
     const { email } = req.body as { email?: string };
     // Always return 204 regardless of whether the email exists (anti-enumeration)
@@ -103,6 +115,7 @@ authRouter.post(
 
 authRouter.post(
   "/reset-password",
+  authLimiter,
   asyncHandler(async (req, res) => {
     const { token, password } = req.body as { token?: string; password?: string };
 
