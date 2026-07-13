@@ -38,6 +38,7 @@ export function ReportPage<T>({ title, description, endpoint, params, filters, c
   useEffect(() => {
     let cancelled = false;
     setRows(null);
+    setError(null);
     api
       .get<T[]>(endpoint, { params: { ...params, format: "json" } })
       .then((res) => {
@@ -85,7 +86,7 @@ export function ReportPage<T>({ title, description, endpoint, params, filters, c
       {error && <Card className="text-sm text-danger">{error}</Card>}
 
       {rows === null ? (
-        <Card className="text-sm text-neutral-500">Memuat data...</Card>
+        !error && <Card className="text-sm text-neutral-500">Memuat data...</Card>
       ) : rows.length === 0 ? (
         <Card className="text-sm text-neutral-500">Tidak ada data.</Card>
       ) : (

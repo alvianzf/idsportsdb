@@ -49,6 +49,7 @@ export function PelatihListPage() {
   useEffect(() => {
     let cancelled = false;
     setItems(null);
+    setError(false);
     api
       .get("/pelatih", {
         params: {
@@ -207,7 +208,7 @@ export function PelatihListPage() {
       {error && <Card className="text-sm text-danger">Gagal memuat data.</Card>}
 
       {items === null ? (
-        <Card className="text-sm text-neutral-500">Memuat data...</Card>
+        !error && <Card className="text-sm text-neutral-500">Memuat data...</Card>
       ) : (
         <>
           <DataTable columns={columns} rows={items} bulkActions={bulkActions} emptyMessage="Belum ada data pelatih." />

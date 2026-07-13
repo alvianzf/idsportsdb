@@ -71,6 +71,7 @@ export function PrestasiListPage() {
   useEffect(() => {
     let cancelled = false;
     setItems(null);
+    setError(false);
     api
       .get("/prestasi", {
         params: {
@@ -215,7 +216,7 @@ export function PrestasiListPage() {
       {error && <Card className="text-sm text-danger">Gagal memuat data.</Card>}
 
       {items === null ? (
-        <Card className="text-sm text-neutral-500">Memuat data...</Card>
+        !error && <Card className="text-sm text-neutral-500">Memuat data...</Card>
       ) : (
         <>
           <DataTable columns={columns} rows={items} bulkActions={bulkActions} emptyMessage="Belum ada data prestasi." />

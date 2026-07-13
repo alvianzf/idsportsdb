@@ -76,6 +76,7 @@ export function DashboardPage() {
     let cancelled = false;
 
     async function load() {
+      setError(false);
       try {
         const { data } = await api.get<{
           summary: DashboardSummary;
@@ -161,7 +162,7 @@ export function DashboardPage() {
           <Card>
             <h2 className="mb-3 text-sm font-semibold text-neutral-900">Statistik Atlet per Cabor</h2>
             {perCabor === null ? (
-              <p className="text-sm text-neutral-500">Memuat data...</p>
+              !error && <p className="text-sm text-neutral-500">Memuat data...</p>
             ) : perCabor.length === 0 ? (
               <p className="text-sm text-neutral-500">Belum ada cabang olahraga.</p>
             ) : (
@@ -186,7 +187,7 @@ export function DashboardPage() {
           <div className="w-full">
             <h2 className="mb-2 text-sm font-semibold text-neutral-900">Statistik Prestasi (Medali)</h2>
             {prestasiStats === null ? (
-              <p className="text-sm text-neutral-500">Memuat data...</p>
+              !error && <p className="text-sm text-neutral-500">Memuat data...</p>
             ) : prestasiStats.length === 0 ? (
               <p className="text-sm text-neutral-500">Belum ada data prestasi.</p>
             ) : (

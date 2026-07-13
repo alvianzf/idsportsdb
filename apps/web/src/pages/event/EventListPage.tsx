@@ -60,6 +60,7 @@ export function EventListPage() {
   const [saving, setSaving] = useState(false);
 
   function load() {
+    setError(false);
     api
       .get<PublicEvent[]>("/events")
       .then((res) => setEvents(res.data))
