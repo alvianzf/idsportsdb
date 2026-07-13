@@ -10,7 +10,7 @@ import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole, scopeToCabor } from "../../middleware/auth.js";
 import { streamPdf, drawPdfTable, dateLabelWib, type PdfMeta } from "../../lib/pdf.js";
-import { streamExcel, streamExcelSheets, type ExcelSheetSpec } from "../../lib/excel.js";
+import { streamExcel, streamExcelSheets, streamCsv, type ExcelSheetSpec } from "../../lib/excel.js";
 import {
   baseReportQuerySchema,
   atletPerCaborQuerySchema,
@@ -149,6 +149,13 @@ reportsRouter.get(
       return;
     }
 
+    if (parsed.data.format === "csv") {
+      await streamCsv(res, "atlet-per-cabor.csv", [
+        { header: "Cabang Olahraga", key: "nama", width: 30 },
+        { header: "Jumlah Atlet", key: "jumlahAtlet", width: 15 },
+      ], data);
+      return;
+    }
     const atlets = await getAtletDetail(caborId, filters);
     if (parsed.data.format === "excel") {
       await streamExcelSheets(res, "atlet-per-cabor.xlsx", [
@@ -196,6 +203,13 @@ reportsRouter.get(
       return;
     }
 
+    if (parsed.data.format === "csv") {
+      await streamCsv(res, "atlet-per-usia.csv", [
+        { header: "Rentang Usia", key: "range", width: 20 },
+        { header: "Jumlah Atlet", key: "count", width: 15 },
+      ], data);
+      return;
+    }
     const atlets = await getAtletDetail(req.scopedCaborId ?? null);
     if (parsed.data.format === "excel") {
       await streamExcelSheets(res, "atlet-per-usia.xlsx", [
@@ -243,6 +257,13 @@ reportsRouter.get(
       return;
     }
 
+    if (parsed.data.format === "csv") {
+      await streamCsv(res, "atlet-per-kecamatan.csv", [
+        { header: "Kecamatan", key: "kecamatan", width: 25 },
+        { header: "Jumlah Atlet", key: "count", width: 15 },
+      ], data);
+      return;
+    }
     const atlets = await getAtletDetail(req.scopedCaborId ?? null);
     if (parsed.data.format === "excel") {
       await streamExcelSheets(res, "atlet-per-kecamatan.xlsx", [
@@ -290,24 +311,24 @@ reportsRouter.get(
       res.json(data);
       return;
     }
+    const pelatihColumns = [
+      { header: "Nama Pelatih", key: "namaPelatih", width: 25 },
+      { header: "Cabang Olahraga", key: "cabor", width: 25 },
+      { header: "Nomor Lisensi", key: "nomorLisensi", width: 20 },
+      { header: "Tingkatan Lisensi", key: "tingkatanLisensi", width: 20 },
+    ];
+    const pelatihRows = data.map((p) => ({
+      namaPelatih: p.namaPelatih,
+      cabor: p.cabangOlahraga.nama,
+      nomorLisensi: p.nomorLisensi,
+      tingkatanLisensi: p.tingkatanLisensi,
+    }));
+    if (parsed.data.format === "csv") {
+      await streamCsv(res, "data-pelatih.csv", pelatihColumns, pelatihRows);
+      return;
+    }
     if (parsed.data.format === "excel") {
-      await streamExcel(
-        res,
-        "data-pelatih.xlsx",
-        "Data Pelatih",
-        [
-          { header: "Nama Pelatih", key: "namaPelatih", width: 25 },
-          { header: "Cabang Olahraga", key: "cabor", width: 25 },
-          { header: "Nomor Lisensi", key: "nomorLisensi", width: 20 },
-          { header: "Tingkatan Lisensi", key: "tingkatanLisensi", width: 20 },
-        ],
-        data.map((p) => ({
-          namaPelatih: p.namaPelatih,
-          cabor: p.cabangOlahraga.nama,
-          nomorLisensi: p.nomorLisensi,
-          tingkatanLisensi: p.tingkatanLisensi,
-        })),
-      );
+      await streamExcel(res, "data-pelatih.xlsx", "Data Pelatih", pelatihColumns, pelatihRows);
       return;
     }
     streamPdf(res, "data-pelatih.pdf", (doc) => {
@@ -347,30 +368,30 @@ reportsRouter.get(
       res.json(data);
       return;
     }
+    const prestasiColumns = [
+      { header: "Atlet", key: "atlet", width: 25 },
+      { header: "Cabang Olahraga", key: "cabor", width: 25 },
+      { header: "Kejuaraan", key: "kejuaraan", width: 30 },
+      { header: "Tingkat", key: "tingkat", width: 18 },
+      { header: "Tahun", key: "tahun", width: 10 },
+      { header: "Medali", key: "medali", width: 12 },
+      { header: "Peringkat", key: "peringkat", width: 12 },
+    ];
+    const prestasiRows = data.map((p) => ({
+      atlet: p.atlet.namaLengkap,
+      cabor: p.atlet.cabangOlahraga.nama,
+      kejuaraan: p.namaKejuaraan,
+      tingkat: COMPETITION_LEVEL_LABELS[p.tingkatKejuaraan],
+      tahun: p.tahun,
+      medali: MEDAL_LABELS[p.medali],
+      peringkat: p.peringkat ?? "-",
+    }));
+    if (parsed.data.format === "csv") {
+      await streamCsv(res, "data-prestasi.csv", prestasiColumns, prestasiRows);
+      return;
+    }
     if (parsed.data.format === "excel") {
-      await streamExcel(
-        res,
-        "data-prestasi.xlsx",
-        "Data Prestasi",
-        [
-          { header: "Atlet", key: "atlet", width: 25 },
-          { header: "Cabang Olahraga", key: "cabor", width: 25 },
-          { header: "Kejuaraan", key: "kejuaraan", width: 30 },
-          { header: "Tingkat", key: "tingkat", width: 18 },
-          { header: "Tahun", key: "tahun", width: 10 },
-          { header: "Medali", key: "medali", width: 12 },
-          { header: "Peringkat", key: "peringkat", width: 12 },
-        ],
-        data.map((p) => ({
-          atlet: p.atlet.namaLengkap,
-          cabor: p.atlet.cabangOlahraga.nama,
-          kejuaraan: p.namaKejuaraan,
-          tingkat: COMPETITION_LEVEL_LABELS[p.tingkatKejuaraan],
-          tahun: p.tahun,
-          medali: MEDAL_LABELS[p.medali],
-          peringkat: p.peringkat ?? "-",
-        })),
-      );
+      await streamExcel(res, "data-prestasi.xlsx", "Data Prestasi", prestasiColumns, prestasiRows);
       return;
     }
     streamPdf(res, "data-prestasi.pdf", (doc) => {
@@ -413,20 +434,19 @@ reportsRouter.get(
       res.json(data);
       return;
     }
+    const rekapColumns = [
+      { header: "Cabang Olahraga", key: "nama", width: 25 },
+      { header: "Emas", key: "gold", width: 10 },
+      { header: "Perak", key: "silver", width: 10 },
+      { header: "Perunggu", key: "bronze", width: 10 },
+      { header: "Total", key: "total", width: 10 },
+    ];
+    if (parsed.data.format === "csv") {
+      await streamCsv(res, "rekap-medali.csv", rekapColumns, data);
+      return;
+    }
     if (parsed.data.format === "excel") {
-      await streamExcel(
-        res,
-        "rekap-medali.xlsx",
-        "Rekap Medali",
-        [
-          { header: "Cabang Olahraga", key: "nama", width: 25 },
-          { header: "Emas", key: "gold", width: 10 },
-          { header: "Perak", key: "silver", width: 10 },
-          { header: "Perunggu", key: "bronze", width: 10 },
-          { header: "Total", key: "total", width: 10 },
-        ],
-        data,
-      );
+      await streamExcel(res, "rekap-medali.xlsx", "Rekap Medali", rekapColumns, data);
       return;
     }
     streamPdf(res, "rekap-medali.pdf", (doc) => {

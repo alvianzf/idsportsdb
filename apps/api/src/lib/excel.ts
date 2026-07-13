@@ -27,6 +27,25 @@ export async function streamExcelSheets(res: Response, filename: string, sheets:
   res.end();
 }
 
+/** Streams a single-sheet .csv as the response. */
+export async function streamCsv(
+  res: Response,
+  filename: string,
+  columns: { header: string; key: string; width?: number }[],
+  rows: Record<string, unknown>[],
+) {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("Sheet1");
+  sheet.columns = columns;
+  sheet.addRows(rows);
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+
+  await workbook.csv.write(res);
+  res.end();
+}
+
 /** Streams a single-sheet .xlsx as the response. */
 export function streamExcel(
   res: Response,

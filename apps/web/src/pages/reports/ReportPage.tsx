@@ -19,12 +19,16 @@ interface ReportPageProps<T> {
   filenameBase: string;
 }
 
-async function downloadFile(endpoint: string, params: Record<string, unknown>, format: "pdf" | "excel", filename: string) {
+type DownloadFormat = "pdf" | "excel" | "csv";
+
+const DOWNLOAD_EXT: Record<DownloadFormat, string> = { pdf: "pdf", excel: "xlsx", csv: "csv" };
+
+async function downloadFile(endpoint: string, params: Record<string, unknown>, format: DownloadFormat, filename: string) {
   const res = await api.get(endpoint, { params: { ...params, format }, responseType: "blob" });
   const url = URL.createObjectURL(res.data as Blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `${filename}.${format === "pdf" ? "pdf" : "xlsx"}`;
+  link.download = `${filename}.${DOWNLOAD_EXT[format]}`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -33,7 +37,7 @@ async function downloadFile(endpoint: string, params: Record<string, unknown>, f
 export function ReportPage<T>({ title, description, endpoint, params, filters, columns, filenameBase }: ReportPageProps<T>) {
   const [rows, setRows] = useState<T[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [downloading, setDownloading] = useState<"pdf" | "excel" | null>(null);
+  const [downloading, setDownloading] = useState<DownloadFormat | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,7 +57,7 @@ export function ReportPage<T>({ title, description, endpoint, params, filters, c
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endpoint, JSON.stringify(params)]);
 
-  async function handleDownload(format: "pdf" | "excel") {
+  async function handleDownload(format: DownloadFormat) {
     setDownloading(format);
     try {
       await downloadFile(endpoint, params, format, filenameBase);
@@ -76,6 +80,9 @@ export function ReportPage<T>({ title, description, endpoint, params, filters, c
             </Button>
             <Button variant="outline" onClick={() => handleDownload("excel")} disabled={downloading !== null}>
               <Download size={16} /> {downloading === "excel" ? "Mengunduh..." : "Excel"}
+            </Button>
+            <Button variant="outline" onClick={() => handleDownload("csv")} disabled={downloading !== null}>
+              <Download size={16} /> {downloading === "csv" ? "Mengunduh..." : "CSV"}
             </Button>
           </div>
         }
