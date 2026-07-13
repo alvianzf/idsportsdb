@@ -359,8 +359,9 @@ model MonitoringEvent {
   createdAt      DateTime        @default(now())
 
   @@index([atletId, type])
-  @@index([type, mutationStatus])
+  @@index([type, mutationStatus, eventDate])
   @@index([createdById])
+  @@index([eventDate])
 }
 
 // Digital athlete card (Modul I). QR encodes a public verify URL containing cardCode.
@@ -398,6 +399,7 @@ model Article {
 
   @@index([published, publishedAt])
   @@index([authorId])
+  @@index([createdAt])
 }
 
 model AuditLog {
