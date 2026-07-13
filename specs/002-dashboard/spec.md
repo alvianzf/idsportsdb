@@ -74,28 +74,36 @@ No new entities. Aggregates over `Atlet`, `Pelatih`, `CabangOlahraga`, `Prestasi
 ## 4. UI / Pages
 
 - **Route**: `/dashboard` (`apps/web/src/pages/DashboardPage.tsx`)
-- **Mobile**: stat cards in a `grid-cols-2` grid; the per-cabor card grid
-  (single column) and the full-width "Statistik Prestasi" card stack below.
-- **Desktop**: stat cards in `grid-cols-4`; per-cabor cards in a responsive
-  grid (`sm:grid-cols-2 lg:grid-cols-3`); the medals card spans full width.
-- **Components**: `StatCard` (icon + label + value), `CaborStatCard`, `Card`,
-  `Badge`.
+- **Section order**: stat cards → "Aksi Cepat" quick actions → pending-mutasi
+  approver card → **Perolehan Medali** card → **Statistik Atlet per Cabor**
+  carousel.
+- **Components**: `StatCard` (icon + label + value), `MedalTotalsCard`,
+  `CaborCarousel`, `CaborStatCard`, `Card`.
+- **Perolehan Medali** (all admin roles): a prominent full-width `Card` titled
+  "Perolehan Medali", placed **above** the per-cabor cards. Three equal columns
+  (Emas / Perak / Perunggu), each a medal icon (`Medal`, gold `#f7b500` / silver
+  `#9ca3af` / bronze `#c9793a`) above a large colored figure and an uppercase
+  label. Counts come from `prestasiStats` (`GOLD`/`SILVER`/`BRONZE`; `NONE`
+  excluded).
 - **Statistik Atlet per Cabor** (SUPER_ADMIN_KONI / ADMIN_KONI only): rendered
-  as a responsive **grid of cards** (not a table), styled to match the public
-  landing page's stat tiles (white `rounded-xl` card + red gradient icon chip).
-  Each card shows the cabor's `logoOrganisasiUrl` image, **falling back to a
-  generic sport icon (`Dumbbell`) inside the gradient chip when the cabor has
-  no logo**, its name, athlete/coach counts, and its Emas/Perak/Perunggu medal
-  tally. Each card is a `Link` to `/cabor/:id` (the cabor admin detail page)
-  with hover affordance. Section is hidden for ADMIN_CABOR (`perCabor` null).
+  as a **searchable, auto-advancing carousel of 4×4 card pages** (`CaborCarousel`),
+  not a table. Up to 16 cards per page in a `lg:grid-cols-4` grid; the slider
+  translates between pages, **auto-advances every 3s** (paused on hover or while
+  searching), with clickable page dots. A search input filters cabor by name and
+  re-paginates the results. Each `CaborStatCard` (styled like the landing page's
+  stat tiles) shows the cabor's `logoOrganisasiUrl` image — **falling back to a
+  generic sport icon (`Dumbbell`) when there is no logo** — its name, **prominent
+  athlete and coach counts** (large figures in a two-column block), and its
+  Emas/Perak/Perunggu tally with medal icons. Each card is a `Link` to
+  `/cabor/:id`. Section is hidden for ADMIN_CABOR (`perCabor` null).
+  > Known limitation: the repo has no per-sport icon set, so the no-logo fallback
+  > is a single generic `Dumbbell` icon.
 - **Year filter**: A `<select>` above the stat grid lets the user pick a
   `tahun` (year) from the current year back to 2020. Changing the year
   re-fetches `GET /dashboard/all?tahun=<year>` and updates `prestasiCount`
   (the "Prestasi `<year>`" stat card). `prestasiCountAll` (total all-time) is
   displayed as a small annotation below the grid and is unaffected by the year
   filter.
-- **Prestasi stats**: `prestasiStats` from `/dashboard/all` (medal breakdown) —
-  rendered as `Badge` chips (Emas / Perak / Perunggu); `NONE` entries filtered.
 - **Empty/loading/error**: while fetching, show `—` placeholders; on error,
   show inline `Card` with danger text.
 

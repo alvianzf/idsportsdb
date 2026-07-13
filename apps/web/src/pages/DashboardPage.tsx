@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Users, UserCog, Building2, Trophy, Medal, ArrowLeftRight, UserPlus, Upload, CalendarPlus, Dumbbell } from "lucide-react";
-import { MEDAL_LABELS, DATA_ADMIN_ROLES, type Medal as MedalType } from "@inasportdb/shared-types";
+import { Users, UserCog, Building2, Trophy, Medal, ArrowLeftRight, UserPlus, Upload, CalendarPlus, Dumbbell, Search } from "lucide-react";
+import { DATA_ADMIN_ROLES } from "@inasportdb/shared-types";
 import { Card, PageHeader, Badge } from "../components/ui";
 import { api, resolveFileUrl } from "../lib/api";
 import { getSocket } from "../lib/socket";
@@ -69,9 +69,9 @@ function QuickAction({ to, label, icon: Icon }: { to: string; label: string; ico
 // cabor's national-organisation logo, falling back to a generic sport icon.
 function CaborStatCard({ c }: { c: PerCaborStat }) {
   const medals = [
-    { label: "Emas", value: c.medals.GOLD, dot: "bg-[#f7b500]" },
-    { label: "Perak", value: c.medals.SILVER, dot: "bg-[#9ca3af]" },
-    { label: "Perunggu", value: c.medals.BRONZE, dot: "bg-[#c9793a]" },
+    { label: "Emas", value: c.medals.GOLD, color: "text-[#f7b500]" },
+    { label: "Perak", value: c.medals.SILVER, color: "text-[#9ca3af]" },
+    { label: "Perunggu", value: c.medals.BRONZE, color: "text-[#c9793a]" },
   ];
   return (
     <Link
@@ -90,17 +90,23 @@ function CaborStatCard({ c }: { c: PerCaborStat }) {
             <Dumbbell size={20} />
           </div>
         )}
-        <div className="min-w-0">
-          <p className="truncate font-semibold text-neutral-900 group-hover:text-primary">{c.nama}</p>
-          <p className="text-xs font-medium text-neutral-500">
-            {c.atletCount} atlet &middot; {c.pelatihCount} pelatih
-          </p>
+        <p className="min-w-0 truncate font-semibold text-neutral-900 group-hover:text-primary">{c.nama}</p>
+      </div>
+      {/* Prominent athlete + coach counts */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-lg bg-neutral-50 px-3 py-2">
+          <p className="text-2xl font-bold leading-none tabular-nums text-neutral-900">{c.atletCount}</p>
+          <p className="mt-1 text-xs font-medium text-neutral-500">Atlet</p>
+        </div>
+        <div className="rounded-lg bg-neutral-50 px-3 py-2">
+          <p className="text-2xl font-bold leading-none tabular-nums text-neutral-900">{c.pelatihCount}</p>
+          <p className="mt-1 text-xs font-medium text-neutral-500">Pelatih</p>
         </div>
       </div>
-      <div className="flex items-center gap-3 border-t border-neutral-100 pt-2 text-xs font-medium text-neutral-600">
+      <div className="flex items-center gap-4 border-t border-neutral-100 pt-2 text-sm font-semibold text-neutral-700">
         {medals.map((m) => (
-          <span key={m.label} className="flex items-center gap-1.5" title={m.label}>
-            <span className={`h-2 w-2 rounded-full ${m.dot}`} />
+          <span key={m.label} className="flex items-center gap-1" title={m.label}>
+            <Medal size={16} className={m.color} />
             <span className="tabular-nums">{m.value}</span>
           </span>
         ))}
@@ -109,12 +115,117 @@ function CaborStatCard({ c }: { c: PerCaborStat }) {
   );
 }
 
-const MEDAL_BADGE_TONE: Record<MedalType, "gold" | "silver" | "bronze" | "neutral"> = {
-  GOLD: "gold",
-  SILVER: "silver",
-  BRONZE: "bronze",
-  NONE: "neutral",
-};
+/** Prominent "Perolehan Medali" totals — one big colored figure + medal icon per medal. */
+function MedalTotalsCard({ stats }: { stats: { key: string; count: number }[] | null }) {
+  const get = (k: string) => stats?.find((s) => s.key === k)?.count ?? 0;
+  const items = [
+    { key: "GOLD", label: "Emas", color: "text-[#f7b500]", count: get("GOLD") },
+    { key: "SILVER", label: "Perak", color: "text-[#9ca3af]", count: get("SILVER") },
+    { key: "BRONZE", label: "Perunggu", color: "text-[#c9793a]", count: get("BRONZE") },
+  ];
+  return (
+    <Card className="mt-4 md:mt-6">
+      <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-neutral-700">Perolehan Medali</h2>
+      <div className="grid grid-cols-3 gap-3">
+        {items.map((m) => (
+          <div
+            key={m.key}
+            className="flex flex-col items-center gap-1 rounded-lg border border-neutral-100 bg-neutral-50/60 px-3 py-5 text-center"
+          >
+            <Medal size={24} className={m.color} />
+            <p className={`text-3xl font-bold leading-none tabular-nums ${m.color}`}>{m.count}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{m.label}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+/** Per-cabor cards as a searchable 4×4 carousel that auto-advances every 3s. */
+function CaborCarousel({ cabors }: { cabors: PerCaborStat[] }) {
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return q ? cabors.filter((c) => c.nama.toLowerCase().includes(q)) : cabors;
+  }, [cabors, query]);
+
+  const PER_PAGE = 16; // 4×4
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const current = Math.min(page, pageCount - 1);
+
+  useEffect(() => {
+    setPage(0);
+  }, [query]);
+
+  // Auto-advance every 3s; paused on hover or while searching.
+  useEffect(() => {
+    if (paused || query || pageCount <= 1) return;
+    const timer = setInterval(() => setPage((p) => (p + 1) % pageCount), 3000);
+    return () => clearInterval(timer);
+  }, [paused, query, pageCount]);
+
+  const pages = useMemo(() => {
+    const out: PerCaborStat[][] = [];
+    for (let i = 0; i < pageCount; i++) out.push(filtered.slice(i * PER_PAGE, i * PER_PAGE + PER_PAGE));
+    return out;
+  }, [filtered, pageCount]);
+
+  return (
+    <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+      <div className="relative mb-3 max-w-xs">
+        <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Cari cabang olahraga..."
+          className="w-full rounded-lg border border-neutral-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-primary"
+        />
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="text-sm text-neutral-500">Tidak ada cabor yang cocok.</p>
+      ) : (
+        <>
+          <div className="overflow-hidden">
+            <div
+              className="flex transition-transform duration-500 ease-in-out"
+              style={{ transform: `translateX(-${current * 100}%)` }}
+            >
+              {pages.map((chunk, i) => (
+                <div
+                  key={i}
+                  className="grid w-full shrink-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 md:gap-4"
+                >
+                  {chunk.map((c) => (
+                    <CaborStatCard key={c.cabangOlahragaId} c={c} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {pageCount > 1 && (
+            <div className="mt-4 flex items-center justify-center gap-2">
+              {pages.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  aria-label={`Halaman ${i + 1}`}
+                  onClick={() => setPage(i)}
+                  className={`h-2 rounded-full transition-all ${i === current ? "w-5 bg-primary" : "w-2 bg-neutral-300 hover:bg-neutral-400"}`}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 /**
  * Module A — Dashboard Utama. Fetches live counts from
@@ -269,6 +380,9 @@ export function DashboardPage() {
         </p>
       </div>
 
+      {/* Perolehan Medali — prominent totals, above the per-cabor cards. */}
+      <MedalTotalsCard stats={prestasiStats} />
+
       {isUnscopedAdmin && (
         <section className="mt-4 md:mt-6">
           <h2 className="mb-3 text-sm font-semibold text-neutral-900">Statistik Atlet per Cabor</h2>
@@ -277,36 +391,10 @@ export function DashboardPage() {
           ) : perCabor.length === 0 ? (
             <p className="text-sm text-neutral-500">Belum ada cabang olahraga.</p>
           ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 md:gap-4">
-              {perCabor.map((c) => (
-                <CaborStatCard key={c.cabangOlahragaId} c={c} />
-              ))}
-            </div>
+            <CaborCarousel cabors={perCabor} />
           )}
         </section>
       )}
-
-      <Card className="mt-4 flex items-start gap-3 md:mt-6">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary">
-          <Medal size={18} />
-        </div>
-        <div className="w-full">
-          <h2 className="mb-2 text-sm font-semibold text-neutral-900">Statistik Prestasi (Medali)</h2>
-          {prestasiStats === null ? (
-            !error && <p className="text-sm text-neutral-500">Memuat data...</p>
-          ) : prestasiStats.length === 0 ? (
-            <p className="text-sm text-neutral-500">Belum ada data prestasi.</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {prestasiStats.filter((stat) => stat.key !== "NONE").map((stat) => (
-                <Badge key={stat.key} tone={MEDAL_BADGE_TONE[stat.key as MedalType] ?? "neutral"}>
-                  {MEDAL_LABELS[stat.key as MedalType] ?? stat.key}: {stat.count}
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
-      </Card>
     </div>
   );
 }
