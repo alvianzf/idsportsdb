@@ -56,6 +56,13 @@ jobs:
           npx prisma generate --schema apps/api/prisma/schema.prisma
           echo "::endgroup::"
 
+          # Sync schema (e.g. new indexes) to the prod DB. No --accept-data-loss,
+          # so any destructive change fails the deploy instead of dropping data.
+          # Run from apps/api so DATABASE_URL loads from apps/api/.env.
+          echo "::group::prisma db push"
+          ( cd apps/api && npx prisma db push --skip-generate )
+          echo "::endgroup::"
+
           echo "::group::build"
           npm run build
           echo "::endgroup::"
