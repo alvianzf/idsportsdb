@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Download, Plus, Search, Tag, Trash2, Upload } from "lucide-react";
+import { Archive, ArchiveRestore, Download, Plus, Search, Tag, Trash2, Upload } from "lucide-react";
 import {
   ATHLETE_STATUSES,
   ATHLETE_STATUS_LABELS,
@@ -46,6 +46,11 @@ export function AtletListPage() {
   const canCreate = role && DATA_ADMIN_ROLES.includes(role);
   const canDelete = role && UNSCOPED_ADMIN_ROLES.includes(role);
   const isUnscopedAdmin = role && UNSCOPED_ADMIN_ROLES.includes(role);
+  // #70 — soft-delete recovery. Admins can toggle an archive view and restore;
+  // only SUPER_ADMIN can permanently purge.
+  const canRestore = role && UNSCOPED_ADMIN_ROLES.includes(role);
+  const canHardDelete = role === "SUPER_ADMIN_KONI";
+  const [showArchive, setShowArchive] = useState(false);
 
   const [items, setItems] = useState<AtletRow[] | null>(null);
   const [total, setTotal] = useState(0);
@@ -111,6 +116,7 @@ export function AtletListPage() {
           cabor: cabor || undefined,
           status: status || undefined,
           kecamatan: kecamatan || undefined,
+          deleted: showArchive || undefined,
           page,
           pageSize,
         },
@@ -130,7 +136,7 @@ export function AtletListPage() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedSearch, cabor, status, kecamatan, page, reloadKey]);
+  }, [debouncedSearch, cabor, status, kecamatan, showArchive, page, reloadKey]);
 
   async function handleBulkDelete(ids: string[]) {
     const confirmed = await confirmAction({
@@ -143,6 +149,36 @@ export function AtletListPage() {
     const failed = results.filter((r) => r.status === "rejected").length;
     if (failed === 0) {
       toast.success(`${ids.length} atlet berhasil dihapus.`);
+    } else {
+      toast.error(`${failed} dari ${ids.length} atlet gagal dihapus.`);
+    }
+    setReloadKey((k) => k + 1);
+  }
+
+  // #70 — restore archived athletes.
+  async function handleRestore(ids: string[]) {
+    const results = await Promise.allSettled(ids.map((id) => api.post(`/atlet/${id}/restore`)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed === 0) {
+      toast.success(`${ids.length} atlet berhasil dipulihkan.`);
+    } else {
+      toast.error(`${failed} dari ${ids.length} atlet gagal dipulihkan.`);
+    }
+    setReloadKey((k) => k + 1);
+  }
+
+  // #70 — permanently purge archived athletes (SUPER_ADMIN only).
+  async function handleHardDelete(ids: string[]) {
+    const confirmed = await confirmAction({
+      text: `Hapus permanen ${ids.length} atlet? Data dan seluruh dokumen/prestasi akan hilang dan tidak dapat dipulihkan.`,
+      danger: true,
+      confirmText: "Hapus Permanen",
+    });
+    if (!confirmed) return;
+    const results = await Promise.allSettled(ids.map((id) => api.delete(`/atlet/${id}/permanent`)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed === 0) {
+      toast.success(`${ids.length} atlet dihapus permanen.`);
     } else {
       toast.error(`${failed} dari ${ids.length} atlet gagal dihapus.`);
     }
@@ -270,11 +306,14 @@ export function AtletListPage() {
       mobile: true,
       sortable: true,
       getValue: (a) => a.namaLengkap,
-      render: (a) => (
-        <Link to={`/atlet/${a.id}`} className="font-medium text-primary hover:underline">
-          {a.namaLengkap}
-        </Link>
-      ),
+      render: (a) =>
+        showArchive ? (
+          <span className="font-medium text-neutral-700">{a.namaLengkap}</span>
+        ) : (
+          <Link to={`/atlet/${a.id}`} className="font-medium text-primary hover:underline">
+            {a.namaLengkap}
+          </Link>
+        ),
     },
     {
       key: "cabor",
@@ -318,10 +357,15 @@ export function AtletListPage() {
     },
   ];
 
-  const bulkActions: BulkAction[] = [
-    ...(canCreate ? [{ label: "Ubah Status", icon: Tag, onClick: handleBulkStatus }] : []),
-    ...(canDelete ? [{ label: "Hapus", icon: Trash2, variant: "danger" as const, onClick: handleBulkDelete }] : []),
-  ];
+  const bulkActions: BulkAction[] = showArchive
+    ? [
+        ...(canRestore ? [{ label: "Pulihkan", icon: ArchiveRestore, variant: "outline" as const, onClick: handleRestore }] : []),
+        ...(canHardDelete ? [{ label: "Hapus Permanen", icon: Trash2, variant: "danger" as const, onClick: handleHardDelete }] : []),
+      ]
+    : [
+        ...(canCreate ? [{ label: "Ubah Status", icon: Tag, onClick: handleBulkStatus }] : []),
+        ...(canDelete ? [{ label: "Hapus", icon: Trash2, variant: "danger" as const, onClick: handleBulkDelete }] : []),
+      ];
 
   return (
     <div>
@@ -330,6 +374,13 @@ export function AtletListPage() {
         description="Daftar atlet binaan KONI Batam"
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            {canRestore && (
+              <Button variant="outline" onClick={() => { setPage(1); setShowArchive((v) => !v); }}>
+                {showArchive ? <><ArchiveRestore size={16} /> Data Aktif</> : <><Archive size={16} /> Arsip</>}
+              </Button>
+            )}
+            {showArchive ? null : (
+            <>
             <div className="relative">
               <Button variant="outline" onClick={() => setShowExportMenu((v) => !v)}>
                 <Download size={16} /> Unduh
@@ -362,6 +413,8 @@ export function AtletListPage() {
                   </Button>
                 </Link>
               </>
+            )}
+            </>
             )}
           </div>
         }
@@ -411,7 +464,7 @@ export function AtletListPage() {
         !error && <Card className="text-sm text-neutral-500">Memuat data...</Card>
       ) : (
         <>
-          <DataTable columns={columns} rows={items} bulkActions={bulkActions} emptyMessage="Belum ada data atlet." />
+          <DataTable columns={columns} rows={items} bulkActions={bulkActions} emptyMessage={showArchive ? "Arsip kosong." : "Belum ada data atlet."} />
           <div className="mt-3">
             <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
           </div>

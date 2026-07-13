@@ -1,7 +1,7 @@
 import type { CompetitionLevel, Medal } from "@inasportdb/shared-types";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
-import { atletInCaborFilter } from "../atlet/atlet.service.js";
+import { atletInCaborFilter, atletNotDeleted } from "../atlet/atlet.service.js";
 import type { AtletReportFilters } from "./reports.schema.js";
 
 function atletFilterWhere(filters: AtletReportFilters): Prisma.AtletWhereInput {
@@ -28,7 +28,7 @@ export async function getAtletPerCabor(caborId: string | null, filters: AtletRep
       cabangOlahragaId: c.id,
       nama: c.nama,
       jumlahAtlet: await prisma.atlet.count({
-        where: { ...atletInCaborFilter(c.id), ...atletWhere },
+        where: { ...atletNotDeleted, ...atletInCaborFilter(c.id), ...atletWhere },
       }),
     })),
   );
@@ -46,7 +46,7 @@ export function calcAge(birth: Date, now: Date): number {
 /** specs/009-pelaporan/spec.md — report 2: data atlet per usia (age buckets). */
 export async function getAtletPerUsia(caborId: string | null, bucket: number) {
   const atlets = await prisma.atlet.findMany({
-    where: caborId ? atletInCaborFilter(caborId) : undefined,
+    where: { ...atletNotDeleted, ...(caborId ? atletInCaborFilter(caborId) : {}) },
     select: { tanggalLahir: true },
   });
 
@@ -71,7 +71,7 @@ export async function getAtletPerUsia(caborId: string | null, bucket: number) {
 /** specs/009-pelaporan/spec.md — report 3: data atlet per kecamatan. */
 export async function getAtletPerKecamatan(caborId: string | null) {
   const atlets = await prisma.atlet.findMany({
-    where: caborId ? atletInCaborFilter(caborId) : undefined,
+    where: { ...atletNotDeleted, ...(caborId ? atletInCaborFilter(caborId) : {}) },
     select: { kecamatan: true },
   });
 
@@ -91,6 +91,7 @@ export async function getAtletPerKecamatan(caborId: string | null) {
 export function getAtletDetail(caborId: string | null, filters: AtletReportFilters = {}) {
   return prisma.atlet.findMany({
     where: {
+      ...atletNotDeleted,
       ...(caborId ? atletInCaborFilter(caborId) : {}),
       ...atletFilterWhere(filters),
     },
@@ -109,7 +110,7 @@ export function getAtletDetail(caborId: string | null, filters: AtletReportFilte
 /** specs/009-pelaporan/spec.md — report 4: data pelatih. */
 export function getPelatihReport(caborId: string | null) {
   return prisma.pelatih.findMany({
-    where: caborId ? { cabangOlahragaId: caborId } : undefined,
+    where: { deletedAt: null, ...(caborId ? { cabangOlahragaId: caborId } : {}) },
     include: { cabangOlahraga: { select: { nama: true } } },
     orderBy: [{ cabangOlahraga: { nama: "asc" } }, { namaPelatih: "asc" }],
   });
@@ -122,10 +123,9 @@ export function getPrestasiReport(
   tingkat?: CompetitionLevel,
   medali?: Medal,
 ) {
-  const conditions = [];
-  if (caborId) conditions.push(atletInCaborFilter(caborId));
+  // #70 — never surface archived athletes' records in reports.
   const where = {
-    ...(conditions.length ? { atlet: conditions[0] } : {}),
+    atlet: { ...atletNotDeleted, ...(caborId ? atletInCaborFilter(caborId) : {}) },
     ...(tahun ? { tahun } : {}),
     ...(tingkat ? { tingkatKejuaraan: tingkat } : {}),
     ...(medali ? { medali } : {}),
@@ -142,7 +142,7 @@ export function getPrestasiReport(
 export async function getRekapMedali(caborId: string | null, tahun?: number) {
   const prestasis = await prisma.prestasi.findMany({
     where: {
-      ...(caborId ? { atlet: atletInCaborFilter(caborId) } : {}),
+      atlet: { ...atletNotDeleted, ...(caborId ? atletInCaborFilter(caborId) : {}) },
       ...(tahun ? { tahun } : {}),
     },
     select: {

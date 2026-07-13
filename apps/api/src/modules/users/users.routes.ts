@@ -109,8 +109,9 @@ usersRouter.post(
         res.status(403).json({ error: "Akun admin cabor tidak terhubung ke cabang olahraga" });
         return;
       }
-      const atlet = await prisma.atlet.findUnique({
-        where: { id: athleteId! },
+      // #70 — don't provision a login for a soft-deleted (archived) athlete.
+      const atlet = await prisma.atlet.findFirst({
+        where: { id: athleteId!, deletedAt: null },
         select: { cabangOlahragaId: true },
       });
       if (!atlet) {
