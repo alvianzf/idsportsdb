@@ -1,0 +1,82 @@
+name: Deploy to VPS
+
+# Continuous deployment: on every push to main (i.e. a merged PR), sync the
+# source to the VPS, build there, and restart the API + refresh the web bundle.
+# Mirrors the manual deploy flow (rsync source -> npm install -> build ->
+# copy web dist to /var/www/konibatam -> pm2 restart koni-api).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Never run two deploys at once; queue them instead of interleaving.
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Rsync source to VPS
+        run: |
+          rsync -az --delete \
+            --exclude 'node_modules' --exclude 'dist' --exclude '.git' \
+            --exclude '.env' --exclude '.env.production' --exclude '.env.local' \
+            --exclude 'uploads' --exclude '*.tsbuildinfo' \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
+            ./ "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/home/${{ secrets.VPS_USER }}/inasportdb/"
+
+      - name: Build and restart on VPS
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            VITE_API_BASE_URL='${{ secrets.VITE_API_BASE_URL }}' 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          cd ~/inasportdb
+
+          # Ensure the web build points at the production API (vite envDir is repo root).
+          printf 'VITE_API_BASE_URL="%s"\n' "$VITE_API_BASE_URL" > .env.production
+
+          echo "::group::npm install"
+          npm install --no-audit --no-fund
+          echo "::endgroup::"
+
+          echo "::group::prisma generate"
+          npx prisma generate --schema apps/api/prisma/schema.prisma
+          echo "::endgroup::"
+
+          echo "::group::build"
+          npm run build
+          echo "::endgroup::"
+
+          echo "::group::deploy web"
+          rsync -a --delete apps/web/dist/ /var/www/konibatam/
+          echo "::endgroup::"
+
+          echo "::group::restart api"
+          pm2 restart koni-api --update-env
+          pm2 save
+          echo "::endgroup::"
+
+          echo "::group::health check"
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4100/health || true)
+            echo "attempt $i: $code"
+            if [ "$code" = "200" ]; then echo "API healthy"; exit 0; fi
+            sleep 3
+          done
+          echo "API did not become healthy" >&2
+          exit 1
+          echo "::endgroup::"
+          REMOTE
