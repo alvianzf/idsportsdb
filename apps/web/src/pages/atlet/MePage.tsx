@@ -123,7 +123,7 @@ export function MePage() {
 
       {tab === "biodata" && <BiodataTab atlet={atlet} />}
       {tab === "dokumen" && (
-        <DokumenTab atletId={atlet.id} documents={atlet.documents ?? []} canManage={false} onChange={load} />
+        <DokumenTab atletId={atlet.id} documents={atlet.documents ?? []} canManage onChange={load} />
       )}
       {tab === "prestasi" && <PrestasiTab atletId={atlet.id} canManage={false} />}
       {tab === "monitoring" && (
