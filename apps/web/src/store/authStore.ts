@@ -14,22 +14,23 @@ export interface AuthUser {
 
 interface AuthState {
   accessToken: string | null;
-  refreshToken: string | null;
   user: AuthUser | null;
-  setSession: (accessToken: string, refreshToken: string, user: AuthUser) => void;
+  setSession: (accessToken: string, user: AuthUser) => void;
   setAccessToken: (accessToken: string) => void;
   logout: () => void;
 }
 
+// The refresh token is NOT stored here — it lives in an httpOnly cookie set by
+// the API so JS/XSS can't read it (issue #4). Only the short-lived access token
+// and the user object are persisted.
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       accessToken: null,
-      refreshToken: null,
       user: null,
-      setSession: (accessToken, refreshToken, user) => set({ accessToken, refreshToken, user }),
+      setSession: (accessToken, user) => set({ accessToken, user }),
       setAccessToken: (accessToken) => set({ accessToken }),
-      logout: () => set({ accessToken: null, refreshToken: null, user: null }),
+      logout: () => set({ accessToken: null, user: null }),
     }),
     { name: "koni-auth" },
   ),

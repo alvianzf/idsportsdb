@@ -12,6 +12,7 @@ const clientUrl = process.env.CLIENT_URL ?? "http://localhost:5173";
 const appBaseUrl = process.env.APP_BASE_URL ?? "http://localhost:5173";
 
 export const env = {
+  isProduction: process.env.NODE_ENV === "production",
   port: Number(process.env.PORT ?? 4000),
   databaseUrl: required("DATABASE_URL"),
   jwtAccessSecret: required("JWT_ACCESS_SECRET"),

@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import path from "node:path";
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import compression from "compression";
 import helmet from "helmet";
 import { env } from "./config/env.js";
@@ -36,6 +37,7 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(compression());
 app.use(cors({ origin: env.corsOrigins, credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
 
 // Sensitive atlet documents require authentication.
 app.use("/uploads/atlet-documents", authenticate, (req, res) => {

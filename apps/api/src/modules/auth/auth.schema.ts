@@ -6,12 +6,7 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-export const refreshSchema = z.object({
-  refreshToken: z.string().min(1),
-});
-
 export type LoginInput = z.infer<typeof loginSchema>;
-export type RefreshInput = z.infer<typeof refreshSchema>;
 
 const roleScopeRefinement = (
   data: { role: string; cabangOlahragaId?: string | null; athleteId?: string | null },
