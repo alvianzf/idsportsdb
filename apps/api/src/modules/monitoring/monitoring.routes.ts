@@ -189,8 +189,8 @@ monitoringRouter.get(
     const where: Prisma.MonitoringEventWhereInput = {
       ...(parsed.data.type ? { type: parsed.data.type } : {}),
       // Match canAccessAtlet: include events of multi-cabor athletes whose
-      // primary OR additional cabor is the scoped one.
-      ...(caborId ? { atlet: atletInCaborFilter(caborId) } : {}),
+      // primary OR additional cabor is the scoped one. Exclude soft-deleted athletes.
+      atlet: caborId ? { ...atletInCaborFilter(caborId), deletedAt: null } : { deletedAt: null },
     };
 
     const events = await prisma.monitoringEvent.findMany({
@@ -215,6 +215,7 @@ monitoringRouter.get(
     const where: Prisma.MonitoringEventWhereInput = {
       type: "MUTATION",
       mutationStatus: parsed.data.status ?? "PENDING",
+      atlet: { deletedAt: null },
     };
 
     const events = await prisma.monitoringEvent.findMany({
@@ -233,7 +234,7 @@ monitoringRouter.get(
   requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI"]),
   asyncHandler(async (_req, res) => {
     const count = await prisma.monitoringEvent.count({
-      where: { type: "MUTATION", mutationStatus: "PENDING" },
+      where: { type: "MUTATION", mutationStatus: "PENDING", atlet: { deletedAt: null } },
     });
     res.json({ count });
   }),
