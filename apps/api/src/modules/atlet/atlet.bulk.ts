@@ -237,6 +237,15 @@ function normalizeName(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+/**
+ * Normalize an identifier (NIK / nomor induk / nomor registrasi) for lenient
+ * duplicate matching: strip ALL whitespace and lowercase, so "REG 001",
+ * "reg001", and "REG001" are treated as the same value.
+ */
+function normalizeId(value: string): string {
+  return value.replace(/\s+/g, "").toLowerCase();
+}
+
 /** Levenshtein edit distance between two strings. */
 function editDistance(a: string, b: string): number {
   const row = Array.from({ length: b.length + 1 }, (_, i) => i);
@@ -419,23 +428,24 @@ atletBulkRouter.post(
         continue;
       }
 
-      // Reject rows that duplicate an earlier row in the same file.
-      const firstDupRow =
-        seenNik.get(parsed.data.nik) ??
-        seenInduk.get(parsed.data.nomorIndukAtlet) ??
-        seenReg.get(parsed.data.nomorRegistrasi);
+      // Reject rows that duplicate an earlier row in the same file (lenient:
+      // whitespace- and case-insensitive on the identifier columns).
+      const nikKey = normalizeId(parsed.data.nik);
+      const indukKey = normalizeId(parsed.data.nomorIndukAtlet);
+      const regKey = normalizeId(parsed.data.nomorRegistrasi);
+      const firstDupRow = seenNik.get(nikKey) ?? seenInduk.get(indukKey) ?? seenReg.get(regKey);
       if (firstDupRow !== undefined) {
-        const label = seenNik.has(parsed.data.nik)
+        const label = seenNik.has(nikKey)
           ? "NIK"
-          : seenInduk.has(parsed.data.nomorIndukAtlet)
+          : seenInduk.has(indukKey)
             ? "Nomor induk"
             : "Nomor registrasi";
         reject("Duplikat dalam berkas", `${label} duplikat dengan baris ${firstDupRow} dalam berkas`);
         continue;
       }
-      seenNik.set(parsed.data.nik, rowNumber);
-      seenInduk.set(parsed.data.nomorIndukAtlet, rowNumber);
-      seenReg.set(parsed.data.nomorRegistrasi, rowNumber);
+      seenNik.set(nikKey, rowNumber);
+      seenInduk.set(indukKey, rowNumber);
+      seenReg.set(regKey, rowNumber);
 
       candidates.push({
         row: rowNumber,
@@ -451,27 +461,23 @@ atletBulkRouter.post(
       });
     }
 
-    // Reject rows whose unique fields already exist in the database.
+    // Reject rows whose identifiers already exist in the database. Matching is
+    // lenient (whitespace/case-insensitive), so it can't be pushed into SQL —
+    // pull the identifier columns and normalize in memory. Data is city-scale;
+    // revisit if the athlete table ever grows very large.
     if (candidates.length) {
       const existing = await prisma.atlet.findMany({
-        where: {
-          OR: [
-            { nik: { in: candidates.map((c) => c.data.nik) } },
-            { nomorIndukAtlet: { in: candidates.map((c) => c.data.nomorIndukAtlet) } },
-            { nomorRegistrasi: { in: candidates.map((c) => c.data.nomorRegistrasi) } },
-          ],
-        },
         select: { nik: true, nomorIndukAtlet: true, nomorRegistrasi: true },
       });
-      const existNik = new Set(existing.map((e) => e.nik));
-      const existInduk = new Set(existing.map((e) => e.nomorIndukAtlet));
-      const existReg = new Set(existing.map((e) => e.nomorRegistrasi));
+      const existNik = new Set(existing.map((e) => normalizeId(e.nik)));
+      const existInduk = new Set(existing.map((e) => normalizeId(e.nomorIndukAtlet)));
+      const existReg = new Set(existing.map((e) => normalizeId(e.nomorRegistrasi)));
       for (const c of candidates) {
-        const label = existNik.has(c.data.nik)
+        const label = existNik.has(normalizeId(c.data.nik))
           ? "NIK"
-          : existInduk.has(c.data.nomorIndukAtlet)
+          : existInduk.has(normalizeId(c.data.nomorIndukAtlet))
             ? "Nomor induk"
-            : existReg.has(c.data.nomorRegistrasi)
+            : existReg.has(normalizeId(c.data.nomorRegistrasi))
               ? "Nomor registrasi"
               : null;
         if (label) {
