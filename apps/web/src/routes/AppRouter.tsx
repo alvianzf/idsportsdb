@@ -261,9 +261,11 @@ const router = createBrowserRouter([
       { path: "me", element: <Suspense fallback={<PageLoader />}><MePage /></Suspense> },
       { path: "me/prestasi", element: <Suspense fallback={<PageLoader />}><MePage /></Suspense> },
 
-      { path: "*", element: <NotFoundPage /> },
     ],
   },
+  // Context-aware 404: admin-area path + logged in → dashboard 404 in layout;
+  // otherwise → public 404 (see NotFoundPage).
+  { path: "*", element: <NotFoundPage /> },
 ]);
 
 export function AppRouter() {

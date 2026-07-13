@@ -1,10 +1,49 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { FileQuestion } from "lucide-react";
 import { Button } from "../components/ui";
+import { AppLayout } from "../layouts/AppLayout";
+import { useAuthStore } from "../store/authStore";
 
-export function NotFoundPage() {
+// Paths that belong to the authenticated admin area (dashboard layout).
+const ADMIN_PREFIXES = [
+  "/dashboard",
+  "/atlet",
+  "/cabor",
+  "/pelatih",
+  "/prestasi",
+  "/monitoring",
+  "/events",
+  "/reports",
+  "/slider",
+  "/users",
+  "/audit",
+  "/me",
+  "/settings",
+];
+
+/** 404 rendered inside the admin layout (retains sidebar + topbar). */
+function DashboardNotFound() {
+  return (
+    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-50 text-primary">
+        <FileQuestion size={32} />
+      </div>
+      <p className="text-4xl font-bold text-primary">404</p>
+      <h1 className="text-lg font-semibold text-neutral-900">Halaman tidak ditemukan</h1>
+      <p className="text-sm text-neutral-500">Halaman yang Anda cari tidak tersedia.</p>
+      <Link to="/dashboard">
+        <Button>Kembali ke Dashboard</Button>
+      </Link>
+    </div>
+  );
+}
+
+/** 404 for the public / landing side — unauthenticated look with the KONI logo. */
+export function PublicNotFound() {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-3 bg-neutral-50 p-4 text-center">
-      <p className="text-4xl font-bold text-primary">404</p>
+      <img src="/logo-koni-batam.png" alt="KONI Batam" className="h-20 w-20 object-contain" />
+      <p className="text-5xl font-bold text-primary">404</p>
       <h1 className="text-lg font-semibold text-neutral-900">Halaman tidak ditemukan</h1>
       <p className="text-sm text-neutral-500">Halaman yang Anda cari tidak tersedia.</p>
       <Link to="/">
@@ -12,4 +51,24 @@ export function NotFoundPage() {
       </Link>
     </div>
   );
+}
+
+/**
+ * Route-level 404 decider. A logged-in user on an admin-area path gets the
+ * dashboard 404 inside the admin layout; everyone else — public paths, or a
+ * logged-out visitor — gets the public 404 with the KONI logo (even when the
+ * user is authenticated but landed on the public side).
+ */
+export function NotFoundPage() {
+  const user = useAuthStore((s) => s.user);
+  const { pathname } = useLocation();
+  const isAdminContext = ADMIN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  if (user && isAdminContext) {
+    return (
+      <AppLayout>
+        <DashboardNotFound />
+      </AppLayout>
+    );
+  }
+  return <PublicNotFound />;
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { ChevronDown, LogOut, UserRound } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -7,13 +7,12 @@ import { BottomNav } from "./BottomNav";
 import { navItemsForRole } from "./navConfig";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import { ProfileModal } from "../components/ProfileModal";
-import { resolveFileUrl } from "../lib/api";
+import { resolveFileUrl, logout } from "../lib/api";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 import { useAuthStore } from "../store/authStore";
 
-export function AppLayout() {
+export function AppLayout({ children }: { children?: ReactNode }) {
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
   const location = useLocation();
   const [showProfile, setShowProfile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -82,7 +81,7 @@ export function AppLayout() {
                     <UserRound size={15} className="text-neutral-400" /> Edit Profil
                   </button>
                   <button
-                    onClick={logout}
+                    onClick={() => void logout()}
                     className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-danger transition-colors hover:bg-neutral-50"
                   >
                     <LogOut size={15} /> Keluar
@@ -103,7 +102,7 @@ export function AppLayout() {
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
             >
-              <Outlet />
+              {children ?? <Outlet />}
             </motion.div>
           </AnimatePresence>
         </main>
