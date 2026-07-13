@@ -55,6 +55,20 @@ export async function bootstrapAuth(): Promise<void> {
   await refreshAccessToken();
 }
 
+/**
+ * Log out: clear the httpOnly refresh cookie on the server FIRST, then the
+ * client session. Without the server call the cookie survives and the next
+ * bootstrapAuth() silently re-authenticates the user (issue #4 regression).
+ */
+export async function logout(): Promise<void> {
+  try {
+    await api.post("/auth/logout");
+  } catch {
+    // Still clear the client session even if the request fails.
+  }
+  useAuthStore.getState().logout();
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
