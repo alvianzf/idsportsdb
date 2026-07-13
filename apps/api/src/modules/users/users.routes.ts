@@ -1,6 +1,8 @@
 import { Router } from "express";
+import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
+import type { Role } from "@inasportdb/shared-types";
 import { prisma } from "../../lib/prisma.js";
 import { authenticate, requireRole } from "../../middleware/auth.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
@@ -14,6 +16,46 @@ import { sendWelcomeEmail, sendPasswordResetByAdminEmail } from "../../lib/email
 function generatePassword(): string {
   // 12 printable characters — URL-safe base64 subset
   return randomBytes(16).toString("base64url").slice(0, 12);
+}
+
+// User-management RBAC (follow-up #68). SUPER_ADMIN_KONI is unrestricted;
+// ADMIN_KONI may fully manage ADMIN_CABOR/ATLET accounts but must never create,
+// promote to, or act on SUPER_ADMIN_KONI or ADMIN_KONI accounts.
+const PRIVILEGED_ROLES: Role[] = ["SUPER_ADMIN_KONI", "ADMIN_KONI"];
+
+/** Whether `actorRole` is allowed to assign `newRole` to a user. */
+function canAssignRole(actorRole: Role, newRole: Role): boolean {
+  if (actorRole === "SUPER_ADMIN_KONI") return true;
+  if (actorRole === "ADMIN_KONI") return !PRIVILEGED_ROLES.includes(newRole);
+  return false;
+}
+
+/** Whether `actorRole` may mutate a target account whose role is `targetRole`. */
+function canManageTarget(actorRole: Role, targetRole: Role): boolean {
+  if (actorRole === "SUPER_ADMIN_KONI") return true;
+  if (actorRole === "ADMIN_KONI") return !PRIVILEGED_ROLES.includes(targetRole);
+  return false;
+}
+
+/**
+ * Loads the target user and enforces `canManageTarget` for the acting user.
+ * On success returns the target's current role; on failure it has already sent
+ * a 404 (missing) or 403 (privileged target) response and returns null.
+ */
+async function loadManageableTarget(req: Request, res: Response): Promise<Role | null> {
+  const target = await prisma.user.findUnique({
+    where: { id: req.params.id },
+    select: { role: true },
+  });
+  if (!target) {
+    res.status(404).json({ error: "Not found" });
+    return null;
+  }
+  if (!canManageTarget(req.user!.role, target.role)) {
+    res.status(403).json({ error: "Forbidden" });
+    return null;
+  }
+  return target.role;
 }
 import {
   createUserSchema,
@@ -44,9 +86,16 @@ usersRouter.post(
     const { role, cabangOlahragaId, athleteId, password: _ignored, ...rest } = parsed.data;
     const creator = req.user!;
 
-    // Role-escalation guard: only a SUPER admin can mint another SUPER admin.
-    if (role === "SUPER_ADMIN_KONI" && creator.role !== "SUPER_ADMIN_KONI") {
-      res.status(403).json({ error: "Hanya Super Admin yang dapat membuat akun Super Admin" });
+    // Role-escalation guard: SUPER may assign any role; ADMIN_KONI may not mint
+    // SUPER_ADMIN_KONI or ADMIN_KONI accounts (canAssignRole). ADMIN_CABOR is
+    // further restricted to ATLET by the block below, so skip it here.
+    if (creator.role !== "ADMIN_CABOR" && !canAssignRole(creator.role, role)) {
+      res.status(403).json({
+        error:
+          creator.role === "ADMIN_KONI"
+            ? "Admin KONI hanya dapat membuat akun Admin Cabor atau Atlet"
+            : "Hanya Super Admin yang dapat membuat akun Super Admin",
+      });
       return;
     }
 
@@ -60,8 +109,9 @@ usersRouter.post(
         res.status(403).json({ error: "Akun admin cabor tidak terhubung ke cabang olahraga" });
         return;
       }
-      const atlet = await prisma.atlet.findUnique({
-        where: { id: athleteId! },
+      // #70 — don't provision a login for a soft-deleted (archived) athlete.
+      const atlet = await prisma.atlet.findFirst({
+        where: { id: athleteId!, deletedAt: null },
         select: { cabangOlahragaId: true },
       });
       if (!atlet) {
@@ -115,8 +165,11 @@ usersRouter.post(
   }),
 );
 
-// All remaining /users endpoints are SUPER_ADMIN_KONI only (specs/001-auth-rbac/spec.md §3, §5).
-usersRouter.use(requireRole(["SUPER_ADMIN_KONI"]));
+// Remaining /users endpoints are open to SUPER_ADMIN_KONI and ADMIN_KONI.
+// ADMIN_KONI's per-target limits (no acting on SUPER/ADMIN_KONI accounts) are
+// enforced in each mutating handler via loadManageableTarget/canAssignRole
+// (follow-up #68); GET list/view stays available to both.
+usersRouter.use(requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI"]));
 
 usersRouter.get(
   "/",
@@ -156,6 +209,8 @@ usersRouter.patch(
       return;
     }
 
+    if ((await loadManageableTarget(req, res)) === null) return;
+
     const { password, ...rest } = parsed.data;
 
     try {
@@ -194,6 +249,15 @@ usersRouter.patch(
 
     const { role, cabangOlahragaId, athleteId } = parsed.data;
 
+    // Guard the current target account, then the role being assigned.
+    if ((await loadManageableTarget(req, res)) === null) return;
+    if (!canAssignRole(req.user!.role, role)) {
+      res.status(403).json({
+        error: "Admin KONI tidak dapat menetapkan peran Super Admin atau Admin KONI",
+      });
+      return;
+    }
+
     try {
       const user = await prisma.user.update({
         where: { id: req.params.id },
@@ -230,6 +294,7 @@ usersRouter.delete(
       res.status(400).json({ error: "Tidak dapat menonaktifkan akun Anda sendiri" });
       return;
     }
+    if ((await loadManageableTarget(req, res)) === null) return;
     try {
       await prisma.user.update({ where: { id: req.params.id }, data: { isActive: false } });
       res.status(204).send();
@@ -251,6 +316,7 @@ usersRouter.delete(
       res.status(400).json({ error: "Tidak dapat menghapus akun Anda sendiri" });
       return;
     }
+    if ((await loadManageableTarget(req, res)) === null) return;
     try {
       await prisma.user.delete({ where: { id: req.params.id } });
       res.status(204).send();
@@ -280,6 +346,10 @@ usersRouter.post(
       const user = await prisma.user.findUnique({ where: { id: req.params.id } });
       if (!user) {
         res.status(404).json({ error: "Not found" });
+        return;
+      }
+      if (!canManageTarget(req.user!.role, user.role)) {
+        res.status(403).json({ error: "Forbidden" });
         return;
       }
 

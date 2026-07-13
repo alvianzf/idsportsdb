@@ -27,9 +27,11 @@ pelatihRouter.get(
       res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
-    const { cabor, search, expiring, page, pageSize } = parsed.data;
+    const { cabor, search, expiring, deleted, page, pageSize } = parsed.data;
 
     const conditions: Prisma.PelatihWhereInput[] = [];
+    // #70 — default lists show only live coaches; ?deleted=true shows the archive.
+    conditions.push(deleted ? { deletedAt: { not: null } } : { deletedAt: null });
     const effectiveCaborId = req.scopedCaborId ?? cabor;
     if (effectiveCaborId) conditions.push({ cabangOlahragaId: effectiveCaborId });
     if (search) {
@@ -67,8 +69,8 @@ pelatihRouter.get(
   "/:id",
   requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"]),
   asyncHandler(async (req, res) => {
-    const pelatih = await prisma.pelatih.findUnique({
-      where: { id: req.params.id },
+    const pelatih = await prisma.pelatih.findFirst({
+      where: { id: req.params.id, deletedAt: null },
       include: { cabangOlahraga: caborSummary },
     });
     if (!pelatih) {
@@ -119,7 +121,7 @@ pelatihRouter.patch(
   "/:id",
   requireRole(DATA_ADMIN_ROLES),
   asyncHandler(async (req, res) => {
-    const existing = await prisma.pelatih.findUnique({ where: { id: req.params.id } });
+    const existing = await prisma.pelatih.findFirst({ where: { id: req.params.id, deletedAt: null } });
     if (!existing) {
       res.status(404).json({ error: "Not found" });
       return;
@@ -162,9 +164,45 @@ pelatihRouter.patch(
   }),
 );
 
+// #70 — soft-delete: archive instead of destroying, so an accidental (bulk)
+// delete can be recovered.
 pelatihRouter.delete(
   "/:id",
   requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI"]),
+  asyncHandler(async (req, res) => {
+    const { count } = await prisma.pelatih.updateMany({
+      where: { id: req.params.id, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+    if (count === 0) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    res.status(204).send();
+  }),
+);
+
+// #70 — restore a soft-deleted coach (clear deletedAt).
+pelatihRouter.post(
+  "/:id/restore",
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI"]),
+  asyncHandler(async (req, res) => {
+    const { count } = await prisma.pelatih.updateMany({
+      where: { id: req.params.id, deletedAt: { not: null } },
+      data: { deletedAt: null },
+    });
+    if (count === 0) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    res.status(204).send();
+  }),
+);
+
+// #70 — permanent (hard) delete, SUPER_ADMIN only. Kept for purging the archive.
+pelatihRouter.delete(
+  "/:id/permanent",
+  requireRole(["SUPER_ADMIN_KONI"]),
   asyncHandler(async (req, res) => {
     try {
       await prisma.pelatih.delete({ where: { id: req.params.id } });
