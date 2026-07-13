@@ -2,7 +2,7 @@ import { z } from "zod";
 import { ROLES } from "@inasportdb/shared-types";
 
 export const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().toLowerCase().email(),
   password: z.string().min(1),
 });
 
@@ -35,7 +35,7 @@ const roleScopeRefinement = (
 
 export const createUserSchema = z
   .object({
-    email: z.string().email(),
+    email: z.string().trim().toLowerCase().email(),
     fullName: z.string().min(1),
     // Password is now auto-generated on the server; field accepted but ignored if sent
     password: z.string().min(8).optional(),
@@ -47,7 +47,7 @@ export const createUserSchema = z
 
 export const updateUserSchema = z.object({
   fullName: z.string().min(1).optional(),
-  email: z.string().email().optional(),
+  email: z.string().trim().toLowerCase().email().optional(),
   isActive: z.boolean().optional(),
   password: z.string().min(8).optional(),
 });
