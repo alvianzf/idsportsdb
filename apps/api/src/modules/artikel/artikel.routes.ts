@@ -10,6 +10,7 @@ import { isNotFoundError, isUniqueConstraintError } from "../../lib/prismaErrors
 import { uploader, publicUrl, uploadRoot, imageFileFilter } from "../../lib/storage.js";
 import { createArtikelSchema, updateArtikelSchema, listArtikelQuerySchema } from "./artikel.schema.js";
 import { emit } from "../../lib/socket.js";
+import { regenerateSitemap } from "../../lib/sitemap.js";
 
 export const artikelRouter = Router();
 artikelRouter.use(authenticate, requireRole(UNSCOPED_ADMIN_ROLES));
@@ -124,6 +125,7 @@ artikelRouter.post(
           include: { author: authorSummary },
         });
         emit("artikel:change");
+        void regenerateSitemap();
         res.status(201).json(article);
         return;
       } catch (err) {
@@ -166,6 +168,7 @@ artikelRouter.patch(
         include: { author: authorSummary },
       });
       if (parsed.data.published !== undefined) emit("artikel:change");
+      void regenerateSitemap();
       res.json(article);
     } catch (err) {
       if (isNotFoundError(err)) {
@@ -230,6 +233,7 @@ artikelRouter.delete(
     try {
       await prisma.article.delete({ where: { id: req.params.id } });
       emit("artikel:change");
+      void regenerateSitemap();
       res.status(204).send();
     } catch (err) {
       if (isNotFoundError(err)) {

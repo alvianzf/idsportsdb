@@ -1,21 +1,31 @@
-# KONI Batam
+# KONI Kota Batam
 
-> Official athlete-management information system of KONI Kota Batam (Komite Olahraga Nasional Indonesia — Batam City, Riau Islands, Indonesia). It publishes public statistics and announcements about the city's registered athletes, coaches, sport disciplines (cabang olahraga), achievements (prestasi), and events.
+> **EN:** Official website of KONI Kota Batam (Komite Olahraga Nasional Indonesia — Batam City Sports Council), Riau Islands, Indonesia. It provides public information about the city's sport development: athletes, coaches, sport disciplines, achievements/medals, announcements, and the event calendar. An internal, access-controlled management system (Sistem Manajemen) powers the data; only aggregate public information is shown to visitors.
+>
+> **ID:** Situs resmi KONI Kota Batam (Komite Olahraga Nasional Indonesia — Kota Batam), Kepulauan Riau, Indonesia. Menyajikan informasi publik tentang pembinaan olahraga kota: atlet, pelatih, cabang olahraga, prestasi/medali, pengumuman, dan kalender event. Sistem manajemen internal yang terkontrol akses mengelola datanya; hanya informasi publik agregat yang ditampilkan kepada pengunjung.
 
-## Public pages
-- [Beranda / Home](https://konibatam.alvianzf.id/): overview, highlights, latest announcements and events.
-- [Data & Statistik](https://konibatam.alvianzf.id/data): public statistics — athlete, coach, and sport-discipline counts, plus achievement (medal) tallies.
-- [Pengumuman / Announcements](https://konibatam.alvianzf.id/artikel/): news and official announcements (each article at `/artikel/{slug}`).
+## About KONI Kota Batam / Tentang KONI Kota Batam
+- **EN:** KONI (Komite Olahraga Nasional Indonesia) is Indonesia's National Sports Committee; the Batam City chapter oversees and develops competitive sport across many disciplines (cabang olahraga) in Batam, Kepulauan Riau. This site publishes the city's public sport statistics and news.
+- **ID:** KONI (Komite Olahraga Nasional Indonesia) adalah komite olahraga nasional; cabang Kota Batam membina dan mengembangkan olahraga prestasi di berbagai cabang olahraga di Batam, Kepulauan Riau. Situs ini menerbitkan statistik dan berita olahraga publik kota.
 
-## About
-KONI Batam is the city-level Indonesian National Sports Committee. This application manages the registry of athletes and coaches across sport disciplines and reports their achievements. Public visitors can view aggregate statistics and announcements; individual administrative records are access-controlled and not public.
+## Public pages / Halaman publik
+- [Beranda / Home](https://konibatam.alvianzf.id/): overview, key statistics, latest news and upcoming events. / Ringkasan, statistik utama, berita terbaru, dan event mendatang.
+- [Data & Statistik / Data & Statistics](https://konibatam.alvianzf.id/data): public counts of active athletes, coaches, and sport disciplines, plus medal tallies. / Jumlah atlet aktif, pelatih, cabang olahraga, dan perolehan medali.
+- [Berita / News](https://konibatam.alvianzf.id/berita): official announcements and news; each article at `/artikel/{slug}`. / Pengumuman dan berita resmi; tiap artikel di `/artikel/{slug}`.
+- [Event / Events](https://konibatam.alvianzf.id/event): public sport-event calendar (championships, schedules). / Kalender event olahraga publik (kejuaraan, jadwal).
 
-## Key terms (Indonesian → English)
+## Key terms / Istilah kunci (Indonesian → English)
 - Atlet — athlete
 - Pelatih — coach
 - Cabang Olahraga (cabor) — sport discipline
 - Prestasi — achievement / medal record
-- Pengumuman — announcement
+- Perolehan medali — medal tally (Emas = Gold, Perak = Silver, Perunggu = Bronze)
+- Pengumuman / Berita — announcement / news
+- Event / Kejuaraan — event / championship
+
+## Notes / Catatan
+- **EN:** Individual administrative records (personal athlete data, documents) are access-controlled and NOT public; only aggregate statistics, published announcements, and public event listings are exposed.
+- **ID:** Data administratif individual (data pribadi atlet, dokumen) terkontrol akses dan TIDAK publik; hanya statistik agregat, pengumuman terbit, dan daftar event publik yang ditampilkan.
 
 ## Sitemap
 https://konibatam.alvianzf.id/sitemap.xml

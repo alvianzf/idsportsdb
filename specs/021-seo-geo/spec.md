@@ -23,14 +23,26 @@ No new entities. The sitemap reads existing `Article` rows (`published`, `slug`,
 |---|---|---|---|
 | `/robots.txt` | static (`apps/web/public/robots.txt` → dist root) | crawler policy | Allows public content + AI bots; disallows auth-gated admin paths; points to the sitemap. |
 | `/llms.txt` | static (`apps/web/public/llms.txt`) | markdown site description for LLMs | GEO/AIO entry point. |
-| `/sitemap.xml` | **API** `app.get("/sitemap.xml")` in `apps/api/src/server.ts`, proxied to the site root by nginx | `application/xml` urlset | Dynamic: static public pages (`/`, `/data`) + one `<url>` per **published** article (`/artikel/{slug}`, `lastmod` = `updatedAt`). Falls back to the static entries if the DB is unreachable. |
+| `/sitemap.xml` | **static file** in the web `dist` root (`/var/www/konibatam/sitemap.xml`) | `application/xml` urlset | Static public pages (`/`, `/data`, `/berita`, `/event`) + one `<url>` per **published** article (`/artikel/{slug}`, `lastmod` = `updatedAt`). |
 
 - Public site base URL: `PUBLIC_SITE_URL` env (default `https://konibatam.alvianzf.id`).
-- **Accessibility (required)**: all three URLs must resolve at the **site root**
-  (`https://konibatam.alvianzf.id/...`). `robots.txt` / `llms.txt` are static
-  files in the SPA `dist` root (served directly by nginx before the SPA
-  fallback). `sitemap.xml` is dynamic, so nginx adds `location = /sitemap.xml`
-  proxying to the API (`127.0.0.1:4100`) ahead of the SPA `try_files` fallback.
+- **Generation**: XML is produced by the shared `buildSitemapXml()` helper
+  (`apps/api/src/lib/sitemap.ts`), which is DB-outage-safe (static pages only if
+  articles can't be read). It runs **(a) at build/deploy time** — a step in the
+  CI/CD deploy workflow (`npm run sitemap`, `apps/api/prisma/generate-sitemap.ts`)
+  writes `sitemap.xml` into the web `dist` before it is rsynced to the server —
+  and **(b) at runtime** — `regenerateSitemap()` rewrites the file (path from
+  `SITEMAP_PATH`, e.g. `/var/www/konibatam/sitemap.xml`) fire-and-forget whenever
+  a berita/article is created, updated, or deleted, so the sitemap stays current
+  between deploys.
+- **Accessibility (required)**: all three URLs resolve at the **site root**
+  (`https://konibatam.alvianzf.id/...`) as static files under the SPA `dist`
+  root, served directly by nginx before the SPA `try_files` fallback (no proxy
+  needed).
+- **Bilingual (ID + EN)**: `llms.txt`, the meta description, Open Graph, Twitter
+  and JSON-LD content are written in both Indonesian and English, framed as
+  **public information about KONI Kota Batam** (the sport council); the internal
+  "Sistem Manajemen" is described only as the access-controlled backend.
 
 ## 4. UI / Pages
 
