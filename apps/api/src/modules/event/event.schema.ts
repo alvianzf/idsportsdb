@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { EVENT_LEVELS, EVENT_STATUSES } from "@inasportdb/shared-types";
 
-export const createEventSchema = z.object({
+const eventFields = z.object({
   namaKejuaraan: z.string().min(1),
   tingkat: z.enum(EVENT_LEVELS),
   lokasi: z.string().optional(),
@@ -12,7 +12,17 @@ export const createEventSchema = z.object({
   status: z.enum(EVENT_STATUSES).optional(),
 });
 
-export const updateEventSchema = createEventSchema.partial();
+function refineTanggal<T extends z.ZodTypeAny>(schema: T) {
+  return schema.refine(
+    (data: { tanggalMulai?: Date; tanggalSelesai?: Date }) =>
+      !data.tanggalMulai || !data.tanggalSelesai || data.tanggalSelesai >= data.tanggalMulai,
+    { message: "Tanggal selesai harus sama dengan atau setelah tanggal mulai", path: ["tanggalSelesai"] },
+  );
+}
+
+export const createEventSchema = refineTanggal(eventFields);
+
+export const updateEventSchema = refineTanggal(eventFields.partial());
 
 export const listEventQuerySchema = z.object({
   status: z.enum(EVENT_STATUSES).optional(),

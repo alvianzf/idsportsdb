@@ -108,6 +108,10 @@ export function EventListPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (form.tanggalSelesai && form.tanggalSelesai < form.tanggalMulai) {
+      toast.error("Tanggal selesai harus sama dengan atau setelah tanggal mulai.");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
