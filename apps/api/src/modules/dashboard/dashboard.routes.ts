@@ -20,7 +20,16 @@ type DashboardRow = {
   cabor: bigint;
   prestasi_tahun: bigint;
   prestasi_all: bigint;
-  per_cabor: Array<{ id: string; nama: string; atlet_count: string; pelatih_count: string }> | null;
+  per_cabor: Array<{
+    id: string;
+    nama: string;
+    logo_organisasi_url: string | null;
+    atlet_count: string;
+    pelatih_count: string;
+    gold_count: string;
+    silver_count: string;
+    bronze_count: string;
+  }> | null;
   prestasi_stats: Array<{ medali: string; cnt: string }> | null;
 };
 
@@ -29,22 +38,23 @@ type DashboardRow = {
 // $queryRaw with correlated subqueries and json_agg eliminates that entirely.
 // See specs/002-dashboard/spec.md §3.2 and specs/016-indexing/spec.md.
 async function fetchAll(caborId: string | null | undefined, tahun: number) {
+  // #70 — exclude soft-deleted rows from every count.
   const atletCaborFilter = caborId
     ? Prisma.sql`AND "cabangOlahragaId" = ${caborId}`
     : Prisma.empty;
   const pelatihCaborFilter = caborId
-    ? Prisma.sql`WHERE "cabangOlahragaId" = ${caborId}`
+    ? Prisma.sql`AND "cabangOlahragaId" = ${caborId}`
     : Prisma.empty;
   const prestasiCaborFilter = caborId
-    ? Prisma.sql`AND "atletId" IN (SELECT id FROM "Atlet" WHERE "cabangOlahragaId" = ${caborId})`
-    : Prisma.empty;
+    ? Prisma.sql`AND "atletId" IN (SELECT id FROM "Atlet" WHERE "deletedAt" IS NULL AND "cabangOlahragaId" = ${caborId})`
+    : Prisma.sql`AND "atletId" IN (SELECT id FROM "Atlet" WHERE "deletedAt" IS NULL)`;
 
   const [row] = await prisma.$queryRaw<DashboardRow[]>`
     SELECT
       (SELECT COUNT(*) FROM "Atlet"
-        WHERE "statusAtlet" = 'ACTIVE' ${atletCaborFilter}
+        WHERE "statusAtlet" = 'ACTIVE' AND "deletedAt" IS NULL ${atletCaborFilter}
       ) AS active_atlet,
-      (SELECT COUNT(*) FROM "Pelatih" ${pelatihCaborFilter}) AS pelatih,
+      (SELECT COUNT(*) FROM "Pelatih" WHERE "deletedAt" IS NULL ${pelatihCaborFilter}) AS pelatih,
       (SELECT COUNT(*) FROM "CabangOlahraga") AS cabor,
       (SELECT COUNT(*) FROM "Prestasi"
         WHERE tahun = ${tahun} ${prestasiCaborFilter}
@@ -55,9 +65,15 @@ async function fetchAll(caborId: string | null | undefined, tahun: number) {
           ? Prisma.sql`NULL`
           : Prisma.sql`(
               SELECT json_agg(r ORDER BY r.nama) FROM (
-                SELECT c.id, c.nama,
-                  (SELECT COUNT(*) FROM "Atlet"  a WHERE a."cabangOlahragaId" = c.id) AS atlet_count,
-                  (SELECT COUNT(*) FROM "Pelatih" p WHERE p."cabangOlahragaId" = c.id) AS pelatih_count
+                SELECT c.id, c.nama, c."logoOrganisasiUrl" AS logo_organisasi_url,
+                  (SELECT COUNT(*) FROM "Atlet"  a WHERE a."cabangOlahragaId" = c.id AND a."deletedAt" IS NULL) AS atlet_count,
+                  (SELECT COUNT(*) FROM "Pelatih" p WHERE p."cabangOlahragaId" = c.id AND p."deletedAt" IS NULL) AS pelatih_count,
+                  (SELECT COUNT(*) FROM "Prestasi" pr JOIN "Atlet" pa ON pa.id = pr."atletId"
+                    WHERE pa."cabangOlahragaId" = c.id AND pa."deletedAt" IS NULL AND pr.medali = 'GOLD')   AS gold_count,
+                  (SELECT COUNT(*) FROM "Prestasi" pr JOIN "Atlet" pa ON pa.id = pr."atletId"
+                    WHERE pa."cabangOlahragaId" = c.id AND pa."deletedAt" IS NULL AND pr.medali = 'SILVER') AS silver_count,
+                  (SELECT COUNT(*) FROM "Prestasi" pr JOIN "Atlet" pa ON pa.id = pr."atletId"
+                    WHERE pa."cabangOlahragaId" = c.id AND pa."deletedAt" IS NULL AND pr.medali = 'BRONZE') AS bronze_count
                 FROM "CabangOlahraga" c
               ) r
             )`
@@ -82,8 +98,14 @@ async function fetchAll(caborId: string | null | undefined, tahun: number) {
     ? row.per_cabor.map((c) => ({
         cabangOlahragaId: c.id,
         nama: c.nama,
+        logoOrganisasiUrl: c.logo_organisasi_url,
         atletCount: Number(c.atlet_count),
         pelatihCount: Number(c.pelatih_count),
+        medals: {
+          GOLD: Number(c.gold_count),
+          SILVER: Number(c.silver_count),
+          BRONZE: Number(c.bronze_count),
+        },
       }))
     : null;
 
@@ -131,7 +153,8 @@ dashboardRouter.get(
       select: {
         id: true,
         nama: true,
-        _count: { select: { atlets: true, pelatihs: true } },
+        // #70 — don't count soft-deleted athletes/coaches.
+        _count: { select: { atlets: { where: { deletedAt: null } }, pelatihs: { where: { deletedAt: null } } } },
       },
       orderBy: { nama: "asc" },
     });
@@ -157,9 +180,10 @@ dashboardRouter.get(
     }
 
     const caborId = req.scopedCaborId;
+    // #70 — exclude prestasi belonging to soft-deleted athletes.
     const prestasiCaborFilter = caborId
-      ? Prisma.sql`AND "atletId" IN (SELECT id FROM "Atlet" WHERE "cabangOlahragaId" = ${caborId})`
-      : Prisma.empty;
+      ? Prisma.sql`AND "atletId" IN (SELECT id FROM "Atlet" WHERE "deletedAt" IS NULL AND "cabangOlahragaId" = ${caborId})`
+      : Prisma.sql`AND "atletId" IN (SELECT id FROM "Atlet" WHERE "deletedAt" IS NULL)`;
 
     switch (parsed.data.groupBy) {
       case "tahun": {

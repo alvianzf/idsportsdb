@@ -232,6 +232,7 @@ model Atlet {
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+  deletedAt         DateTime?
 
   documents        AtletDocument[]
   prestasis        Prestasi[]
@@ -247,6 +248,7 @@ model Atlet {
   @@index([statusAtlet])
   @@index([kecamatan])
   @@index([cabangOlahragaId, statusAtlet])
+  @@index([deletedAt])
 }
 
 // Join table for athletes who compete in more than one sport discipline.
@@ -291,9 +293,11 @@ model Pelatih {
 
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+  deletedAt          DateTime?
 
   @@index([cabangOlahragaId])
   @@index([masaBerlakuAkhir])
+  @@index([deletedAt])
 }
 
 model PengurusCabor {

@@ -17,7 +17,9 @@ const ACTION_TONE: Record<string, "success" | "info" | "danger" | "warning" | "n
   UPDATE_ROLE: "info",
   RESET_PASSWORD: "warning",
   DEACTIVATE: "warning",
+  RESTORE: "success",
   DELETE: "danger",
+  PERMANENT_DELETE: "danger",
   REJECTED: "danger",
   APPROVED: "success",
 };

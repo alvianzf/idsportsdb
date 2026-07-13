@@ -216,19 +216,22 @@ const router = createBrowserRouter([
         ),
       },
 
-      // Users (Super Admin only)
+      // Users — SUPER_ADMIN_KONI and ADMIN_KONI (the API enforces ADMIN_KONI's
+      // per-target limits: no acting on SUPER/ADMIN_KONI accounts). Follow-up #68.
       {
         path: "users",
         element: (
-          <RequireRole roles={["SUPER_ADMIN_KONI"]}>
+          <RequireRole roles={["SUPER_ADMIN_KONI", "ADMIN_KONI"]}>
             <Suspense fallback={<PageLoader />}><UsersListPage /></Suspense>
           </RequireRole>
         ),
       },
       {
+        // #68 — ADMIN_KONI and ADMIN_CABOR may provision logins (the API enforces
+        // role/cabor limits); user list & edit stay SUPER_ADMIN_KONI-only.
         path: "users/new",
         element: (
-          <RequireRole roles={["SUPER_ADMIN_KONI"]}>
+          <RequireRole roles={["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"]}>
             <Suspense fallback={<PageLoader />}><UsersFormPage /></Suspense>
           </RequireRole>
         ),
@@ -236,7 +239,7 @@ const router = createBrowserRouter([
       {
         path: "users/:id/edit",
         element: (
-          <RequireRole roles={["SUPER_ADMIN_KONI"]}>
+          <RequireRole roles={["SUPER_ADMIN_KONI", "ADMIN_KONI"]}>
             <Suspense fallback={<PageLoader />}><UsersFormPage /></Suspense>
           </RequireRole>
         ),

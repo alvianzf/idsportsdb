@@ -5,6 +5,7 @@ import { ROLES, ROLE_LABELS, type Role } from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Badge, Select, DataTable, type Column, type BulkAction } from "../../components/ui";
 import { api } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
+import { useAuthStore } from "../../store/authStore";
 import toast from "react-hot-toast";
 
 interface UserRow {
@@ -29,6 +30,13 @@ export function UsersListPage() {
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [roleFilter, setRoleFilter] = useState<Role | "">("");
   const [error, setError] = useState<string | null>(null);
+  const currentRole = useAuthStore((state) => state.user?.role);
+
+  // ADMIN_KONI may not act on SUPER_ADMIN_KONI / ADMIN_KONI accounts (API 403s
+  // too); hide their row actions. SUPER_ADMIN_KONI may manage everyone.
+  const canManage = (row: UserRow) =>
+    currentRole !== "ADMIN_KONI" ||
+    (row.role !== "SUPER_ADMIN_KONI" && row.role !== "ADMIN_KONI");
 
   function load() {
     setUsers(null);
@@ -138,40 +146,43 @@ export function UsersListPage() {
     {
       key: "aksi",
       label: "Aksi",
-      render: (user) => (
-        <div className="flex flex-wrap gap-2">
-          {/* Edit — neutral outline */}
-          <Link to={`/users/${user.id}/edit`}>
-            <Button variant="outline">Edit</Button>
-          </Link>
-          {/* Reset Password — purple */}
-          <Button
-            variant="outline"
-            onClick={() => handleResetPassword(user)}
-            title="Reset kata sandi — kirim ulang email dengan kata sandi baru"
-            className="border-purple-300 text-purple-600 hover:bg-purple-50"
-          >
-            <RotateCcw size={14} /> Reset Password
-          </Button>
-          {/* Deactivate — amber/warning */}
-          {user.isActive && (
+      render: (user) =>
+        canManage(user) ? (
+          <div className="flex flex-wrap gap-2">
+            {/* Edit — neutral outline */}
+            <Link to={`/users/${user.id}/edit`}>
+              <Button variant="outline">Edit</Button>
+            </Link>
+            {/* Reset Password — purple */}
             <Button
               variant="outline"
-              onClick={() => handleDeactivate(user)}
-              className="border-warning/40 text-warning hover:bg-warning/10"
+              onClick={() => handleResetPassword(user)}
+              title="Reset kata sandi — kirim ulang email dengan kata sandi baru"
+              className="border-purple-300 text-purple-600 hover:bg-purple-50"
             >
-              Nonaktifkan
+              <RotateCcw size={14} /> Reset Password
             </Button>
-          )}
-          {/* Hard delete — red/danger */}
-          <Button
-            variant="danger"
-            onClick={() => handleDelete(user)}
-          >
-            <Trash2 size={14} /> Hapus
-          </Button>
-        </div>
-      ),
+            {/* Deactivate — amber/warning */}
+            {user.isActive && (
+              <Button
+                variant="outline"
+                onClick={() => handleDeactivate(user)}
+                className="border-warning/40 text-warning hover:bg-warning/10"
+              >
+                Nonaktifkan
+              </Button>
+            )}
+            {/* Hard delete — red/danger */}
+            <Button
+              variant="danger"
+              onClick={() => handleDelete(user)}
+            >
+              <Trash2 size={14} /> Hapus
+            </Button>
+          </div>
+        ) : (
+          <span className="text-sm text-neutral-400">—</span>
+        ),
     },
   ];
 

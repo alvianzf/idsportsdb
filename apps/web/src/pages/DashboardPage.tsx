@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Users, UserCog, Building2, Trophy, Medal, ArrowLeftRight } from "lucide-react";
-import { MEDAL_LABELS, type Medal as MedalType } from "@inasportdb/shared-types";
+import { Users, UserCog, Building2, Trophy, Medal, ArrowLeftRight, UserPlus, Upload, CalendarPlus, Dumbbell } from "lucide-react";
+import { MEDAL_LABELS, DATA_ADMIN_ROLES, type Medal as MedalType } from "@inasportdb/shared-types";
 import { Card, PageHeader, Badge } from "../components/ui";
-import { api } from "../lib/api";
+import { api, resolveFileUrl } from "../lib/api";
 import { getSocket } from "../lib/socket";
 import { useAuthStore } from "../store/authStore";
 
@@ -19,8 +19,10 @@ interface DashboardSummary {
 interface PerCaborStat {
   cabangOlahragaId: string;
   nama: string;
+  logoOrganisasiUrl: string | null;
   atletCount: number;
   pelatihCount: number;
+  medals: { GOLD: number; SILVER: number; BRONZE: number };
 }
 
 interface PrestasiStat {
@@ -48,6 +50,65 @@ function StatCard({ label, value, icon: Icon }: StatCardProps) {
   );
 }
 
+// #73 — dashboard quick action tile linking to a common create/import flow.
+function QuickAction({ to, label, icon: Icon }: { to: string; label: string; icon: typeof Users }) {
+  return (
+    <Link to={to}>
+      <Card className="flex items-center gap-3 transition-colors hover:bg-neutral-50">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary">
+          <Icon size={18} />
+        </div>
+        <span className="text-sm font-medium text-neutral-800">{label}</span>
+      </Card>
+    </Link>
+  );
+}
+
+// Per-cabor card — mirrors the landing page's stat-tile look (white rounded-xl
+// card + red gradient icon chip). Clickable to the cabor admin page. Shows the
+// cabor's national-organisation logo, falling back to a generic sport icon.
+function CaborStatCard({ c }: { c: PerCaborStat }) {
+  const medals = [
+    { label: "Emas", value: c.medals.GOLD, dot: "bg-[#f7b500]" },
+    { label: "Perak", value: c.medals.SILVER, dot: "bg-[#9ca3af]" },
+    { label: "Perunggu", value: c.medals.BRONZE, dot: "bg-[#c9793a]" },
+  ];
+  return (
+    <Link
+      to={`/cabor/${c.cabangOlahragaId}`}
+      className="group flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-lg shadow-neutral-900/5 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+    >
+      <div className="flex items-center gap-3">
+        {c.logoOrganisasiUrl ? (
+          <img
+            src={resolveFileUrl(c.logoOrganisasiUrl)}
+            alt={c.nama}
+            className="h-11 w-11 shrink-0 rounded-lg bg-white object-contain"
+          />
+        ) : (
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#990000] to-[#d92626] text-white shadow-md shadow-red-900/30">
+            <Dumbbell size={20} />
+          </div>
+        )}
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-neutral-900 group-hover:text-primary">{c.nama}</p>
+          <p className="text-xs font-medium text-neutral-500">
+            {c.atletCount} atlet &middot; {c.pelatihCount} pelatih
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3 border-t border-neutral-100 pt-2 text-xs font-medium text-neutral-600">
+        {medals.map((m) => (
+          <span key={m.label} className="flex items-center gap-1.5" title={m.label}>
+            <span className={`h-2 w-2 rounded-full ${m.dot}`} />
+            <span className="tabular-nums">{m.value}</span>
+          </span>
+        ))}
+      </div>
+    </Link>
+  );
+}
+
 const MEDAL_BADGE_TONE: Record<MedalType, "gold" | "silver" | "bronze" | "neutral"> = {
   GOLD: "gold",
   SILVER: "silver",
@@ -63,6 +124,7 @@ const MEDAL_BADGE_TONE: Record<MedalType, "gold" | "silver" | "bronze" | "neutra
 export function DashboardPage() {
   const role = useAuthStore((state) => state.user?.role);
   const isUnscopedAdmin = role === "SUPER_ADMIN_KONI" || role === "ADMIN_KONI";
+  const canManageAtlet = role ? DATA_ADMIN_ROLES.includes(role) : false;
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
@@ -165,6 +227,17 @@ export function DashboardPage() {
         </Link>
       )}
 
+      {(canManageAtlet || isUnscopedAdmin) && (
+        <div className="mb-4">
+          <p className="mb-2 text-sm text-neutral-500">Aksi Cepat</p>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+            {canManageAtlet && <QuickAction to="/atlet/new" label="Tambah Atlet" icon={UserPlus} />}
+            {canManageAtlet && <QuickAction to="/atlet?import=1" label="Impor Atlet" icon={Upload} />}
+            {isUnscopedAdmin && <QuickAction to="/events" label="Buat Event" icon={CalendarPlus} />}
+          </div>
+        </div>
+      )}
+
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm text-neutral-500">Data Prestasi</p>
         <select
@@ -196,51 +269,44 @@ export function DashboardPage() {
         </p>
       </div>
 
-      <div className="mt-4 grid gap-4 md:mt-6 md:grid-cols-2">
-        {isUnscopedAdmin && (
-          <Card>
-            <h2 className="mb-3 text-sm font-semibold text-neutral-900">Statistik Atlet per Cabor</h2>
-            {perCabor === null ? (
-              !error && <p className="text-sm text-neutral-500">Memuat data...</p>
-            ) : perCabor.length === 0 ? (
-              <p className="text-sm text-neutral-500">Belum ada cabang olahraga.</p>
-            ) : (
-              <ul className="divide-y divide-neutral-100">
-                {perCabor.map((c) => (
-                  <li key={c.cabangOlahragaId} className="flex items-center justify-between py-2 text-sm">
-                    <span className="text-neutral-700">{c.nama}</span>
-                    <span className="text-neutral-500">
-                      {c.atletCount} atlet &middot; {c.pelatihCount} pelatih
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        )}
+      {isUnscopedAdmin && (
+        <section className="mt-4 md:mt-6">
+          <h2 className="mb-3 text-sm font-semibold text-neutral-900">Statistik Atlet per Cabor</h2>
+          {perCabor === null ? (
+            !error && <p className="text-sm text-neutral-500">Memuat data...</p>
+          ) : perCabor.length === 0 ? (
+            <p className="text-sm text-neutral-500">Belum ada cabang olahraga.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 md:gap-4">
+              {perCabor.map((c) => (
+                <CaborStatCard key={c.cabangOlahragaId} c={c} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
-        <Card className="flex items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary">
-            <Medal size={18} />
-          </div>
-          <div className="w-full">
-            <h2 className="mb-2 text-sm font-semibold text-neutral-900">Statistik Prestasi (Medali)</h2>
-            {prestasiStats === null ? (
-              !error && <p className="text-sm text-neutral-500">Memuat data...</p>
-            ) : prestasiStats.length === 0 ? (
-              <p className="text-sm text-neutral-500">Belum ada data prestasi.</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {prestasiStats.filter((stat) => stat.key !== "NONE").map((stat) => (
-                  <Badge key={stat.key} tone={MEDAL_BADGE_TONE[stat.key as MedalType] ?? "neutral"}>
-                    {MEDAL_LABELS[stat.key as MedalType] ?? stat.key}: {stat.count}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-        </Card>
-      </div>
+      <Card className="mt-4 flex items-start gap-3 md:mt-6">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary">
+          <Medal size={18} />
+        </div>
+        <div className="w-full">
+          <h2 className="mb-2 text-sm font-semibold text-neutral-900">Statistik Prestasi (Medali)</h2>
+          {prestasiStats === null ? (
+            !error && <p className="text-sm text-neutral-500">Memuat data...</p>
+          ) : prestasiStats.length === 0 ? (
+            <p className="text-sm text-neutral-500">Belum ada data prestasi.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {prestasiStats.filter((stat) => stat.key !== "NONE").map((stat) => (
+                <Badge key={stat.key} tone={MEDAL_BADGE_TONE[stat.key as MedalType] ?? "neutral"}>
+                  {MEDAL_LABELS[stat.key as MedalType] ?? stat.key}: {stat.count}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }

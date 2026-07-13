@@ -8,7 +8,7 @@ import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole, scopeToCabor } from "../../middleware/auth.js";
 import { isNotFoundError } from "../../lib/prismaErrors.js";
 import { uploader, publicUrl, uploadRoot, documentFileFilter } from "../../lib/storage.js";
-import { atletInCaborFilter, caborTambahanInclude, canAccessAtlet } from "../atlet/atlet.service.js";
+import { atletInCaborFilter, atletNotDeleted, caborTambahanInclude, canAccessAtlet } from "../atlet/atlet.service.js";
 import { emit } from "../../lib/socket.js";
 import { createPrestasiSchema, updatePrestasiSchema, listPrestasiQuerySchema } from "./prestasi.schema.js";
 import { writeAudit } from "../../lib/audit.js";
@@ -27,8 +27,8 @@ atletPrestasiRouter.get(
   "/:atletId/prestasi",
   requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ATLET"]),
   asyncHandler(async (req, res) => {
-    const atlet = await prisma.atlet.findUnique({
-      where: { id: req.params.atletId },
+    const atlet = await prisma.atlet.findFirst({
+      where: { id: req.params.atletId, ...atletNotDeleted },
       include: caborTambahanInclude,
     });
     if (!atlet) {
@@ -52,8 +52,8 @@ atletPrestasiRouter.post(
   "/:atletId/prestasi",
   requireRole(DATA_ADMIN_ROLES),
   asyncHandler(async (req, res) => {
-    const atlet = await prisma.atlet.findUnique({
-      where: { id: req.params.atletId },
+    const atlet = await prisma.atlet.findFirst({
+      where: { id: req.params.atletId, ...atletNotDeleted },
       include: caborTambahanInclude,
     });
     if (!atlet) {
