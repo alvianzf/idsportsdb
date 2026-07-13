@@ -94,6 +94,10 @@ export function PrestasiListPage() {
         if (cancelled) return;
         setItems(res.data.items);
         setTotal(res.data.total);
+        // After a bulk delete the current page can fall out of range (empty page,
+        // no pager to escape) — clamp back to the last real page.
+        const totalPages = Math.max(1, Math.ceil(res.data.total / pageSize));
+        if (page > totalPages) setPage(totalPages);
       })
       .catch(() => {
         if (!cancelled) setError(true);

@@ -83,12 +83,35 @@ export function UsersFormPage() {
     setSaving(true);
     try {
       if (isEdit) {
+        // Two separate endpoints (name/email, then role+scoping). If the second
+        // fails the first has already persisted, so reconcile the form with the
+        // server's actual state and tell the user exactly what did save.
         await api.patch(`/users/${id}`, { fullName: form.fullName, email: form.email });
-        await api.patch(`/users/${id}/role`, {
-          role: form.role,
-          cabangOlahragaId: form.role === "ADMIN_CABOR" ? form.cabangOlahragaId || null : null,
-          athleteId: form.role === "ATLET" ? form.athleteId || null : null,
-        });
+        try {
+          await api.patch(`/users/${id}/role`, {
+            role: form.role,
+            cabangOlahragaId: form.role === "ADMIN_CABOR" ? form.cabangOlahragaId || null : null,
+            athleteId: form.role === "ATLET" ? form.athleteId || null : null,
+          });
+        } catch (roleErr) {
+          try {
+            const res = await api.get(`/users/${id}`);
+            const u = res.data;
+            setForm({
+              email: u.email ?? "",
+              fullName: u.fullName ?? "",
+              role: u.role ?? "ADMIN_KONI",
+              cabangOlahragaId: u.cabangOlahragaId ?? "",
+              athleteId: u.athleteId ?? "",
+            });
+          } catch {
+            // Reconciling refetch failed too — leave the form as-is.
+          }
+          setError(
+            `Nama dan email tersimpan, tetapi perubahan peran gagal (${extractError(roleErr)}). Form dimuat ulang — silakan coba ubah peran lagi.`,
+          );
+          return;
+        }
         toast.success("Pengguna berhasil diubah.");
       } else {
         await api.post("/users", {

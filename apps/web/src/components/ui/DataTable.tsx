@@ -1,4 +1,4 @@
-import { useState, Fragment, type ReactNode } from "react";
+import { useEffect, useState, Fragment, type ReactNode } from "react";
 import { ChevronDown, ChevronUp, ChevronsUpDown, Trash2 } from "lucide-react";
 import { Button } from "./Button";
 
@@ -51,6 +51,12 @@ export function DataTable<T extends { id: string }>({
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+
+  // Drop stale selection whenever the rows change (paging/filtering/search/reload),
+  // so a bulk action can never act on ids the user can no longer see.
+  useEffect(() => {
+    setSelected(new Set());
+  }, [rows]);
 
   const hasBulk = Boolean(bulkActions?.length);
   const hasExpand = Boolean(expandContent);

@@ -1,5 +1,6 @@
 import { useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { FileText, Upload, X } from "lucide-react";
+import toast from "react-hot-toast";
 
 interface DropZoneProps {
   /** MIME type or extension filter, e.g. "image/*" or ".pdf,.docx" */
@@ -20,6 +21,23 @@ interface DropZoneProps {
 
 function isImage(name: string) {
   return /\.(png|jpe?g|gif|webp|svg)$/i.test(name);
+}
+
+/**
+ * Whether a file matches the `accept` filter (extensions, mime types, or wildcards
+ * like image/*). The `accept` attribute only gates the file picker, so drag-drop
+ * must check this itself. Type only — size is left to the server.
+ */
+function matchesAccept(file: File, accept?: string): boolean {
+  const tokens = (accept ?? "").split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
+  if (tokens.length === 0) return true;
+  const name = file.name.toLowerCase();
+  const type = file.type.toLowerCase();
+  return tokens.some((token) => {
+    if (token.startsWith(".")) return name.endsWith(token);
+    if (token.endsWith("/*")) return type.startsWith(token.slice(0, -1));
+    return type === token;
+  });
 }
 
 export function DropZone({
@@ -76,7 +94,12 @@ export function DropZone({
     e.preventDefault();
     setDragging(false);
     const f = e.dataTransfer.files?.[0];
-    if (f) apply(f);
+    if (!f) return;
+    if (!matchesAccept(f, accept)) {
+      toast.error(`Jenis berkas tidak didukung. Gunakan ${accept}.`);
+      return;
+    }
+    apply(f);
   }
 
   const displayUrl = previewUrl ?? existingUrl ?? null;
