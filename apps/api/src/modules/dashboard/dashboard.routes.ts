@@ -20,7 +20,16 @@ type DashboardRow = {
   cabor: bigint;
   prestasi_tahun: bigint;
   prestasi_all: bigint;
-  per_cabor: Array<{ id: string; nama: string; atlet_count: string; pelatih_count: string }> | null;
+  per_cabor: Array<{
+    id: string;
+    nama: string;
+    logo_organisasi_url: string | null;
+    atlet_count: string;
+    pelatih_count: string;
+    gold_count: string;
+    silver_count: string;
+    bronze_count: string;
+  }> | null;
   prestasi_stats: Array<{ medali: string; cnt: string }> | null;
 };
 
@@ -55,9 +64,15 @@ async function fetchAll(caborId: string | null | undefined, tahun: number) {
           ? Prisma.sql`NULL`
           : Prisma.sql`(
               SELECT json_agg(r ORDER BY r.nama) FROM (
-                SELECT c.id, c.nama,
+                SELECT c.id, c.nama, c."logoOrganisasiUrl" AS logo_organisasi_url,
                   (SELECT COUNT(*) FROM "Atlet"  a WHERE a."cabangOlahragaId" = c.id) AS atlet_count,
-                  (SELECT COUNT(*) FROM "Pelatih" p WHERE p."cabangOlahragaId" = c.id) AS pelatih_count
+                  (SELECT COUNT(*) FROM "Pelatih" p WHERE p."cabangOlahragaId" = c.id) AS pelatih_count,
+                  (SELECT COUNT(*) FROM "Prestasi" pr JOIN "Atlet" pa ON pa.id = pr."atletId"
+                    WHERE pa."cabangOlahragaId" = c.id AND pr.medali = 'GOLD')   AS gold_count,
+                  (SELECT COUNT(*) FROM "Prestasi" pr JOIN "Atlet" pa ON pa.id = pr."atletId"
+                    WHERE pa."cabangOlahragaId" = c.id AND pr.medali = 'SILVER') AS silver_count,
+                  (SELECT COUNT(*) FROM "Prestasi" pr JOIN "Atlet" pa ON pa.id = pr."atletId"
+                    WHERE pa."cabangOlahragaId" = c.id AND pr.medali = 'BRONZE') AS bronze_count
                 FROM "CabangOlahraga" c
               ) r
             )`
@@ -82,8 +97,14 @@ async function fetchAll(caborId: string | null | undefined, tahun: number) {
     ? row.per_cabor.map((c) => ({
         cabangOlahragaId: c.id,
         nama: c.nama,
+        logoOrganisasiUrl: c.logo_organisasi_url,
         atletCount: Number(c.atlet_count),
         pelatihCount: Number(c.pelatih_count),
+        medals: {
+          GOLD: Number(c.gold_count),
+          SILVER: Number(c.silver_count),
+          BRONZE: Number(c.bronze_count),
+        },
       }))
     : null;
 

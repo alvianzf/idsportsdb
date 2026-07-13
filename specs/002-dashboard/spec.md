@@ -41,8 +41,10 @@ No new entities. Aggregates over `Atlet`, `Pelatih`, `CabangOlahraga`, `Prestasi
   perCabor: Array<{             // null for ADMIN_CABOR (scoped to one cabor)
     cabangOlahragaId: string;
     nama: string;
+    logoOrganisasiUrl: string | null; // national-org logo for the card; null → sport-icon fallback
     atletCount: number;
     pelatihCount: number;
+    medals: { GOLD: number; SILVER: number; BRONZE: number }; // per-cabor medal tally (NONE excluded)
   }> | null;
   prestasiStats: Array<{ key: string; count: number }>; // grouped by medali
 }
@@ -72,10 +74,20 @@ No new entities. Aggregates over `Atlet`, `Pelatih`, `CabangOlahraga`, `Prestasi
 ## 4. UI / Pages
 
 - **Route**: `/dashboard` (`apps/web/src/pages/DashboardPage.tsx`)
-- **Mobile**: stat cards in a `grid-cols-2` grid; "Statistik per Cabor" and
-  "Statistik Prestasi" cards stack vertically below.
-- **Desktop**: stat cards in `grid-cols-4`; stats cards in `md:grid-cols-2`.
-- **Components**: `StatCard` (icon + label + value), `Card`, `Badge`.
+- **Mobile**: stat cards in a `grid-cols-2` grid; the per-cabor card grid
+  (single column) and the full-width "Statistik Prestasi" card stack below.
+- **Desktop**: stat cards in `grid-cols-4`; per-cabor cards in a responsive
+  grid (`sm:grid-cols-2 lg:grid-cols-3`); the medals card spans full width.
+- **Components**: `StatCard` (icon + label + value), `CaborStatCard`, `Card`,
+  `Badge`.
+- **Statistik Atlet per Cabor** (SUPER_ADMIN_KONI / ADMIN_KONI only): rendered
+  as a responsive **grid of cards** (not a table), styled to match the public
+  landing page's stat tiles (white `rounded-xl` card + red gradient icon chip).
+  Each card shows the cabor's `logoOrganisasiUrl` image, **falling back to a
+  generic sport icon (`Dumbbell`) inside the gradient chip when the cabor has
+  no logo**, its name, athlete/coach counts, and its Emas/Perak/Perunggu medal
+  tally. Each card is a `Link` to `/cabor/:id` (the cabor admin detail page)
+  with hover affordance. Section is hidden for ADMIN_CABOR (`perCabor` null).
 - **Year filter**: A `<select>` above the stat grid lets the user pick a
   `tahun` (year) from the current year back to 2020. Changing the year
   re-fetches `GET /dashboard/all?tahun=<year>` and updates `prestasiCount`
@@ -122,6 +134,18 @@ No new entities. Aggregates over `Atlet`, `Pelatih`, `CabangOlahraga`, `Prestasi
 ---
 
 ## Changelog
+
+### Per-cabor statistik as card grid (changed)
+- "Statistik Atlet per Cabor" changed from a table/list to a responsive **grid
+  of cards** matching the public landing page's stat-tile styling. Each card
+  shows the cabor's `logoOrganisasiUrl` logo (falling back to a `Dumbbell`
+  sport icon in a red gradient chip when absent), athlete/coach counts, and a
+  per-cabor Emas/Perak/Perunggu medal tally, and links to `/cabor/:id`.
+- `/dashboard/all` `perCabor` entries now include `logoOrganisasiUrl` and a
+  `medals` object (`{ GOLD, SILVER, BRONZE }`, `NONE` excluded), added to the
+  single `$queryRaw` (correlated sub-SELECTs on `Prestasi` joined to `Atlet`).
+- The "Statistik Prestasi (Medali)" card is now full-width (previously shared a
+  `md:grid-cols-2` row with the per-cabor section).
 
 ### Medal tally excludes NONE (changed)
 - Dashboard "Statistik Prestasi (Medali)" badge list now filters out `NONE`
