@@ -214,6 +214,19 @@ monitoringRouter.get(
   }),
 );
 
+// Lightweight count for surfacing pending mutasi to approvers (nav/dashboard
+// badge). Kept separate from the queue list so it can be polled cheaply.
+monitoringRouter.get(
+  "/mutasi/pending-count",
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI"]),
+  asyncHandler(async (_req, res) => {
+    const count = await prisma.monitoringEvent.count({
+      where: { type: "MUTATION", mutationStatus: "PENDING" },
+    });
+    res.json({ count });
+  }),
+);
+
 monitoringRouter.patch(
   "/:id/mutasi",
   requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI"]),
@@ -256,10 +269,16 @@ monitoringRouter.patch(
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      const updatedEvent = await tx.monitoringEvent.update({
-        where: { id: req.params.id },
+      // Atomic status transition: the guard above reads the row outside the tx,
+      // so two concurrent approve/reject requests can both pass it. This
+      // conditional update only flips a still-PENDING row; if a concurrent
+      // request already decided this mutation, count === 0 and we roll back —
+      // closing the TOCTOU race that left event status and cabor out of sync.
+      const { count } = await tx.monitoringEvent.updateMany({
+        where: { id: req.params.id, type: "MUTATION", mutationStatus: "PENDING" },
         data: { mutationStatus: parsed.data.status },
       });
+      if (count === 0) return null;
 
       if (parsed.data.status === "APPROVED" && event.toValue) {
         const atlet = await tx.atlet.findUnique({ where: { id: event.atletId } });
@@ -272,8 +291,13 @@ monitoringRouter.patch(
         });
       }
 
-      return updatedEvent;
+      return tx.monitoringEvent.findUnique({ where: { id: req.params.id } });
     });
+
+    if (!updated) {
+      res.status(409).json({ error: "Mutasi ini sudah diproses" });
+      return;
+    }
 
     emit("monitoring:change");
     res.json(updated);
