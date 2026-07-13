@@ -19,7 +19,7 @@ import { streamExcel } from "../../lib/excel.js";
 import { streamPdf, drawPdfTable } from "../../lib/pdf.js";
 import { isUniqueConstraintError } from "../../lib/prismaErrors.js";
 import { createAtletSchema, listAtletQuerySchema } from "./atlet.schema.js";
-import { atletInCaborFilter } from "./atlet.service.js";
+import { atletInCaborFilter, atletNotDeleted } from "./atlet.service.js";
 import { emit } from "../../lib/socket.js";
 
 // Revisi 2026-07-12: bulk download (Excel/CSV/PDF) and bulk update via
@@ -60,7 +60,7 @@ atletBulkRouter.get(
     }
     const { format, cabor, status, kecamatan, search } = parsed.data;
 
-    const conditions: Prisma.AtletWhereInput[] = [];
+    const conditions: Prisma.AtletWhereInput[] = [atletNotDeleted];
     const effectiveCaborId = req.scopedCaborId ?? cabor;
     if (effectiveCaborId) conditions.push(atletInCaborFilter(effectiveCaborId));
     if (status) conditions.push({ statusAtlet: status });

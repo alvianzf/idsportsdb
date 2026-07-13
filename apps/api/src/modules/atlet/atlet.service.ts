@@ -1,6 +1,12 @@
 import type { Request } from "express";
 import type { Prisma } from "@prisma/client";
 
+/**
+ * #70 — soft-delete filter. Live reads (lists, details, dashboard, reports,
+ * exports) must exclude soft-deleted athletes; spread this into their `where`.
+ */
+export const atletNotDeleted: Prisma.AtletWhereInput = { deletedAt: null };
+
 /** Prisma `where` fragment matching athletes whose primary OR additional cabor is `caborId`. */
 export function atletInCaborFilter(caborId: string): Prisma.AtletWhereInput {
   return {

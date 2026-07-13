@@ -15,7 +15,7 @@ import {
   listAtletQuerySchema,
   uploadDocumentSchema,
 } from "./atlet.schema.js";
-import { atletInCaborFilter, caborTambahanInclude, canAccessAtlet } from "./atlet.service.js";
+import { atletInCaborFilter, atletNotDeleted, caborTambahanInclude, canAccessAtlet } from "./atlet.service.js";
 import { emit } from "../../lib/socket.js";
 
 export const atletRouter = Router();
@@ -47,9 +47,11 @@ atletRouter.get(
       res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
-    const { cabor, status, kecamatan, search, page, pageSize } = parsed.data;
+    const { cabor, status, kecamatan, search, deleted, page, pageSize } = parsed.data;
 
     const conditions: Prisma.AtletWhereInput[] = [];
+    // #70 — default lists show only live athletes; ?deleted=true shows the archive.
+    conditions.push(deleted ? { deletedAt: { not: null } } : atletNotDeleted);
     const effectiveCaborId = req.scopedCaborId ?? cabor;
     if (effectiveCaborId) conditions.push(atletInCaborFilter(effectiveCaborId));
     if (status) conditions.push({ statusAtlet: status });
@@ -91,8 +93,8 @@ atletRouter.get(
       return;
     }
 
-    const atlet = await prisma.atlet.findUnique({
-      where: { id: req.user!.athleteId },
+    const atlet = await prisma.atlet.findFirst({
+      where: { id: req.user!.athleteId, ...atletNotDeleted },
       include: {
         cabangOlahraga: caborSummary,
         ...caborTambahanInclude,
@@ -151,8 +153,8 @@ atletRouter.get(
   "/:id",
   requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ATLET"]),
   asyncHandler(async (req, res) => {
-    const atlet = await prisma.atlet.findUnique({
-      where: { id: req.params.id },
+    const atlet = await prisma.atlet.findFirst({
+      where: { id: req.params.id, ...atletNotDeleted },
       include: { cabangOlahraga: caborSummary, ...caborTambahanInclude, documents: true },
     });
     if (!atlet) {
@@ -220,8 +222,8 @@ atletRouter.patch(
   "/:id",
   requireRole(DATA_ADMIN_ROLES),
   asyncHandler(async (req, res) => {
-    const existing = await prisma.atlet.findUnique({
-      where: { id: req.params.id },
+    const existing = await prisma.atlet.findFirst({
+      where: { id: req.params.id, ...atletNotDeleted },
       include: caborTambahanInclude,
     });
     if (!existing) {
@@ -283,8 +285,61 @@ atletRouter.patch(
   }),
 );
 
+// #70 — soft-delete: mark the row archived instead of destroying it, so an
+// accidental (bulk) delete can be recovered. Files and cascaded records are kept.
 atletRouter.delete(
   "/:id",
+  requireRole(["SUPER_ADMIN_KONI"]),
+  asyncHandler(async (req, res) => {
+    try {
+      const { count } = await prisma.atlet.updateMany({
+        where: { id: req.params.id, ...atletNotDeleted },
+        data: { deletedAt: new Date() },
+      });
+      if (count === 0) {
+        res.status(404).json({ error: "Not found" });
+        return;
+      }
+      // Deactivate any linked ATLET login so no active account keeps a JWT
+      // pointing at an archived athlete.
+      await prisma.user.updateMany({
+        where: { athleteId: req.params.id },
+        data: { isActive: false, athleteId: null },
+      });
+      emit("atlet:change");
+      res.status(204).send();
+    } catch (err) {
+      if (isNotFoundError(err)) {
+        res.status(404).json({ error: "Not found" });
+        return;
+      }
+      throw err;
+    }
+  }),
+);
+
+// #70 — restore a soft-deleted athlete (clear deletedAt).
+atletRouter.post(
+  "/:id/restore",
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI"]),
+  asyncHandler(async (req, res) => {
+    const { count } = await prisma.atlet.updateMany({
+      where: { id: req.params.id, deletedAt: { not: null } },
+      data: { deletedAt: null },
+    });
+    if (count === 0) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    emit("atlet:change");
+    res.status(204).send();
+  }),
+);
+
+// #70 — permanent (hard) delete, SUPER_ADMIN only. Kept available for purging
+// the archive. Destroys the row, its cascaded records, and its files.
+atletRouter.delete(
+  "/:id/permanent",
   requireRole(["SUPER_ADMIN_KONI"]),
   asyncHandler(async (req, res) => {
     // Capture the athlete's files before deletion so we can unlink them once the
@@ -326,8 +381,8 @@ atletRouter.get(
   "/:id/documents",
   requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ATLET"]),
   asyncHandler(async (req, res) => {
-    const atlet = await prisma.atlet.findUnique({
-      where: { id: req.params.id },
+    const atlet = await prisma.atlet.findFirst({
+      where: { id: req.params.id, ...atletNotDeleted },
       include: caborTambahanInclude,
     });
     if (!atlet) {
@@ -357,8 +412,8 @@ atletRouter.post(
       if (req.file) fs.unlink(req.file.path, () => undefined);
     };
 
-    const atlet = await prisma.atlet.findUnique({
-      where: { id: req.params.id },
+    const atlet = await prisma.atlet.findFirst({
+      where: { id: req.params.id, ...atletNotDeleted },
       include: caborTambahanInclude,
     });
     if (!atlet) {
@@ -405,8 +460,8 @@ atletRouter.delete(
   "/:id/documents/:docId",
   requireRole(DATA_ADMIN_ROLES),
   asyncHandler(async (req, res) => {
-    const atlet = await prisma.atlet.findUnique({
-      where: { id: req.params.id },
+    const atlet = await prisma.atlet.findFirst({
+      where: { id: req.params.id, ...atletNotDeleted },
       include: caborTambahanInclude,
     });
     if (!atlet) {

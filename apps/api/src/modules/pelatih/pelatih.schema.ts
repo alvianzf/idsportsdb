@@ -25,6 +25,8 @@ export const listPelatihQuerySchema = z.object({
   cabor: z.string().optional(),
   search: z.string().optional(),
   expiring: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
+  // #70 — when true, list the soft-deleted (archived) coaches instead of live ones.
+  deleted: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });

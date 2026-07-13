@@ -20,9 +20,9 @@ publicRouter.get(
   asyncHandler(async (_req, res) => {
     const [caborCount, activeAtletCount, pelatihCount, medalGroups] = await Promise.all([
       prisma.cabangOlahraga.count(),
-      prisma.atlet.count({ where: { statusAtlet: "ACTIVE" } }),
-      prisma.pelatih.count(),
-      prisma.prestasi.groupBy({ by: ["medali"], _count: { _all: true } }),
+      prisma.atlet.count({ where: { statusAtlet: "ACTIVE", deletedAt: null } }),
+      prisma.pelatih.count({ where: { deletedAt: null } }),
+      prisma.prestasi.groupBy({ by: ["medali"], _count: { _all: true }, where: { atlet: { deletedAt: null } } }),
     ]);
 
     const medals = { GOLD: 0, SILVER: 0, BRONZE: 0 };
@@ -120,6 +120,7 @@ publicRouter.get(
     // ditampilkan di menu Data publik.
     const publicWhere = {
       statusAtlet: { notIn: ["INACTIVE", "TRANSFERRED"] as ("INACTIVE" | "TRANSFERRED")[] },
+      deletedAt: null,
     };
 
     const [atlets, total] = await Promise.all([
@@ -179,6 +180,7 @@ publicRouter.get(
 
     const [items, total] = await Promise.all([
       prisma.pelatih.findMany({
+        where: { deletedAt: null },
         select: {
           id: true,
           namaPelatih: true,
@@ -190,7 +192,7 @@ publicRouter.get(
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      prisma.pelatih.count(),
+      prisma.pelatih.count({ where: { deletedAt: null } }),
     ]);
 
     res.json({

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Search, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, Plus, Search, Trash2 } from "lucide-react";
 import { DATA_ADMIN_ROLES, UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Input, Badge, Pagination, Combobox, DataTable, type Column, type BulkAction } from "../../components/ui";
 import { api } from "../../lib/api";
@@ -28,6 +28,11 @@ export function PelatihListPage() {
   const canCreate = role && DATA_ADMIN_ROLES.includes(role);
   const canDelete = role && UNSCOPED_ADMIN_ROLES.includes(role);
   const isUnscopedAdmin = role && UNSCOPED_ADMIN_ROLES.includes(role);
+  // #70 — soft-delete recovery. Admins can view the archive and restore;
+  // only SUPER_ADMIN can permanently purge.
+  const canRestore = role && UNSCOPED_ADMIN_ROLES.includes(role);
+  const canHardDelete = role === "SUPER_ADMIN_KONI";
+  const [showArchive, setShowArchive] = useState(false);
 
   const [items, setItems] = useState<PelatihRow[] | null>(null);
   const [total, setTotal] = useState(0);
@@ -63,6 +68,7 @@ export function PelatihListPage() {
           search: debouncedSearch || undefined,
           cabor: cabor || undefined,
           expiring: expiring || undefined,
+          deleted: showArchive || undefined,
           page,
           pageSize,
         },
@@ -78,7 +84,7 @@ export function PelatihListPage() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedSearch, cabor, expiring, page, reloadKey]);
+  }, [debouncedSearch, cabor, expiring, showArchive, page, reloadKey]);
 
   function isExpiringSoon(date: string | null) {
     if (!date) return false;
@@ -103,6 +109,36 @@ export function PelatihListPage() {
     setReloadKey((k) => k + 1);
   }
 
+  // #70 — restore archived coaches.
+  async function handleRestore(ids: string[]) {
+    const results = await Promise.allSettled(ids.map((id) => api.post(`/pelatih/${id}/restore`)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed === 0) {
+      toast.success(`${ids.length} pelatih berhasil dipulihkan.`);
+    } else {
+      toast.error(`${failed} dari ${ids.length} pelatih gagal dipulihkan.`);
+    }
+    setReloadKey((k) => k + 1);
+  }
+
+  // #70 — permanently purge archived coaches (SUPER_ADMIN only).
+  async function handleHardDelete(ids: string[]) {
+    const confirmed = await confirmAction({
+      text: `Hapus permanen ${ids.length} pelatih? Data tidak dapat dipulihkan.`,
+      danger: true,
+      confirmText: "Hapus Permanen",
+    });
+    if (!confirmed) return;
+    const results = await Promise.allSettled(ids.map((id) => api.delete(`/pelatih/${id}/permanent`)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed === 0) {
+      toast.success(`${ids.length} pelatih dihapus permanen.`);
+    } else {
+      toast.error(`${failed} dari ${ids.length} pelatih gagal dihapus.`);
+    }
+    setReloadKey((k) => k + 1);
+  }
+
   const columns: Column<PelatihRow>[] = [
     {
       key: "namaPelatih",
@@ -110,11 +146,14 @@ export function PelatihListPage() {
       mobile: true,
       sortable: true,
       getValue: (p) => p.namaPelatih,
-      render: (p) => (
-        <Link to={`/pelatih/${p.id}`} className="font-medium text-primary hover:underline">
-          {p.namaPelatih}
-        </Link>
-      ),
+      render: (p) =>
+        showArchive ? (
+          <span className="font-medium text-neutral-700">{p.namaPelatih}</span>
+        ) : (
+          <Link to={`/pelatih/${p.id}`} className="font-medium text-primary hover:underline">
+            {p.namaPelatih}
+          </Link>
+        ),
     },
     {
       key: "cabor",
@@ -155,9 +194,14 @@ export function PelatihListPage() {
     },
   ];
 
-  const bulkActions: BulkAction[] = canDelete
-    ? [{ label: "Hapus", icon: Trash2, variant: "danger", onClick: handleBulkDelete }]
-    : [];
+  const bulkActions: BulkAction[] = showArchive
+    ? [
+        ...(canRestore ? [{ label: "Pulihkan", icon: ArchiveRestore, variant: "outline" as const, onClick: handleRestore }] : []),
+        ...(canHardDelete ? [{ label: "Hapus Permanen", icon: Trash2, variant: "danger" as const, onClick: handleHardDelete }] : []),
+      ]
+    : canDelete
+      ? [{ label: "Hapus", icon: Trash2, variant: "danger", onClick: handleBulkDelete }]
+      : [];
 
   return (
     <div>
@@ -165,13 +209,20 @@ export function PelatihListPage() {
         title="Data Pelatih"
         description="Daftar pelatih cabang olahraga"
         actions={
-          canCreate ? (
-            <Link to="/pelatih/new">
-              <Button>
-                <Plus size={16} /> Tambah
+          <div className="flex flex-wrap items-center gap-2">
+            {canRestore && (
+              <Button variant="outline" onClick={() => { setPage(1); setShowArchive((v) => !v); }}>
+                {showArchive ? <><ArchiveRestore size={16} /> Data Aktif</> : <><Archive size={16} /> Arsip</>}
               </Button>
-            </Link>
-          ) : undefined
+            )}
+            {canCreate && !showArchive && (
+              <Link to="/pelatih/new">
+                <Button>
+                  <Plus size={16} /> Tambah
+                </Button>
+              </Link>
+            )}
+          </div>
         }
       />
 
@@ -218,7 +269,7 @@ export function PelatihListPage() {
         !error && <Card className="text-sm text-neutral-500">Memuat data...</Card>
       ) : (
         <>
-          <DataTable columns={columns} rows={items} bulkActions={bulkActions} emptyMessage="Belum ada data pelatih." />
+          <DataTable columns={columns} rows={items} bulkActions={bulkActions} emptyMessage={showArchive ? "Arsip kosong." : "Belum ada data pelatih."} />
           <div className="mt-3">
             <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
           </div>
