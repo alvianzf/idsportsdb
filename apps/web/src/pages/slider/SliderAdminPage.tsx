@@ -26,6 +26,7 @@ export function SliderAdminPage() {
   const [file, setFile] = useState<File | null>(null);
 
   function load() {
+    setError(false);
     api
       .get<Slide[]>("/slider")
       .then((res) => setSlides(res.data))
