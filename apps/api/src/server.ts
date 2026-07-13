@@ -61,34 +61,6 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-// SEO/GEO — dynamic sitemap of public pages + published articles. Served at the
-// site root via nginx (`location = /sitemap.xml` proxies here). See specs/021-seo-geo.
-app.get("/sitemap.xml", async (_req, res) => {
-  const base = (process.env.PUBLIC_SITE_URL ?? "https://konibatam.alvianzf.id").replace(/\/$/, "");
-  const entries: { loc: string; lastmod?: string }[] = [{ loc: `${base}/` }, { loc: `${base}/data` }];
-  try {
-    const articles = await prisma.article.findMany({
-      where: { published: true },
-      select: { slug: true, updatedAt: true },
-      orderBy: { updatedAt: "desc" },
-    });
-    for (const a of articles) {
-      entries.push({ loc: `${base}/artikel/${a.slug}`, lastmod: a.updatedAt.toISOString() });
-    }
-  } catch {
-    // DB unreachable — still return the static entries so the sitemap stays valid.
-  }
-  const body =
-    `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    entries
-      .map((e) => `  <url><loc>${e.loc}</loc>${e.lastmod ? `<lastmod>${e.lastmod}</lastmod>` : ""}</url>`)
-      .join("\n") +
-    `\n</urlset>\n`;
-  res.setHeader("Content-Type", "application/xml; charset=utf-8");
-  res.send(body);
-});
-
 app.use("/api/v1/public", publicRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", usersRouter);

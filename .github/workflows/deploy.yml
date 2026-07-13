@@ -67,6 +67,11 @@ jobs:
           npm run build
           echo "::endgroup::"
 
+          # Generate the static sitemap into the web dist before deploying it.
+          echo "::group::sitemap"
+          ( cd apps/api && npx tsx prisma/generate-sitemap.ts )
+          echo "::endgroup::"
+
           echo "::group::deploy web"
           rsync -a --delete apps/web/dist/ /var/www/konibatam/
           echo "::endgroup::"

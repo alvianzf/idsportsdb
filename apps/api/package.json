@@ -13,7 +13,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts",
-    "normalize:identifiers": "tsx prisma/normalize-identifiers.ts"
+    "normalize:identifiers": "tsx prisma/normalize-identifiers.ts",
+    "sitemap": "tsx prisma/generate-sitemap.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
