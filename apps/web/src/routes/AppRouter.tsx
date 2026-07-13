@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import { AppLayout } from "../layouts/AppLayout";
 import { RequireRole } from "../components/RequireRole";
+import { ADMIN_ROLES } from "../layouts/navConfig";
 
 // Helper so named-export pages work with React.lazy (which needs a default export).
 // A failed chunk fetch usually means a new deploy replaced the hashed assets while
@@ -136,43 +137,43 @@ const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       // Module A
-      { path: "dashboard", element: <Suspense fallback={<PageLoader />}><DashboardPage /></Suspense> },
+      { path: "dashboard", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><DashboardPage /></Suspense></RequireRole> },
 
       // Module E
-      { path: "cabor", element: <Suspense fallback={<PageLoader />}><CaborListPage /></Suspense> },
-      { path: "cabor/new", element: <Suspense fallback={<PageLoader />}><CaborFormPage /></Suspense> },
-      { path: "cabor/:id", element: <Suspense fallback={<PageLoader />}><CaborDetailPage /></Suspense> },
-      { path: "cabor/:id/edit", element: <Suspense fallback={<PageLoader />}><CaborFormPage /></Suspense> },
+      { path: "cabor", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><CaborListPage /></Suspense></RequireRole> },
+      { path: "cabor/new", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><CaborFormPage /></Suspense></RequireRole> },
+      { path: "cabor/:id", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><CaborDetailPage /></Suspense></RequireRole> },
+      { path: "cabor/:id/edit", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><CaborFormPage /></Suspense></RequireRole> },
 
       // Module B
-      { path: "atlet", element: <Suspense fallback={<PageLoader />}><AtletListPage /></Suspense> },
-      { path: "atlet/new", element: <Suspense fallback={<PageLoader />}><AtletFormPage /></Suspense> },
-      { path: "atlet/:id", element: <Suspense fallback={<PageLoader />}><AtletDetailPage /></Suspense> },
-      { path: "atlet/:id/edit", element: <Suspense fallback={<PageLoader />}><AtletFormPage /></Suspense> },
+      { path: "atlet", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><AtletListPage /></Suspense></RequireRole> },
+      { path: "atlet/new", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><AtletFormPage /></Suspense></RequireRole> },
+      { path: "atlet/:id", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><AtletDetailPage /></Suspense></RequireRole> },
+      { path: "atlet/:id/edit", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><AtletFormPage /></Suspense></RequireRole> },
 
       // Module C
-      { path: "pelatih", element: <Suspense fallback={<PageLoader />}><PelatihListPage /></Suspense> },
-      { path: "pelatih/new", element: <Suspense fallback={<PageLoader />}><PelatihFormPage /></Suspense> },
-      { path: "pelatih/:id", element: <Suspense fallback={<PageLoader />}><PelatihDetailPage /></Suspense> },
-      { path: "pelatih/:id/edit", element: <Suspense fallback={<PageLoader />}><PelatihFormPage /></Suspense> },
+      { path: "pelatih", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><PelatihListPage /></Suspense></RequireRole> },
+      { path: "pelatih/new", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><PelatihFormPage /></Suspense></RequireRole> },
+      { path: "pelatih/:id", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><PelatihDetailPage /></Suspense></RequireRole> },
+      { path: "pelatih/:id/edit", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><PelatihFormPage /></Suspense></RequireRole> },
 
       // Module F
-      { path: "prestasi", element: <Suspense fallback={<PageLoader />}><PrestasiListPage /></Suspense> },
+      { path: "prestasi", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><PrestasiListPage /></Suspense></RequireRole> },
 
       // Module G
-      { path: "monitoring", element: <Suspense fallback={<PageLoader />}><MonitoringPage /></Suspense> },
+      { path: "monitoring", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><MonitoringPage /></Suspense></RequireRole> },
 
       // Kalender Event (spec 017)
-      { path: "events", element: <Suspense fallback={<PageLoader />}><EventListPage /></Suspense> },
+      { path: "events", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><EventListPage /></Suspense></RequireRole> },
 
       // Module H
-      { path: "reports", element: <Suspense fallback={<PageLoader />}><ReportsIndexPage /></Suspense> },
-      { path: "reports/atlet-per-cabor", element: <Suspense fallback={<PageLoader />}><AtletPerCaborReportPage /></Suspense> },
-      { path: "reports/atlet-per-usia", element: <Suspense fallback={<PageLoader />}><AtletPerUsiaReportPage /></Suspense> },
-      { path: "reports/atlet-per-kecamatan", element: <Suspense fallback={<PageLoader />}><AtletPerKecamatanReportPage /></Suspense> },
-      { path: "reports/pelatih", element: <Suspense fallback={<PageLoader />}><PelatihReportPage /></Suspense> },
-      { path: "reports/prestasi", element: <Suspense fallback={<PageLoader />}><PrestasiReportPage /></Suspense> },
-      { path: "reports/rekap-medali", element: <Suspense fallback={<PageLoader />}><RekapMedaliReportPage /></Suspense> },
+      { path: "reports", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><ReportsIndexPage /></Suspense></RequireRole> },
+      { path: "reports/atlet-per-cabor", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><AtletPerCaborReportPage /></Suspense></RequireRole> },
+      { path: "reports/atlet-per-usia", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><AtletPerUsiaReportPage /></Suspense></RequireRole> },
+      { path: "reports/atlet-per-kecamatan", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><AtletPerKecamatanReportPage /></Suspense></RequireRole> },
+      { path: "reports/pelatih", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><PelatihReportPage /></Suspense></RequireRole> },
+      { path: "reports/prestasi", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><PrestasiReportPage /></Suspense></RequireRole> },
+      { path: "reports/rekap-medali", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><RekapMedaliReportPage /></Suspense></RequireRole> },
 
       // Article CMS
       {

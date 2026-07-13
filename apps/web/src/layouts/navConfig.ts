@@ -25,7 +25,7 @@ export interface NavItem {
   roles: Role[];
 }
 
-const ADMIN_ROLES: Role[] = ["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"];
+export const ADMIN_ROLES: Role[] = ["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"];
 
 export const ADMIN_NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, mobile: true, roles: ADMIN_ROLES },
