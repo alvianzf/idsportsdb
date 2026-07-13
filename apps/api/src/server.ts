@@ -35,8 +35,16 @@ app.use(express.json());
 
 // Sensitive atlet documents require authentication.
 app.use("/uploads/atlet-documents", authenticate, (req, res) => {
-  const filename = req.path.replace(/^\//, "");
-  res.sendFile(path.join(uploadRoot, "atlet-documents", filename));
+  const filename = decodeURIComponent(req.path.replace(/^\//, ""));
+  // Confine to the atlet-documents directory: `root` makes sendFile reject any
+  // path that escapes it, and we reject "../" segments before they normalize.
+  if (filename.includes("..") || path.isAbsolute(filename)) {
+    res.status(400).json({ error: "Invalid path" });
+    return;
+  }
+  res.sendFile(filename, { root: path.join(uploadRoot, "atlet-documents") }, (err) => {
+    if (err) res.status(404).json({ error: "Not found" });
+  });
 });
 
 // All other uploads (article images, certificates, etc.) are public.

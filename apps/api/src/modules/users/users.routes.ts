@@ -4,7 +4,11 @@ import { randomBytes } from "node:crypto";
 import { prisma } from "../../lib/prisma.js";
 import { authenticate, requireRole } from "../../middleware/auth.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
-import { isNotFoundError, isUniqueConstraintError } from "../../lib/prismaErrors.js";
+import {
+  isForeignKeyConstraintError,
+  isNotFoundError,
+  isUniqueConstraintError,
+} from "../../lib/prismaErrors.js";
 import { sendWelcomeEmail, sendPasswordResetByAdminEmail } from "../../lib/email.js";
 
 function generatePassword(): string {
@@ -191,6 +195,14 @@ usersRouter.delete(
     } catch (err) {
       if (isNotFoundError(err)) {
         res.status(404).json({ error: "Not found" });
+        return;
+      }
+      // User authored audit logs / monitoring events / articles (Restrict FKs).
+      if (isForeignKeyConstraintError(err)) {
+        res.status(409).json({
+          error:
+            "Tidak dapat menghapus permanen: pengguna memiliki data terkait (log, monitoring, atau artikel). Nonaktifkan saja.",
+        });
         return;
       }
       throw err;

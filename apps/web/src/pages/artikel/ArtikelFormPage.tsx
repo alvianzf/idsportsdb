@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type For
 import { useNavigate, useParams } from "react-router-dom";
 import { CalendarDays, Eye, Trash2, Upload, X } from "lucide-react";
 import toast from "react-hot-toast";
+import DOMPurify from "dompurify";
 import { Card, PageHeader, Button, Field, Input, Textarea, RichTextEditor, Modal } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
 
@@ -137,9 +138,11 @@ export function ArtikelFormPage() {
         published: form.published,
       };
 
-      let articleId = id;
-      if (isEdit) {
-        await api.patch(`/artikel/${id}`, payload);
+      // If a previous submit already created the article (e.g. the cover upload
+      // then failed), reuse that id and PATCH instead of creating a duplicate.
+      let articleId = articleIdRef.current;
+      if (isEdit || articleId) {
+        await api.patch(`/artikel/${articleId}`, payload);
       } else {
         const res = await api.post("/artikel", payload);
         articleId = res.data.id;
@@ -348,7 +351,7 @@ export function ArtikelFormPage() {
             {form.content ? (
               <div
                 className="prose-article mt-4 text-sm text-neutral-700"
-                dangerouslySetInnerHTML={{ __html: form.content }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(form.content) }}
               />
             ) : (
               <p className="mt-4 italic text-sm text-neutral-400">Konten belum diisi.</p>

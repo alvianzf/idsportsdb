@@ -4,7 +4,11 @@ import multer from "multer";
 import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole } from "../../middleware/auth.js";
-import { isNotFoundError, isUniqueConstraintError } from "../../lib/prismaErrors.js";
+import {
+  isForeignKeyConstraintError,
+  isNotFoundError,
+  isUniqueConstraintError,
+} from "../../lib/prismaErrors.js";
 import { uploadRoot } from "../../lib/storage.js";
 import { createCaborSchema, updateCaborSchema, listCaborQuerySchema } from "./cabor.schema.js";
 
@@ -132,7 +136,7 @@ caborRouter.delete(
   asyncHandler(async (req, res) => {
     const cabor = await prisma.cabangOlahraga.findUnique({
       where: { id: req.params.id },
-      include: { _count: { select: { atlets: true, pelatihs: true } } },
+      include: { _count: { select: { atlets: true, pelatihs: true, users: true, pengurus: true } } },
     });
     if (!cabor) {
       res.status(404).json({ error: "Not found" });
@@ -144,9 +148,25 @@ caborRouter.delete(
       });
       return;
     }
+    // Deleting a cabor would SetNull its admins' scope (unscoping them to all
+    // cabor) and Restrict-fail on pengurus — block both explicitly.
+    if (cabor._count.users > 0 || cabor._count.pengurus > 0) {
+      res.status(409).json({
+        error: "Tidak dapat menghapus cabor yang masih memiliki admin atau pengurus",
+      });
+      return;
+    }
 
-    await prisma.cabangOlahraga.delete({ where: { id: req.params.id } });
-    res.status(204).send();
+    try {
+      await prisma.cabangOlahraga.delete({ where: { id: req.params.id } });
+      res.status(204).send();
+    } catch (err) {
+      if (isForeignKeyConstraintError(err)) {
+        res.status(409).json({ error: "Tidak dapat menghapus cabor yang masih terpakai" });
+        return;
+      }
+      throw err;
+    }
   }),
 );
 

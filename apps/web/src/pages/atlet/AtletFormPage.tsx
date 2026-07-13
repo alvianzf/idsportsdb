@@ -106,6 +106,9 @@ export function AtletFormPage() {
   const [pendingDocs, setPendingDocs] = useState<Partial<Record<RegistrationDocType, File>>>({});
   // refs for hidden file inputs so we can reset them
   const fileInputRefs = useRef<Partial<Record<RegistrationDocType, HTMLInputElement | null>>>({});
+  // Tracks an athlete created in a prior submit attempt so a retry after a
+  // failed document upload continues rather than creating a duplicate.
+  const createdAtletIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     api.get<CaborOption[]>("/cabor").then((res) => setCabors(res.data));
@@ -208,9 +211,18 @@ export function AtletFormPage() {
         await api.patch(`/atlet/${id}`, payload);
         navigate(`/atlet/${id}`);
       } else {
-        const res = await api.post("/atlet", payload);
-        const atletId = res.data.id as string;
-        // Upload any staged registration documents
+        // Reuse an athlete created in a prior failed attempt (PATCH) instead of
+        // POSTing a duplicate; otherwise create it now.
+        let atletId = createdAtletIdRef.current;
+        if (atletId) {
+          await api.patch(`/atlet/${atletId}`, payload);
+        } else {
+          const res = await api.post("/atlet", payload);
+          atletId = res.data.id as string;
+          createdAtletIdRef.current = atletId;
+        }
+        // Upload staged documents; drop each from pendingDocs as it succeeds so
+        // a retry only uploads the remainder.
         const pendingEntries = Object.entries(pendingDocs) as [RegistrationDocType, File][];
         for (const [type, file] of pendingEntries) {
           const fd = new FormData();
@@ -218,6 +230,11 @@ export function AtletFormPage() {
           fd.append("type", type);
           await api.post(`/atlet/${atletId}/documents`, fd, {
             headers: { "Content-Type": "multipart/form-data" },
+          });
+          setPendingDocs((d) => {
+            const n = { ...d };
+            delete n[type];
+            return n;
           });
         }
         navigate(`/atlet/${atletId}`);

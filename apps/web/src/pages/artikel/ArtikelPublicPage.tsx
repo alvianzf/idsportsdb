@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { CalendarDays, ArrowLeft } from "lucide-react";
+import DOMPurify from "dompurify";
 import { api, resolveFileUrl } from "../../lib/api";
 
 interface Article {
@@ -81,7 +82,7 @@ export function ArtikelPublicPage() {
         )}
         <div
           className="prose-article mt-4 text-sm text-neutral-700"
-          dangerouslySetInnerHTML={{ __html: article.content }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.content) }}
         />
       </main>
     </div>
