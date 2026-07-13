@@ -181,6 +181,14 @@ atletRouter.post(
     const cabangOlahragaId = req.scopedCaborId ?? rest.cabangOlahragaId;
     const lainItems = dedupeCaborLain(cabangOlahragaLain, cabangOlahragaId);
 
+    // #56 — an ADMIN_CABOR may only manage memberships in their own cabor, which
+    // is already forced to be the primary here, so any secondary membership
+    // targets a cabor they don't control. Reject rather than silently insert.
+    if (req.scopedCaborId && lainItems.some((item) => item.cabangOlahragaId !== req.scopedCaborId)) {
+      res.status(403).json({ error: "Tidak dapat menambah keanggotaan cabang olahraga lain" });
+      return;
+    }
+
     try {
       const atlet = await prisma.atlet.create({
         data: {
@@ -241,9 +249,15 @@ atletRouter.patch(
     if (cabangOlahragaLain !== undefined) {
       const primaryId = (data.cabangOlahragaId as string | undefined) ?? existing.cabangOlahragaId;
       const lainItems = dedupeCaborLain(cabangOlahragaLain, primaryId);
+      // #56 — a scoped ADMIN_CABOR may only add/remove the membership in their
+      // own cabor. Restrict both the wipe and the recreate to that cabor so
+      // memberships in cabors they don't control are left untouched.
+      const ownItems = req.scopedCaborId
+        ? lainItems.filter((item) => item.cabangOlahragaId === req.scopedCaborId)
+        : lainItems;
       data.caborTambahan = {
-        deleteMany: {},
-        create: lainItems.map(({ cabangOlahragaId: cid, nomorIndukAtlet, nomorRegistrasi }) => ({ cabangOlahragaId: cid, nomorIndukAtlet, nomorRegistrasi })),
+        deleteMany: req.scopedCaborId ? { cabangOlahragaId: req.scopedCaborId } : {},
+        create: ownItems.map(({ cabangOlahragaId: cid, nomorIndukAtlet, nomorRegistrasi }) => ({ cabangOlahragaId: cid, nomorIndukAtlet, nomorRegistrasi })),
       };
     }
 

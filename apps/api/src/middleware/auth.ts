@@ -58,9 +58,21 @@ export function requireRole(roles: Role[]) {
  * For ADMIN_CABOR, sets `req.scopedCaborId` to their own cabor id. Route
  * handlers must filter list queries by this and reject (403) writes that
  * target a different cabor. Must run after `authenticate`.
+ *
+ * A misprovisioned ADMIN_CABOR with no cabor is denied outright: a null scope
+ * must never fall through to unscoped (all-cabor) access.
  */
-export function scopeToCabor(req: Request, _res: Response, next: NextFunction) {
-  req.scopedCaborId = req.user?.role === "ADMIN_CABOR" ? req.user.cabangOlahragaId : null;
+export function scopeToCabor(req: Request, res: Response, next: NextFunction) {
+  if (req.user?.role === "ADMIN_CABOR") {
+    if (!req.user.cabangOlahragaId) {
+      res.status(403).json({ error: "Akun admin cabor tidak terhubung ke cabang olahraga" });
+      return;
+    }
+    req.scopedCaborId = req.user.cabangOlahragaId;
+    next();
+    return;
+  }
+  req.scopedCaborId = null;
   next();
 }
 
