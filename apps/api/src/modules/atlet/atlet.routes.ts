@@ -7,7 +7,7 @@ import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole, scopeToCabor } from "../../middleware/auth.js";
 import { isNotFoundError, isUniqueConstraintError } from "../../lib/prismaErrors.js";
-import { uploader, publicUrl, uploadRoot } from "../../lib/storage.js";
+import { uploader, publicUrl, uploadRoot, documentFileFilter } from "../../lib/storage.js";
 import {
   createAtletSchema,
   updateAtletSchema,
@@ -22,7 +22,7 @@ export const atletRouter = Router();
 
 atletRouter.use(authenticate, scopeToCabor);
 
-const documentUpload = uploader("atlet-documents");
+const documentUpload = uploader("atlet-documents", undefined, documentFileFilter);
 
 const caborSummary = { select: { id: true, nama: true } } as const;
 

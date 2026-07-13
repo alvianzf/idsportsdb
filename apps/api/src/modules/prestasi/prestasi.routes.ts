@@ -5,7 +5,7 @@ import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole, scopeToCabor } from "../../middleware/auth.js";
 import { isNotFoundError } from "../../lib/prismaErrors.js";
-import { uploader, publicUrl } from "../../lib/storage.js";
+import { uploader, publicUrl, documentFileFilter } from "../../lib/storage.js";
 import { atletInCaborFilter, caborTambahanInclude, canAccessAtlet } from "../atlet/atlet.service.js";
 import { emit } from "../../lib/socket.js";
 import { createPrestasiSchema, updatePrestasiSchema, listPrestasiQuerySchema } from "./prestasi.schema.js";
@@ -14,7 +14,7 @@ const atletSummary = {
   select: { id: true, namaLengkap: true, cabangOlahragaId: true, cabangOlahraga: { select: { id: true, nama: true } } },
 } as const;
 
-const certUpload = uploader("prestasi-sertifikat");
+const certUpload = uploader("prestasi-sertifikat", undefined, documentFileFilter);
 
 /** Mounted at /api/v1/atlet — `/:atletId/prestasi` (specs/007-prestasi-atlet/spec.md §3). */
 export const atletPrestasiRouter = Router();
