@@ -50,6 +50,7 @@ export function AtletListPage() {
   const [items, setItems] = useState<AtletRow[] | null>(null);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [cabor, setCabor] = useState("");
   const [status, setStatus] = useState("");
   const [kecamatan, setKecamatan] = useState("");
@@ -77,6 +78,12 @@ export function AtletListPage() {
     }
   }, [isUnscopedAdmin]);
 
+  // Debounce free-text search so typing fires one request, not one per keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 250);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   useEffect(() => {
     let cancelled = false;
     setItems(null);
@@ -84,7 +91,7 @@ export function AtletListPage() {
     api
       .get("/atlet", {
         params: {
-          search: search || undefined,
+          search: debouncedSearch || undefined,
           cabor: cabor || undefined,
           status: status || undefined,
           kecamatan: kecamatan || undefined,
@@ -103,7 +110,7 @@ export function AtletListPage() {
     return () => {
       cancelled = true;
     };
-  }, [search, cabor, status, kecamatan, page, reloadKey]);
+  }, [debouncedSearch, cabor, status, kecamatan, page, reloadKey]);
 
   async function handleBulkDelete(ids: string[]) {
     const confirmed = await confirmAction({
@@ -284,17 +291,20 @@ export function AtletListPage() {
                 <Download size={16} /> Unduh
               </Button>
               {showExportMenu && (
-                <div className="absolute right-0 z-20 mt-1 w-36 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg">
-                  {(["xlsx", "csv", "pdf"] as const).map((f) => (
-                    <button
-                      key={f}
-                      onClick={() => handleExport(f)}
-                      className="block w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-50"
-                    >
-                      {f === "xlsx" ? "Excel (.xlsx)" : f.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowExportMenu(false)} />
+                  <div className="absolute right-0 z-20 mt-1 w-36 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg">
+                    {(["xlsx", "csv", "pdf"] as const).map((f) => (
+                      <button
+                        key={f}
+                        onClick={() => handleExport(f)}
+                        className="block w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-50"
+                      >
+                        {f === "xlsx" ? "Excel (.xlsx)" : f.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
             {canCreate && (

@@ -5,6 +5,15 @@ export function ymd(value: string | Date): string {
   return (typeof value === "string" ? value : value.toISOString()).slice(0, 10);
 }
 
+/** Today as YYYY-MM-DD in the local (WIB) timezone. Avoids the UTC day shift
+ * that `ymd(new Date())` produces between 00:00–07:00 WIB. */
+export function todayYmd(): string {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
 /** Parse a YYYY-MM-DD at noon local time (avoids DST/timezone day shifts). */
 export function parseYmd(s: string): Date {
   return new Date(`${s}T12:00:00`);
@@ -47,7 +56,7 @@ export const EMPTY_FILTERS: EventFilters = { search: "", date: "", status: "", t
  * event on/after today, falling back to the most recent past match. */
 export function searchJumpDate(matches: PublicEvent[], search: string): string | undefined {
   if (!search.trim() || matches.length === 0) return undefined;
-  const today = ymd(new Date());
+  const today = todayYmd();
   const sorted = [...matches].sort((a, b) => eventStart(a).localeCompare(eventStart(b)));
   const upcoming = sorted.find((e) => eventStart(e) >= today);
   return eventStart(upcoming ?? sorted[sorted.length - 1]);

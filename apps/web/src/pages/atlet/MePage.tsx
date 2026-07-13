@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { useLocation } from "react-router-dom";
 import { Pencil } from "lucide-react";
 import toast from "react-hot-toast";
 import { BATAM_KECAMATAN, EDUCATION_LEVELS } from "@inasportdb/shared-types";
@@ -21,9 +22,18 @@ type TabKey = (typeof TABS)[number]["key"];
 
 /** Module B — Atlet self-service profile. See specs/004-atlet/spec.md §5. */
 export function MePage() {
+  const location = useLocation();
   const [atlet, setAtlet] = useState<AtletDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<TabKey>("biodata");
+  const [tab, setTab] = useState<TabKey>(
+    location.pathname.endsWith("/prestasi") ? "prestasi" : "biodata",
+  );
+
+  // Sync the active tab when navigating between /me and /me/prestasi
+  // (the component stays mounted, so the initial state alone is not enough).
+  useEffect(() => {
+    setTab(location.pathname.endsWith("/prestasi") ? "prestasi" : "biodata");
+  }, [location.pathname]);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState({
