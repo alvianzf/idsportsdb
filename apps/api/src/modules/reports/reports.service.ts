@@ -16,24 +16,22 @@ export async function getAtletPerCabor(caborId: string | null, filters: AtletRep
   const atletWhere = atletFilterWhere(filters);
   const cabors = await prisma.cabangOlahraga.findMany({
     where: caborId ? { id: caborId } : undefined,
-    select: {
-      id: true,
-      nama: true,
-      _count: {
-        select: {
-          atlets: { where: atletWhere },
-          atletTambahan: { where: { atlet: atletWhere } },
-        },
-      },
-    },
+    select: { id: true, nama: true },
     orderBy: { nama: "asc" },
   });
 
-  return cabors.map((c) => ({
-    cabangOlahragaId: c.id,
-    nama: c.nama,
-    jumlahAtlet: c._count.atlets + c._count.atletTambahan,
-  }));
+  // #65: count DISTINCT athletes per cabor (primary OR additional membership),
+  // matching the detail sheet's `atletInCaborFilter`, instead of summing
+  // memberships — which double-counts multi-cabor athletes.
+  return Promise.all(
+    cabors.map(async (c) => ({
+      cabangOlahragaId: c.id,
+      nama: c.nama,
+      jumlahAtlet: await prisma.atlet.count({
+        where: { ...atletInCaborFilter(c.id), ...atletWhere },
+      }),
+    })),
+  );
 }
 
 export function calcAge(birth: Date, now: Date): number {
@@ -58,6 +56,9 @@ export async function getAtletPerUsia(caborId: string | null, bucket: number) {
     // Revisi 2026-07-12: tanggal lahir is optional — skip athletes without one.
     if (!a.tanggalLahir) continue;
     const age = calcAge(a.tanggalLahir, now);
+    // #74: guard against future birthdates producing negative ages (and labels
+    // like "-5--1"); skip them rather than bucketing.
+    if (age < 0) continue;
     const bucketStart = Math.floor(age / bucket) * bucket;
     counts.set(bucketStart, (counts.get(bucketStart) ?? 0) + 1);
   }
@@ -150,11 +151,23 @@ export async function getRekapMedali(caborId: string | null, tahun?: number) {
     },
   });
 
+  // #59: when scoped/filtered to a cabor, every returned prestasi matched that
+  // cabor via primary OR additional membership — attribute the medal to THAT
+  // cabor, not the athlete's primary cabor (which leaks/misattributes across
+  // cabors for a scoped ADMIN_CABOR).
+  const scopedNama = caborId
+    ? (await prisma.cabangOlahraga.findUnique({ where: { id: caborId }, select: { nama: true } }))?.nama
+    : null;
+
   const map = new Map<string, { nama: string; gold: number; silver: number; bronze: number }>();
   for (const p of prestasis) {
-    const key = p.atlet.cabangOlahragaId;
+    // #74: only real medals create rows — cabors whose athletes have only NONE
+    // records are omitted instead of showing a 0/0/0/0 row.
+    if (p.medali !== "GOLD" && p.medali !== "SILVER" && p.medali !== "BRONZE") continue;
+    const key = caborId ?? p.atlet.cabangOlahragaId;
     if (!map.has(key)) {
-      map.set(key, { nama: p.atlet.cabangOlahraga.nama, gold: 0, silver: 0, bronze: 0 });
+      const nama = caborId ? (scopedNama ?? p.atlet.cabangOlahraga.nama) : p.atlet.cabangOlahraga.nama;
+      map.set(key, { nama, gold: 0, silver: 0, bronze: 0 });
     }
     const entry = map.get(key)!;
     if (p.medali === "GOLD") entry.gold++;
