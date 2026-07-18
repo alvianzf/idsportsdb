@@ -108,7 +108,11 @@ atletMonitoringRouter.post(
       if (type === "STATUS_CHANGE" && toValue) {
         await tx.atlet.update({
           where: { id: req.params.atletId },
-          data: { statusAtlet: toValue as AthleteStatus },
+          data: {
+            statusAtlet: toValue as AthleteStatus,
+            // Cedera detail only applies while status is INJURED.
+            ...(toValue !== "INJURED" ? { tanggalCedera: null, keteranganCedera: null } : {}),
+          },
         });
       }
 

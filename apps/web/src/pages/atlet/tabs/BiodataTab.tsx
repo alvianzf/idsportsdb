@@ -100,6 +100,15 @@ export function BiodataTab({ atlet }: { atlet: AtletDetail }) {
             </dd>
           </div>
         )}
+        {atlet.statusAtlet === "INJURED" && (
+          <div className="md:col-span-2">
+            <dt className="text-neutral-500">Cedera</dt>
+            <dd className="font-medium text-neutral-900">
+              {atlet.tanggalCedera ? formatDate(atlet.tanggalCedera) : "-"}
+              {atlet.keteranganCedera ? ` — ${atlet.keteranganCedera}` : ""}
+            </dd>
+          </div>
+        )}
         <div>
           <dt className="text-neutral-500">Kecamatan</dt>
           <dd className="font-medium text-neutral-900">{atlet.kecamatan ?? "-"}</dd>

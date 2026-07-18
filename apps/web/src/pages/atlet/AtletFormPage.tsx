@@ -13,7 +13,7 @@ import {
   UNSCOPED_ADMIN_ROLES,
   type AthleteStatus,
 } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Field, Input, Select, Combobox } from "../../components/ui";
+import { Card, PageHeader, Button, Field, Input, Select, Textarea, Combobox } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 
@@ -27,9 +27,10 @@ const REGISTRATION_DOCS: { type: RegistrationDocType; label: string; required: b
 
 const MAX_DOC_SIZE_MB = 10;
 
-// Revisi 2026-07-12: the form only offers Aktif/Tidak Aktif; other statuses
-// (cedera, pemusatan latihan, mutasi) are set via the Monitoring module.
-const FORM_STATUSES: AthleteStatus[] = ["ACTIVE", "INACTIVE"];
+// Revisi 2026-07-12: the form offers the plain administrative statuses; TC and
+// mutasi are set via the Monitoring module. Revisi 2026-07-18: Cedera and
+// Pensiun are selectable here too (Cedera asks for tanggal + keterangan).
+const FORM_STATUSES: AthleteStatus[] = ["ACTIVE", "INACTIVE", "INJURED", "RETIRED"];
 
 interface CaborOption {
   id: string;
@@ -55,6 +56,8 @@ interface AtletForm {
   cabangOlahragaId: string;
   cabangOlahragaLain: CaborLainItem[];
   statusAtlet: string;
+  tanggalCedera: string;
+  keteranganCedera: string;
   tingkatAtlet: string;
   pendidikan: string;
   pekerjaan: string;
@@ -73,6 +76,8 @@ const empty: AtletForm = {
   cabangOlahragaId: "",
   cabangOlahragaLain: [],
   statusAtlet: "ACTIVE",
+  tanggalCedera: "",
+  keteranganCedera: "",
   tingkatAtlet: "",
   pendidikan: "",
   pekerjaan: "",
@@ -140,6 +145,8 @@ export function AtletFormPage() {
           cabangOlahragaId: a.cabangOlahragaId ?? "",
           cabangOlahragaLain: caborTambahan,
           statusAtlet: a.statusAtlet ?? "ACTIVE",
+          tanggalCedera: a.tanggalCedera ? a.tanggalCedera.slice(0, 10) : "",
+          keteranganCedera: a.keteranganCedera ?? "",
           tingkatAtlet: a.tingkatAtlet ?? "",
           pendidikan: a.pendidikan ?? "",
           pekerjaan: a.pekerjaan ?? "",
@@ -203,6 +210,8 @@ export function AtletFormPage() {
         cabangOlahragaId: form.cabangOlahragaId || undefined,
         cabangOlahragaLain: form.cabangOlahragaLain,
         statusAtlet: form.statusAtlet,
+        tanggalCedera: form.statusAtlet === "INJURED" && form.tanggalCedera ? form.tanggalCedera : undefined,
+        keteranganCedera: form.statusAtlet === "INJURED" && form.keteranganCedera ? form.keteranganCedera : undefined,
         tingkatAtlet: form.tingkatAtlet || undefined,
         pendidikan: form.pendidikan || undefined,
         pekerjaan: form.pekerjaan || undefined,
@@ -383,6 +392,27 @@ export function AtletFormPage() {
                   ]}
                 />
               </Field>
+              {form.statusAtlet === "INJURED" && (
+                <>
+                  <Field label="Tanggal Cedera" required htmlFor="tanggalCedera">
+                    <Input
+                      id="tanggalCedera"
+                      type="date"
+                      required
+                      value={form.tanggalCedera}
+                      onChange={(e) => setForm((f) => ({ ...f, tanggalCedera: e.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Keterangan Cedera" htmlFor="keteranganCedera">
+                    <Textarea
+                      id="keteranganCedera"
+                      rows={2}
+                      value={form.keteranganCedera}
+                      onChange={(e) => setForm((f) => ({ ...f, keteranganCedera: e.target.value }))}
+                    />
+                  </Field>
+                </>
+              )}
               <Field label="Tingkat Atlet" htmlFor="tingkatAtlet">
                 <Select
                   id="tingkatAtlet"

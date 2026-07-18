@@ -227,6 +227,9 @@ model Atlet {
   cabangOlahraga    CabangOlahraga @relation(fields: [cabangOlahragaId], references: [id])
 
   statusAtlet       AthleteStatus @default(ACTIVE)
+  // Revisi 2026-07-18: cedera detail, only meaningful while statusAtlet = INJURED.
+  tanggalCedera     DateTime?
+  keteranganCedera  String?  @db.Text
   // Revisi 2026-07-12: tingkat atlet TBD — optional until the client finalizes levels.
   tingkatAtlet      AthleteLevel?
   pendidikan        String?

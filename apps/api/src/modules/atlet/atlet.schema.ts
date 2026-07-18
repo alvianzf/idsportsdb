@@ -19,6 +19,10 @@ export const createAtletSchema = z.object({
   email: z.string().email().optional(),
   cabangOlahragaId: z.string().min(1),
   statusAtlet: z.enum(ATHLETE_STATUSES).optional(),
+  // Revisi 2026-07-18: cedera detail; the routes clear these whenever the
+  // status is set to anything other than INJURED.
+  tanggalCedera: z.coerce.date().optional(),
+  keteranganCedera: z.string().optional(),
   // Revisi 2026-07-12: tingkat atlet TBD — optional.
   tingkatAtlet: z.enum(ATHLETE_LEVELS).optional(),
   pendidikan: z.string().optional(),

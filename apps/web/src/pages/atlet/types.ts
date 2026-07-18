@@ -30,6 +30,8 @@ export interface AtletDetail {
   cabangOlahraga: CaborRef;
   caborTambahan: { id: string; cabangOlahragaId: string; cabangOlahraga: CaborRef; nomorIndukAtlet: string | null; nomorRegistrasi: string | null }[];
   statusAtlet: AthleteStatus;
+  tanggalCedera: string | null;
+  keteranganCedera: string | null;
   tingkatAtlet: AthleteLevel | null;
   pendidikan: string | null;
   pekerjaan: string | null;

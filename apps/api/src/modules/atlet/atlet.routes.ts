@@ -188,6 +188,11 @@ atletRouter.post(
     }
 
     const { cabangOlahragaLain, ...rest } = parsed.data;
+    // Cedera detail only applies to status INJURED.
+    if (rest.statusAtlet !== "INJURED") {
+      rest.tanggalCedera = undefined;
+      rest.keteranganCedera = undefined;
+    }
     const cabangOlahragaId = req.scopedCaborId ?? rest.cabangOlahragaId;
     const lainItems = dedupeCaborLain(cabangOlahragaLain, cabangOlahragaId);
 
@@ -254,6 +259,11 @@ atletRouter.patch(
 
     // specs/004-atlet/spec.md §3 — ADMIN_CABOR cannot change the primary cabor.
     const data: Prisma.AtletUncheckedUpdateInput = { ...rest };
+    // Cedera detail only applies to status INJURED — clear it on any other status.
+    if (rest.statusAtlet && rest.statusAtlet !== "INJURED") {
+      data.tanggalCedera = null;
+      data.keteranganCedera = null;
+    }
     if (cabangOlahragaId && req.user!.role !== "ADMIN_CABOR") {
       data.cabangOlahragaId = cabangOlahragaId;
     }
