@@ -21,7 +21,7 @@ pelatihRouter.use(authenticate, scopeToCabor);
 // specs/005-pelatih/spec.md §3
 pelatihRouter.get(
   "/",
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA"]),
   asyncHandler(async (req, res) => {
     const parsed = listPelatihQuerySchema.safeParse(req.query);
     if (!parsed.success) {
@@ -68,7 +68,7 @@ pelatihRouter.get(
 
 pelatihRouter.get(
   "/:id",
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA"]),
   asyncHandler(async (req, res) => {
     const pelatih = await prisma.pelatih.findFirst({
       where: { id: req.params.id, deletedAt: null },

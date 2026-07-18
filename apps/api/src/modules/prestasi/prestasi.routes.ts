@@ -25,7 +25,7 @@ atletPrestasiRouter.use(authenticate, scopeToCabor);
 
 atletPrestasiRouter.get(
   "/:atletId/prestasi",
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ATLET"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA", "ATLET"]),
   asyncHandler(async (req, res) => {
     const atlet = await prisma.atlet.findFirst({
       where: { id: req.params.atletId, ...atletNotDeleted },
@@ -86,7 +86,7 @@ prestasiRouter.use(authenticate, scopeToCabor);
 
 prestasiRouter.get(
   "/",
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA"]),
   asyncHandler(async (req, res) => {
     const parsed = listPrestasiQuerySchema.safeParse(req.query);
     if (!parsed.success) {

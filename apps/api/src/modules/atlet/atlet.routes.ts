@@ -41,7 +41,7 @@ function dedupeCaborLain(items: CaborLainInput[] | undefined, primaryId: string)
 // specs/004-atlet/spec.md §3
 atletRouter.get(
   "/",
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA"]),
   asyncHandler(async (req, res) => {
     const parsed = listAtletQuerySchema.safeParse(req.query);
     if (!parsed.success) {
@@ -152,7 +152,7 @@ atletRouter.patch(
 
 atletRouter.get(
   "/:id",
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ATLET"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA", "ATLET"]),
   asyncHandler(async (req, res) => {
     const atlet = await prisma.atlet.findFirst({
       where: { id: req.params.id, ...atletNotDeleted },
@@ -396,7 +396,7 @@ atletRouter.delete(
 // specs/004-atlet/spec.md §3
 atletRouter.get(
   "/:id/documents",
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ATLET"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA", "ATLET"]),
   asyncHandler(async (req, res) => {
     const atlet = await prisma.atlet.findFirst({
       where: { id: req.params.id, ...atletNotDeleted },

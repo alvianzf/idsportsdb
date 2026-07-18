@@ -26,7 +26,7 @@ atletMonitoringRouter.use(authenticate, scopeToCabor);
 
 atletMonitoringRouter.get(
   "/:atletId/monitoring",
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ATLET"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA", "ATLET"]),
   asyncHandler(async (req, res) => {
     const atlet = await prisma.atlet.findFirst({
       where: { id: req.params.atletId, ...atletNotDeleted },
@@ -177,7 +177,7 @@ monitoringRouter.patch(
 
 monitoringRouter.get(
   "/",
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA"]),
   asyncHandler(async (req, res) => {
     const parsed = listMonitoringQuerySchema.safeParse(req.query);
     if (!parsed.success) {
@@ -204,7 +204,7 @@ monitoringRouter.get(
 
 monitoringRouter.get(
   "/mutasi",
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_DISPORA"]),
   asyncHandler(async (req, res) => {
     const parsed = mutasiQueueQuerySchema.safeParse(req.query);
     if (!parsed.success) {
@@ -231,7 +231,7 @@ monitoringRouter.get(
 // badge). Kept separate from the queue list so it can be polled cheaply.
 monitoringRouter.get(
   "/mutasi/pending-count",
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_DISPORA"]),
   asyncHandler(async (_req, res) => {
     const count = await prisma.monitoringEvent.count({
       where: { type: "MUTATION", mutationStatus: "PENDING", atlet: { deletedAt: null } },

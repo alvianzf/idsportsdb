@@ -10,7 +10,7 @@ export const dashboardRouter = Router();
 // specs/002-dashboard/spec.md §3
 dashboardRouter.use(
   authenticate,
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA"]),
   scopeToCabor,
 );
 
