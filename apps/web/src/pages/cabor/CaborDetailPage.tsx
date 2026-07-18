@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, FileText, Pencil, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Field, Input, Modal, Combobox, DropZone } from "../../components/ui";
+import { Card, PageHeader, Button, Field, Input, Select, Modal, Combobox, DropZone } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 import { useAuthStore } from "../../store/authStore";
