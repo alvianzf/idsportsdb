@@ -3,7 +3,7 @@ import { Building2, Medal as MedalIcon, UserCog, Users } from "lucide-react";
 import {
   ATHLETE_LEVEL_LABELS,
   ATHLETE_STATUS_LABELS,
-  COMPETITION_LEVEL_LABELS,
+  competitionLevelLabel,
   GENDER_LABELS,
   MEDAL_LABELS,
   type AthleteLevel,
@@ -34,6 +34,7 @@ interface PublicAtlet {
   prestasiTertinggi: {
     namaKejuaraan: string;
     tingkatKejuaraan: CompetitionLevel;
+    tingkatLainnya: string | null;
     medali: Medal;
     tahun: number;
   } | null;
@@ -143,7 +144,7 @@ export function DataPublicPage() {
               </span>
             )}
             <span className="text-xs">
-              {a.prestasiTertinggi.namaKejuaraan} · {COMPETITION_LEVEL_LABELS[a.prestasiTertinggi.tingkatKejuaraan]}{" "}
+              {a.prestasiTertinggi.namaKejuaraan} · {competitionLevelLabel(a.prestasiTertinggi.tingkatKejuaraan, a.prestasiTertinggi.tingkatLainnya)}{" "}
               {a.prestasiTertinggi.tahun}
             </span>
           </span>

@@ -4,7 +4,7 @@ import { ArrowLeft, User } from "lucide-react";
 import {
   ATHLETE_LEVEL_LABELS,
   ATHLETE_STATUS_LABELS,
-  COMPETITION_LEVEL_LABELS,
+  competitionLevelLabel,
   GENDER_LABELS,
   MEDAL_LABELS,
   type AthleteStatus,
@@ -21,6 +21,7 @@ interface Prestasi {
   id: string;
   namaKejuaraan: string;
   tingkatKejuaraan: CompetitionLevel;
+  tingkatLainnya: string | null;
   tahun: number;
   medali: Medal;
   peringkat: number | null;
@@ -178,7 +179,7 @@ export function AtletRecordPage() {
                 <div>
                   <p className="text-sm font-medium text-neutral-900">{p.namaKejuaraan}</p>
                   <p className="mt-0.5 text-xs text-neutral-400">
-                    {COMPETITION_LEVEL_LABELS[p.tingkatKejuaraan]} · {p.tahun}
+                    {competitionLevelLabel(p.tingkatKejuaraan, p.tingkatLainnya)} · {p.tahun}
                     {p.peringkat ? ` · Peringkat ${p.peringkat}` : ""}
                   </p>
                 </div>

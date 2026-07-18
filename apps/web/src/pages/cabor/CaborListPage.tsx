@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Search, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Badge, Input, DataTable, type Column, type BulkAction } from "../../components/ui";
+import { Card, PageHeader, Button, Badge, DataTable, SearchInput, type Column, type BulkAction } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import { confirmAction } from "../../lib/confirm";
@@ -193,15 +193,12 @@ export function CaborListPage() {
       />
 
       <Card className="mb-4">
-        <div className="relative">
-          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-          <Input
-            placeholder="Cari nama cabang olahraga..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+        <SearchInput
+          placeholder="Cari nama cabang olahraga..."
+          value={search}
+          onChange={setSearch}
+          suggestions={items?.map((c) => c.nama) ?? []}
+        />
       </Card>
 
       {error && <Card className="text-sm text-danger">Gagal memuat data.</Card>}

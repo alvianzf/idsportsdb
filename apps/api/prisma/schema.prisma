@@ -85,6 +85,7 @@ enum CompetitionLevel {
   KEJURNAS
   KEJURDA
   EVENT_KHUSUS
+  LAINNYA // custom text in Prestasi.tingkatLainnya (revisi 2026-07-18)
 }
 
 enum Medal {
@@ -357,6 +358,8 @@ model Prestasi {
   atlet            Atlet    @relation(fields: [atletId], references: [id], onDelete: Cascade)
   namaKejuaraan    String
   tingkatKejuaraan CompetitionLevel
+  // Custom tingkat text, only meaningful when tingkatKejuaraan = LAINNYA.
+  tingkatLainnya   String?
   tahun            Int
   medali           Medal
   peringkat        Int?

@@ -4,6 +4,7 @@ import { Trash2 } from "lucide-react";
 import {
   COMPETITION_LEVELS,
   COMPETITION_LEVEL_LABELS,
+  competitionLevelLabel,
   DATA_ADMIN_ROLES,
   MEDALS,
   MEDAL_LABELS,
@@ -21,6 +22,7 @@ interface PrestasiRow {
   id: string;
   namaKejuaraan: string;
   tingkatKejuaraan: CompetitionLevel;
+  tingkatLainnya: string | null;
   tahun: number;
   medali: Medal;
   peringkat: number | null;
@@ -171,7 +173,7 @@ export function PrestasiListPage() {
       label: "Tingkat",
       sortable: true,
       getValue: (p) => p.tingkatKejuaraan,
-      render: (p) => <span className="text-neutral-600">{COMPETITION_LEVEL_LABELS[p.tingkatKejuaraan]}</span>,
+      render: (p) => <span className="text-neutral-600">{competitionLevelLabel(p.tingkatKejuaraan, p.tingkatLainnya)}</span>,
     },
     {
       key: "tahun",

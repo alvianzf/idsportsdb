@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
   MEDAL_LABELS,
-  COMPETITION_LEVEL_LABELS,
+  competitionLevelLabel,
   GENDER_LABELS,
   ATHLETE_STATUS_LABELS,
   ATHLETE_LEVEL_LABELS,
@@ -381,7 +381,7 @@ reportsRouter.get(
       atlet: p.atlet.namaLengkap,
       cabor: p.atlet.cabangOlahraga.nama,
       kejuaraan: p.namaKejuaraan,
-      tingkat: COMPETITION_LEVEL_LABELS[p.tingkatKejuaraan],
+      tingkat: competitionLevelLabel(p.tingkatKejuaraan, p.tingkatLainnya),
       tahun: p.tahun,
       medali: MEDAL_LABELS[p.medali],
       peringkat: p.peringkat ?? "-",

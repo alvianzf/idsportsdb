@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import {
   COMPETITION_LEVEL_CHOICES,
   COMPETITION_LEVEL_LABELS,
+  competitionLevelLabel,
   MEDALS,
   MEDAL_LABELS,
   type CompetitionLevel,
@@ -23,6 +24,7 @@ interface Prestasi {
   id: string;
   namaKejuaraan: string;
   tingkatKejuaraan: CompetitionLevel;
+  tingkatLainnya: string | null;
   tahun: number;
   medali: Medal;
   peringkat: number | null;
@@ -34,6 +36,7 @@ interface Prestasi {
 interface PrestasiForm {
   namaKejuaraan: string;
   tingkatKejuaraan: CompetitionLevel;
+  tingkatLainnya: string;
   tahun: string;
   medali: Medal;
   peringkat: string;
@@ -42,6 +45,7 @@ interface PrestasiForm {
 const emptyForm: PrestasiForm = {
   namaKejuaraan: "",
   tingkatKejuaraan: "KEJURDA",
+  tingkatLainnya: "",
   tahun: String(new Date().getFullYear()),
   medali: "GOLD",
   peringkat: "",
@@ -84,6 +88,16 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   // Certificate staged in the create/edit modal, uploaded after the record saves.
   const [certFile, setCertFile] = useState<File | null>(null);
+  // Autocomplete suggestions for the custom "Lainnya" tingkat (distinct DB values).
+  const [tingkatSuggestions, setTingkatSuggestions] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    api
+      .get<string[]>("/prestasi/tingkat-lainnya")
+      .then((res) => setTingkatSuggestions(res.data))
+      .catch(() => setTingkatSuggestions([]));
+  }, [modalOpen]);
 
   function load() {
     api
@@ -107,6 +121,7 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
     setForm({
       namaKejuaraan: p.namaKejuaraan,
       tingkatKejuaraan: p.tingkatKejuaraan,
+      tingkatLainnya: p.tingkatLainnya ?? "",
       tahun: String(p.tahun),
       medali: p.medali,
       peringkat: p.peringkat != null ? String(p.peringkat) : "",
@@ -124,6 +139,7 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
       const payload = {
         namaKejuaraan: form.namaKejuaraan,
         tingkatKejuaraan: form.tingkatKejuaraan,
+        tingkatLainnya: form.tingkatKejuaraan === "LAINNYA" ? form.tingkatLainnya : undefined,
         tahun: Number(form.tahun),
         medali: form.medali,
         peringkat: form.peringkat ? Number(form.peringkat) : undefined,
@@ -222,7 +238,7 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
               <div>
                 <p className="font-medium text-neutral-900">{p.namaKejuaraan}</p>
                 <p className="text-neutral-500">
-                  {COMPETITION_LEVEL_LABELS[p.tingkatKejuaraan]} &middot; {p.tahun}
+                  {competitionLevelLabel(p.tingkatKejuaraan, p.tingkatLainnya)} &middot; {p.tahun}
                   {p.peringkat ? ` · Peringkat ${p.peringkat}` : ""}
                 </p>
                 {(p.sertifikatUrl || p.sertifikats.length > 0) && (
@@ -369,6 +385,24 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
                 />
               </Field>
             </div>
+
+            {form.tingkatKejuaraan === "LAINNYA" && (
+              <Field label="Tingkat Lainnya" required htmlFor="tingkatLainnya">
+                <Input
+                  id="tingkatLainnya"
+                  required
+                  list="tingkatLainnyaOptions"
+                  placeholder="Tulis tingkat kejuaraan"
+                  value={form.tingkatLainnya}
+                  onChange={(e) => setForm((f) => ({ ...f, tingkatLainnya: e.target.value }))}
+                />
+                <datalist id="tingkatLainnyaOptions">
+                  {tingkatSuggestions.map((s) => (
+                    <option key={s} value={s} />
+                  ))}
+                </datalist>
+              </Field>
+            )}
 
             {/* Revisi 2026-07-18: attach a certificate right here (full width). */}
             <Field label="Sertifikat" htmlFor="sertifikatFile">

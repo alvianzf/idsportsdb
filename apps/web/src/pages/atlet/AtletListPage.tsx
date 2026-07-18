@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Archive, ArchiveRestore, Download, Plus, Search, Tag, Trash2, Upload } from "lucide-react";
+import { Archive, ArchiveRestore, Download, Plus, Tag, Trash2, Upload } from "lucide-react";
 import {
   ATHLETE_STATUSES,
   ATHLETE_STATUS_LABELS,
@@ -10,7 +10,7 @@ import {
   UNSCOPED_VIEW_ROLES,
   type AthleteStatus,
 } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Input, Select, Badge, Pagination, Combobox, DataTable, DropZone, Modal, type Column, type BulkAction } from "../../components/ui";
+import { Card, PageHeader, Button, Select, Badge, Pagination, Combobox, DataTable, DropZone, Modal, SearchInput, type Column, type BulkAction } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import { confirmAction } from "../../lib/confirm";
@@ -423,18 +423,16 @@ export function AtletListPage() {
       />
 
       <Card className="mb-4 space-y-3">
-        <div className="relative">
-          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-          <Input
-            placeholder="Cari nama, NIK, atau nomor registrasi..."
-            value={search}
-            onChange={(e) => {
-              setPage(1);
-              setSearch(e.target.value);
-            }}
-            className="pl-9"
-          />
-        </div>
+        <SearchInput
+          placeholder="Cari nama, NIK, atau nomor registrasi..."
+          value={search}
+          onChange={(v) => {
+            setPage(1);
+            setSearch(v);
+          }}
+          onSubmit={() => setDebouncedSearch(search)}
+          suggestions={items?.map((a) => a.namaLengkap) ?? []}
+        />
         <div className="flex flex-col gap-2">
           {isUnscopedAdmin && (
             <Combobox
