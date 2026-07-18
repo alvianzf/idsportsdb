@@ -21,8 +21,15 @@ interface CaborDetail {
   pengurus: Pengurus[];
 }
 
+// Revisi 2026-07-18: jabatan picked from a default list; "Lainnya" opens manual input.
+const JABATAN_OPTIONS = ["Ketua", "Wakil", "Sekretaris", "Bendahara", "Kepala Bidang"] as const;
+const JABATAN_LAINNYA = "Lainnya";
+
 interface PengurusForm {
   namaPengurus: string;
+  /** One of JABATAN_OPTIONS or JABATAN_LAINNYA. */
+  jabatanPilihan: string;
+  /** Manual text, used when jabatanPilihan = Lainnya. */
   jabatan: string;
   masaBaktiMulai: string;
   masaBaktiAkhir: string;
@@ -32,6 +39,7 @@ interface PengurusForm {
 
 const emptyPengurus: PengurusForm = {
   namaPengurus: "",
+  jabatanPilihan: "",
   jabatan: "",
   masaBaktiMulai: "",
   masaBaktiAkhir: "",
@@ -75,9 +83,11 @@ export function CaborDetailPage() {
 
   function openEdit(p: Pengurus) {
     setEditingPengurus(p);
+    const isPreset = (JABATAN_OPTIONS as readonly string[]).includes(p.jabatan);
     setForm({
       namaPengurus: p.namaPengurus,
-      jabatan: p.jabatan,
+      jabatanPilihan: isPreset ? p.jabatan : JABATAN_LAINNYA,
+      jabatan: isPreset ? "" : p.jabatan,
       masaBaktiMulai: p.masaBaktiMulai.slice(0, 10),
       masaBaktiAkhir: p.masaBaktiAkhir.slice(0, 10),
       kontak: p.kontak ?? "",
@@ -94,7 +104,7 @@ export function CaborDetailPage() {
     try {
       const payload = {
         namaPengurus: form.namaPengurus,
-        jabatan: form.jabatan,
+        jabatan: form.jabatanPilihan === JABATAN_LAINNYA ? form.jabatan : form.jabatanPilihan,
         masaBaktiMulai: form.masaBaktiMulai,
         masaBaktiAkhir: form.masaBaktiAkhir,
         kontak: form.kontak || undefined,
@@ -276,14 +286,30 @@ export function CaborDetailPage() {
                 onChange={(e) => setForm((f) => ({ ...f, namaPengurus: e.target.value }))}
               />
             </Field>
-            <Field label="Jabatan" required htmlFor="jabatan">
-              <Input
-                id="jabatan"
+            <Field label="Jabatan" required htmlFor="jabatanPilihan">
+              <Select
+                id="jabatanPilihan"
                 required
-                value={form.jabatan}
-                onChange={(e) => setForm((f) => ({ ...f, jabatan: e.target.value }))}
+                value={form.jabatanPilihan}
+                onChange={(v) => setForm((f) => ({ ...f, jabatanPilihan: v }))}
+                options={[
+                  { value: "", label: "Pilih jabatan" },
+                  ...JABATAN_OPTIONS.map((j) => ({ value: j, label: j })),
+                  { value: JABATAN_LAINNYA, label: JABATAN_LAINNYA },
+                ]}
               />
             </Field>
+            {form.jabatanPilihan === JABATAN_LAINNYA && (
+              <Field label="Jabatan Lainnya" required htmlFor="jabatan">
+                <Input
+                  id="jabatan"
+                  required
+                  placeholder="Tulis nama jabatan"
+                  value={form.jabatan}
+                  onChange={(e) => setForm((f) => ({ ...f, jabatan: e.target.value }))}
+                />
+              </Field>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <Field label="Masa Bakti Mulai" required htmlFor="masaBaktiMulai">
                 <Input
