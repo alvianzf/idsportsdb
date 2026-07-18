@@ -21,16 +21,52 @@ interface CaborDetail {
   pengurus: Pengurus[];
 }
 
-// Revisi 2026-07-18: jabatan picked from a default list; "Lainnya" opens manual input.
-const JABATAN_OPTIONS = ["Ketua", "Wakil", "Sekretaris", "Bendahara", "Kepala Bidang"] as const;
+// Revisi 2026-07-18: jabatan picked from a default list. Kepala/Wakil Bidang &
+// Seksi append the unit name; Anggota picks an existing bidang/seksi; "Lainnya"
+// opens manual input. Stored as one string (e.g. "Kepala Bidang Pembinaan").
+const JABATAN_SIMPLE = ["Ketua Umum", "Ketua Harian", "Wakil", "Sekretaris", "Bendahara"] as const;
+const JABATAN_PREFIXED = ["Kepala Bidang", "Wakil Kepala Bidang", "Kepala Seksi", "Wakil Kepala Seksi"] as const;
+const JABATAN_ANGGOTA = "Anggota";
 const JABATAN_LAINNYA = "Lainnya";
+
+/** Split a stored jabatan string back into (pilihan, detail) for the form. */
+function parseJabatan(jabatan: string): { pilihan: string; detail: string } {
+  // Longest prefix first so "Wakil Kepala Bidang X" doesn't match "Kepala Bidang".
+  const prefixes = [...JABATAN_PREFIXED].sort((a, b) => b.length - a.length);
+  for (const p of prefixes) {
+    if (jabatan === p) return { pilihan: p, detail: "" };
+    if (jabatan.startsWith(`${p} `)) return { pilihan: p, detail: jabatan.slice(p.length + 1) };
+  }
+  if (jabatan === JABATAN_ANGGOTA) return { pilihan: JABATAN_ANGGOTA, detail: "" };
+  if (jabatan.startsWith(`${JABATAN_ANGGOTA} `)) {
+    return { pilihan: JABATAN_ANGGOTA, detail: jabatan.slice(JABATAN_ANGGOTA.length + 1) };
+  }
+  if ((JABATAN_SIMPLE as readonly string[]).includes(jabatan)) return { pilihan: jabatan, detail: "" };
+  return { pilihan: JABATAN_LAINNYA, detail: jabatan };
+}
+
+/** Unique "Bidang X" / "Seksi Y" units derived from existing Kepala Bidang/Seksi entries. */
+function unitOptions(pengurus: { jabatan: string }[]): string[] {
+  const units = new Set<string>();
+  for (const p of pengurus) {
+    for (const [prefix, unit] of [
+      ["Kepala Bidang ", "Bidang "],
+      ["Wakil Kepala Bidang ", "Bidang "],
+      ["Kepala Seksi ", "Seksi "],
+      ["Wakil Kepala Seksi ", "Seksi "],
+    ] as const) {
+      if (p.jabatan.startsWith(prefix)) units.add(unit + p.jabatan.slice(prefix.length));
+    }
+  }
+  return [...units].sort();
+}
 
 interface PengurusForm {
   namaPengurus: string;
-  /** One of JABATAN_OPTIONS or JABATAN_LAINNYA. */
+  /** One of JABATAN_SIMPLE, JABATAN_PREFIXED, Anggota, or Lainnya. */
   jabatanPilihan: string;
-  /** Manual text, used when jabatanPilihan = Lainnya. */
-  jabatan: string;
+  /** Bidang/seksi name (prefixed roles), unit (Anggota), or full manual text (Lainnya). */
+  jabatanDetail: string;
   masaBaktiMulai: string;
   masaBaktiAkhir: string;
   kontak: string;
@@ -40,12 +76,24 @@ interface PengurusForm {
 const emptyPengurus: PengurusForm = {
   namaPengurus: "",
   jabatanPilihan: "",
-  jabatan: "",
+  jabatanDetail: "",
   masaBaktiMulai: "",
   masaBaktiAkhir: "",
   kontak: "",
   reportsToId: "",
 };
+
+/** Compose the stored jabatan string from the form's (pilihan, detail). */
+function composeJabatan(form: PengurusForm): string {
+  if (form.jabatanPilihan === JABATAN_LAINNYA) return form.jabatanDetail;
+  if (
+    (JABATAN_PREFIXED as readonly string[]).includes(form.jabatanPilihan) ||
+    form.jabatanPilihan === JABATAN_ANGGOTA
+  ) {
+    return form.jabatanDetail ? `${form.jabatanPilihan} ${form.jabatanDetail}` : form.jabatanPilihan;
+  }
+  return form.jabatanPilihan;
+}
 
 /** Module E — Cabang Olahraga detail + pengurus management. See specs/003-cabang-olahraga/spec.md, specs/006-pengurus-cabor/spec.md. */
 export function CaborDetailPage() {
@@ -83,11 +131,11 @@ export function CaborDetailPage() {
 
   function openEdit(p: Pengurus) {
     setEditingPengurus(p);
-    const isPreset = (JABATAN_OPTIONS as readonly string[]).includes(p.jabatan);
+    const { pilihan, detail } = parseJabatan(p.jabatan);
     setForm({
       namaPengurus: p.namaPengurus,
-      jabatanPilihan: isPreset ? p.jabatan : JABATAN_LAINNYA,
-      jabatan: isPreset ? "" : p.jabatan,
+      jabatanPilihan: pilihan,
+      jabatanDetail: detail,
       masaBaktiMulai: p.masaBaktiMulai.slice(0, 10),
       masaBaktiAkhir: p.masaBaktiAkhir.slice(0, 10),
       kontak: p.kontak ?? "",
@@ -104,7 +152,7 @@ export function CaborDetailPage() {
     try {
       const payload = {
         namaPengurus: form.namaPengurus,
-        jabatan: form.jabatanPilihan === JABATAN_LAINNYA ? form.jabatan : form.jabatanPilihan,
+        jabatan: composeJabatan(form),
         masaBaktiMulai: form.masaBaktiMulai,
         masaBaktiAkhir: form.masaBaktiAkhir,
         kontak: form.kontak || undefined,
@@ -291,22 +339,57 @@ export function CaborDetailPage() {
                 id="jabatanPilihan"
                 required
                 value={form.jabatanPilihan}
-                onChange={(v) => setForm((f) => ({ ...f, jabatanPilihan: v }))}
+                onChange={(v) => setForm((f) => ({ ...f, jabatanPilihan: v, jabatanDetail: "" }))}
                 options={[
                   { value: "", label: "Pilih jabatan" },
-                  ...JABATAN_OPTIONS.map((j) => ({ value: j, label: j })),
+                  ...JABATAN_SIMPLE.map((j) => ({ value: j, label: j })),
+                  ...JABATAN_PREFIXED.map((j) => ({ value: j, label: j })),
+                  { value: JABATAN_ANGGOTA, label: JABATAN_ANGGOTA },
                   { value: JABATAN_LAINNYA, label: JABATAN_LAINNYA },
                 ]}
               />
             </Field>
-            {form.jabatanPilihan === JABATAN_LAINNYA && (
-              <Field label="Jabatan Lainnya" required htmlFor="jabatan">
+            {(JABATAN_PREFIXED as readonly string[]).includes(form.jabatanPilihan) && (
+              <Field
+                label={form.jabatanPilihan.includes("Bidang") ? "Nama Bidang" : "Nama Seksi"}
+                required
+                htmlFor="jabatanDetail"
+              >
                 <Input
-                  id="jabatan"
+                  id="jabatanDetail"
+                  required
+                  placeholder={form.jabatanPilihan.includes("Bidang") ? "contoh: Pembinaan Prestasi" : "contoh: Perlengkapan"}
+                  value={form.jabatanDetail}
+                  onChange={(e) => setForm((f) => ({ ...f, jabatanDetail: e.target.value }))}
+                />
+              </Field>
+            )}
+            {form.jabatanPilihan === JABATAN_ANGGOTA && (
+              <Field label="Bidang/Seksi" required htmlFor="jabatanDetail">
+                <Select
+                  id="jabatanDetail"
+                  required
+                  value={form.jabatanDetail}
+                  onChange={(v) => setForm((f) => ({ ...f, jabatanDetail: v }))}
+                  options={[
+                    { value: "", label: "Pilih bidang/seksi" },
+                    ...unitOptions(cabor?.pengurus ?? []).map((u) => ({ value: u, label: u })),
+                    // Preserve a unit already on the record even if its kepala was removed.
+                    ...(form.jabatanDetail && !unitOptions(cabor?.pengurus ?? []).includes(form.jabatanDetail)
+                      ? [{ value: form.jabatanDetail, label: form.jabatanDetail }]
+                      : []),
+                  ]}
+                />
+              </Field>
+            )}
+            {form.jabatanPilihan === JABATAN_LAINNYA && (
+              <Field label="Jabatan Lainnya" required htmlFor="jabatanDetail">
+                <Input
+                  id="jabatanDetail"
                   required
                   placeholder="Tulis nama jabatan"
-                  value={form.jabatan}
-                  onChange={(e) => setForm((f) => ({ ...f, jabatan: e.target.value }))}
+                  value={form.jabatanDetail}
+                  onChange={(e) => setForm((f) => ({ ...f, jabatanDetail: e.target.value }))}
                 />
               </Field>
             )}
