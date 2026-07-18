@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Plus, Trash2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Lock, LockOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import { UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Badge, DataTable, SearchInput, type Column, type BulkAction } from "../../components/ui";
+import { ActionMenu, Card, PageHeader, Button, Badge, DataTable, SearchInput, type Column, type BulkAction } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import { confirmAction } from "../../lib/confirm";
@@ -22,6 +22,7 @@ interface CaborRow {
 
 /** Module E — Cabang Olahraga list. See specs/003-cabang-olahraga/spec.md. */
 export function CaborListPage() {
+  const navigate = useNavigate();
   const role = useAuthStore((state) => state.user?.role);
   const canCreate = role && UNSCOPED_ADMIN_ROLES.includes(role);
   const canToggleActive = role === "SUPER_ADMIN_KONI";
@@ -62,6 +63,23 @@ export function CaborListPage() {
       toast.error(`${failed} dari ${ids.length} cabang olahraga gagal dihapus.`);
     }
     setReloadKey((k) => k + 1);
+  }
+
+  async function handleDelete(c: CaborRow) {
+    const confirmed = await confirmAction({
+      text: `Hapus ${c.nama} secara permanen? Tindakan ini tidak dapat dibatalkan.`,
+      danger: true,
+      confirmText: "Hapus",
+    });
+    if (!confirmed) return;
+    try {
+      await api.delete(`/cabor/${c.id}`);
+      toast.success("Cabang olahraga berhasil dihapus.");
+      setReloadKey((k) => k + 1);
+    } catch (err) {
+      const msg = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
+      toast.error(typeof msg === "string" ? msg : "Gagal menghapus cabang olahraga.");
+    }
   }
 
   async function handleToggleActive(c: CaborRow) {
@@ -149,23 +167,23 @@ export function CaborListPage() {
       render: (c) =>
         c.isActive ? <Badge tone="success">Aktif</Badge> : <Badge tone="neutral">Nonaktif</Badge>,
     },
+    // Revisi 2026-07-18: SUPER_ADMIN row actions in a three-dots dropdown —
+    // edit, deactivate/activate, and permanent delete (SweetAlert confirm).
     ...(canToggleActive
       ? [
           {
             key: "aksi",
             label: "Aksi",
             render: (c) => (
-              <Button
-                variant="outline"
-                onClick={() => handleToggleActive(c)}
-                className={
+              <ActionMenu
+                items={[
+                  { label: "Edit", icon: Pencil, onClick: () => navigate(`/cabor/${c.id}/edit`) },
                   c.isActive
-                    ? "border-warning/40 text-warning hover:bg-warning/10"
-                    : "border-success/40 text-success hover:bg-success/10"
-                }
-              >
-                {c.isActive ? "Nonaktifkan" : "Aktifkan"}
-              </Button>
+                    ? { label: "Nonaktifkan", icon: Lock, onClick: () => handleToggleActive(c) }
+                    : { label: "Aktifkan", icon: LockOpen, onClick: () => handleToggleActive(c) },
+                  { label: "Hapus", icon: Trash2, danger: true, onClick: () => handleDelete(c) },
+                ]}
+              />
             ),
           } satisfies Column<CaborRow>,
         ]

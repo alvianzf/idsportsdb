@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
+import { logout } from "../lib/api";
 import type { NavItem } from "./navConfig";
 
 export function Sidebar({ items }: { items: NavItem[] }) {
@@ -62,6 +63,19 @@ export function Sidebar({ items }: { items: NavItem[] }) {
           </NavLink>
         ))}
       </nav>
+
+      {/* Logout (revisi 2026-07-18) */}
+      <button
+        type="button"
+        onClick={() => void logout()}
+        title="Keluar"
+        className={`flex items-center border-t border-white/15 py-3 text-white/70 transition-colors hover:bg-white/10 hover:text-white ${
+          collapsed ? "justify-center" : "gap-3 px-6"
+        }`}
+      >
+        <LogOut size={18} strokeWidth={1.8} />
+        {!collapsed && <span className="text-sm font-medium">Keluar</span>}
+      </button>
 
       {/* Collapse toggle */}
       <button

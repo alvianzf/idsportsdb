@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { Home } from "lucide-react";
 import { api } from "../lib/api";
 import { useAuthStore } from "../store/authStore";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
@@ -40,7 +41,15 @@ export function LoginPage() {
   return (
     // Revisi 2026-07-12: split login — left half red 50% opacity with the KONI
     // logo centered (20% viewport height), right half the centered form.
-    <div className="flex min-h-svh bg-neutral-50">
+    <div className="relative flex min-h-svh bg-neutral-50">
+      {/* Home button back to the landing page (revisi 2026-07-18) */}
+      <Link
+        to="/"
+        title="Kembali ke Beranda"
+        className="absolute left-4 top-4 z-10 flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-sm font-medium text-neutral-700 shadow-sm backdrop-blur transition-colors hover:text-primary"
+      >
+        <Home size={16} /> Beranda
+      </Link>
       <div className="hidden w-1/2 items-center justify-center bg-primary/50 md:flex">
         <img src="/logo-koni-batam.png" alt="KONI Batam" className="h-[20svh] object-contain" />
       </div>
