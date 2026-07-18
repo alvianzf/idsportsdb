@@ -18,7 +18,7 @@ export interface ActionMenuItem {
  */
 export function ActionMenu({ items, label = "Aksi" }: { items: ActionMenuItem[]; label?: string }) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; right: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -29,7 +29,15 @@ export function ActionMenu({ items, label = "Aksi" }: { items: ActionMenuItem[];
     }
     const rect = buttonRef.current?.getBoundingClientRect();
     if (!rect) return;
-    setPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    // Flip upward when the menu would run past the bottom of the viewport
+    // (≈40px per item + padding), so last-row menus stay fully visible.
+    const estimatedHeight = items.length * 40 + 10;
+    const openUp = rect.bottom + 4 + estimatedHeight > window.innerHeight && rect.top > estimatedHeight;
+    setPos(
+      openUp
+        ? { bottom: window.innerHeight - rect.top + 4, right: window.innerWidth - rect.right }
+        : { top: rect.bottom + 4, right: window.innerWidth - rect.right },
+    );
     setOpen(true);
   }
 
@@ -79,7 +87,7 @@ export function ActionMenu({ items, label = "Aksi" }: { items: ActionMenuItem[];
           <div
             ref={menuRef}
             role="menu"
-            style={{ top: pos.top, right: pos.right }}
+            style={{ top: pos.top, bottom: pos.bottom, right: pos.right }}
             className="fixed z-50 w-48 overflow-hidden rounded-md border border-neutral-200 bg-white py-1 shadow-lg"
           >
             {items.map((item) => (
