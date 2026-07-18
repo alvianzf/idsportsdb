@@ -42,6 +42,7 @@ atletPrestasiRouter.get(
 
     const prestasis = await prisma.prestasi.findMany({
       where: { atletId: req.params.atletId },
+      include: { sertifikats: { orderBy: { uploadedAt: "desc" } } },
       orderBy: { tahun: "desc" },
     });
     res.json(prestasis);
@@ -107,7 +108,7 @@ prestasiRouter.get(
     const [items, total] = await Promise.all([
       prisma.prestasi.findMany({
         where,
-        include: { atlet: atletSummary },
+        include: { atlet: atletSummary, sertifikats: { orderBy: { uploadedAt: "desc" } } },
         orderBy: [{ tahun: "desc" }, { createdAt: "desc" }],
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -211,14 +212,45 @@ prestasiRouter.post(
       return;
     }
 
-    const sertifikatUrl = publicUrl("prestasi-sertifikat", req.file.filename);
-    const updated = await prisma.prestasi.update({
-      where: { id: req.params.id },
-      data: { sertifikatUrl },
+    // Revisi 2026-07-18: certificates accumulate (multiple per prestasi)
+    // instead of replacing a single file.
+    await prisma.prestasiSertifikat.create({
+      data: {
+        prestasiId: req.params.id,
+        fileUrl: publicUrl("prestasi-sertifikat", req.file.filename),
+      },
     });
-    if (prestasi.sertifikatUrl) {
-      fs.unlink(path.join(uploadRoot, prestasi.sertifikatUrl.replace("/uploads/", "")), () => undefined);
-    }
+    const updated = await prisma.prestasi.findUnique({
+      where: { id: req.params.id },
+      include: { sertifikats: { orderBy: { uploadedAt: "desc" } } },
+    });
     res.json(updated);
+  }),
+);
+
+// Revisi 2026-07-18: remove one certificate file from a prestasi.
+prestasiRouter.delete(
+  "/:id/sertifikat/:sertifikatId",
+  requireRole(DATA_ADMIN_ROLES),
+  asyncHandler(async (req, res) => {
+    const { prestasi, allowed } = await loadPrestasiWithAccessCheck(req);
+    if (!prestasi) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (!allowed) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    const sertifikat = await prisma.prestasiSertifikat.findFirst({
+      where: { id: req.params.sertifikatId, prestasiId: req.params.id },
+    });
+    if (!sertifikat) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    await prisma.prestasiSertifikat.delete({ where: { id: sertifikat.id } });
+    fs.unlink(path.join(uploadRoot, sertifikat.fileUrl.replace("/uploads/", "")), () => undefined);
+    res.status(204).send();
   }),
 );

@@ -13,6 +13,12 @@ import { Card, Button, Badge, Field, Input, Select, Modal } from "../../../compo
 import { api, resolveFileUrl } from "../../../lib/api";
 import { confirmAction } from "../../../lib/confirm";
 
+interface PrestasiSertifikat {
+  id: string;
+  fileUrl: string;
+  uploadedAt: string;
+}
+
 interface Prestasi {
   id: string;
   namaKejuaraan: string;
@@ -20,7 +26,9 @@ interface Prestasi {
   tahun: number;
   medali: Medal;
   peringkat: number | null;
+  // Legacy single certificate; new uploads land in `sertifikats`.
   sertifikatUrl: string | null;
+  sertifikats: PrestasiSertifikat[];
 }
 
 interface PrestasiForm {
@@ -141,6 +149,17 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
     }
   }
 
+  async function handleDeleteCert(p: Prestasi, s: PrestasiSertifikat) {
+    if (!(await confirmAction({ text: "Hapus sertifikat ini?" }))) return;
+    try {
+      await api.delete(`/prestasi/${p.id}/sertifikat/${s.id}`);
+      toast.success("Sertifikat berhasil dihapus.");
+      load();
+    } catch {
+      toast.error("Gagal menghapus sertifikat.");
+    }
+  }
+
   async function handleUploadCert(p: Prestasi, event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -187,15 +206,40 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
                   {COMPETITION_LEVEL_LABELS[p.tingkatKejuaraan]} &middot; {p.tahun}
                   {p.peringkat ? ` · Peringkat ${p.peringkat}` : ""}
                 </p>
-                {p.sertifikatUrl && (
-                  <a
-                    href={resolveFileUrl(p.sertifikatUrl)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                  >
-                    <FileText size={14} /> Lihat sertifikat
-                  </a>
+                {(p.sertifikatUrl || p.sertifikats.length > 0) && (
+                  <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    {p.sertifikatUrl && (
+                      <a
+                        href={resolveFileUrl(p.sertifikatUrl)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                      >
+                        <FileText size={14} /> Sertifikat
+                      </a>
+                    )}
+                    {p.sertifikats.map((s, i) => (
+                      <span key={s.id} className="inline-flex items-center gap-1 text-xs">
+                        <a
+                          href={resolveFileUrl(s.fileUrl)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-primary hover:underline"
+                        >
+                          <FileText size={14} /> Sertifikat {p.sertifikatUrl ? i + 2 : i + 1}
+                        </a>
+                        {canManage && (
+                          <button
+                            onClick={() => handleDeleteCert(p, s)}
+                            aria-label="Hapus sertifikat"
+                            className="text-neutral-400 hover:text-danger"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                  </span>
                 )}
               </div>
               <div className="flex items-center gap-2">

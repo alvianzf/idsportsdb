@@ -354,7 +354,10 @@ model Prestasi {
   tahun            Int
   medali           Medal
   peringkat        Int?
+  // Legacy single certificate (pre revisi 2026-07-18); new uploads go to `sertifikats`.
   sertifikatUrl    String?
+
+  sertifikats      PrestasiSertifikat[]
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -364,6 +367,17 @@ model Prestasi {
   @@index([medali])
   @@index([tingkatKejuaraan])
   @@index([tahun, tingkatKejuaraan, medali])
+}
+
+// Revisi 2026-07-18: a prestasi can hold multiple certificate files.
+model PrestasiSertifikat {
+  id         String   @id @default(uuid())
+  prestasiId String
+  prestasi   Prestasi @relation(fields: [prestasiId], references: [id], onDelete: Cascade)
+  fileUrl    String
+  uploadedAt DateTime @default(now())
+
+  @@index([prestasiId])
 }
 
 // Unified monitoring/timeline log for Modul G (cedera, mutasi, pemusatan latihan,
