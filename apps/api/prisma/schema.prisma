@@ -33,6 +33,7 @@ enum AthleteStatus {
   INJURED
   TRAINING_CAMP // pemusatan latihan
   TRANSFERRED // mutasi
+  RETIRED // pensiun (revisi 2026-07-18)
 }
 
 // Revisi 2026-07-12: tingkat atlet final — Kota/Provinsi/Nasional/Internasional.

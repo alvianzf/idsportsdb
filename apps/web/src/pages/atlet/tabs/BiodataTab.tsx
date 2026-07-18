@@ -15,6 +15,7 @@ const STATUS_TONE: Record<AthleteStatus, "success" | "danger" | "warning" | "inf
   INJURED: "danger",
   TRAINING_CAMP: "info",
   TRANSFERRED: "warning",
+  RETIRED: "neutral",
 };
 
 function formatDate(value: string) {

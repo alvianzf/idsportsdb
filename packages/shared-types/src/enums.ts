@@ -11,6 +11,7 @@ export const ATHLETE_STATUSES = [
   "INJURED",
   "TRAINING_CAMP",
   "TRANSFERRED",
+  "RETIRED",
 ] as const;
 export type AthleteStatus = (typeof ATHLETE_STATUSES)[number];
 export const ATHLETE_STATUS_LABELS: Record<AthleteStatus, string> = {
@@ -19,6 +20,7 @@ export const ATHLETE_STATUS_LABELS: Record<AthleteStatus, string> = {
   INJURED: "Cedera",
   TRAINING_CAMP: "TC",
   TRANSFERRED: "Mutasi",
+  RETIRED: "Pensiun",
 };
 
 // Revisi 2026-07-12: tingkat atlet final — Kota/Provinsi/Nasional/Internasional.
