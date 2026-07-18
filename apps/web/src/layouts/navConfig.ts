@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Newspaper,
   History,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@inasportdb/shared-types";
@@ -44,6 +45,8 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { to: "/slider", label: "Slider Beranda", icon: Images, roles: ["SUPER_ADMIN_KONI"] },
   { to: "/users", label: "Pengguna", icon: ShieldCheck, roles: ["SUPER_ADMIN_KONI", "ADMIN_KONI"] },
   { to: "/audit", label: "Riwayat Aktivitas", icon: History, roles: ["SUPER_ADMIN_KONI"] },
+  // Revisi 2026-07-18: SUPER_ADMIN hub for all system capabilities.
+  { to: "/settings", label: "Pengaturan Sistem", icon: Settings, roles: ["SUPER_ADMIN_KONI"] },
 ];
 
 export const ATLET_NAV_ITEMS: NavItem[] = [

@@ -79,6 +79,7 @@ const ArtikelFormPage = page(() => import("../pages/artikel/ArtikelFormPage"), "
 const ArtikelPublicPage = page(() => import("../pages/artikel/ArtikelPublicPage"), "ArtikelPublicPage");
 
 const SliderAdminPage = page(() => import("../pages/slider/SliderAdminPage"), "SliderAdminPage");
+const SystemSettingsPage = page(() => import("../pages/settings/SystemSettingsPage"), "SystemSettingsPage");
 const UsersListPage = page(() => import("../pages/users/UsersListPage"), "UsersListPage");
 const UsersFormPage = page(() => import("../pages/users/UsersFormPage"), "UsersFormPage");
 const AuditLogPage = page(() => import("../pages/audit/AuditLogPage"), "AuditLogPage");
@@ -241,6 +242,16 @@ const router = createBrowserRouter([
         element: (
           <RequireRole roles={["SUPER_ADMIN_KONI", "ADMIN_KONI"]}>
             <Suspense fallback={<PageLoader />}><UsersFormPage /></Suspense>
+          </RequireRole>
+        ),
+      },
+
+      // Pengaturan Sistem hub (Super Admin only, revisi 2026-07-18)
+      {
+        path: "settings",
+        element: (
+          <RequireRole roles={["SUPER_ADMIN_KONI"]}>
+            <Suspense fallback={<PageLoader />}><SystemSettingsPage /></Suspense>
           </RequireRole>
         ),
       },
