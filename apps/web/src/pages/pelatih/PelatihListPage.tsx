@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Archive, ArchiveRestore, Plus, Search, Trash2 } from "lucide-react";
 import { DATA_ADMIN_ROLES, LICENSE_TIERS, UNSCOPED_ADMIN_ROLES, UNSCOPED_VIEW_ROLES } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Input, Badge, Pagination, Combobox, DataTable, Select, type Column, type BulkAction } from "../../components/ui";
+import { Card, PageHeader, Button, Input, Badge, Modal, Pagination, Combobox, DataTable, Select, type Column, type BulkAction } from "../../components/ui";
+import { PelatihFormPage } from "./PelatihFormPage";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import { confirmAction } from "../../lib/confirm";
@@ -33,6 +34,7 @@ export function PelatihListPage() {
   const canRestore = role && UNSCOPED_ADMIN_ROLES.includes(role);
   const canHardDelete = role === "SUPER_ADMIN_KONI";
   const [showArchive, setShowArchive] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
 
   const [items, setItems] = useState<PelatihRow[] | null>(null);
   const [total, setTotal] = useState(0);
@@ -218,15 +220,32 @@ export function PelatihListPage() {
               </Button>
             )}
             {canCreate && !showArchive && (
-              <Link to="/pelatih/new">
-                <Button>
-                  <Plus size={16} /> Tambah
-                </Button>
-              </Link>
+              // Revisi 2026-07-18: create form opens in a modal instead of a page.
+              <Button onClick={() => setShowCreate(true)} title="Tambah pelatih baru">
+                <Plus size={16} /> Tambah
+              </Button>
             )}
           </div>
         }
       />
+
+      {showCreate && (
+        <Modal
+          title="Tambah Pelatih"
+          onClose={() => {
+            setShowCreate(false);
+            setReloadKey((k) => k + 1);
+          }}
+        >
+          <PelatihFormPage
+            embedded
+            onDone={() => {
+              setShowCreate(false);
+              setReloadKey((k) => k + 1);
+            }}
+          />
+        </Modal>
+      )}
 
       <Card className="mb-4">
         {/* Revisi 2026-07-18: search + filters share one row (like Pengguna). */}
