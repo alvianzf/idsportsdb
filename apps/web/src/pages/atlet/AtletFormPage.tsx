@@ -116,7 +116,7 @@ export function AtletFormPage() {
   const createdAtletIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    api.get<CaborOption[]>("/cabor").then((res) => setCabors(res.data));
+    api.get<CaborOption[]>(isEdit ? "/cabor" : "/cabor?active=true").then((res) => setCabors(res.data));
   }, []);
 
   useEffect(() => {
@@ -210,8 +210,9 @@ export function AtletFormPage() {
         cabangOlahragaId: form.cabangOlahragaId || undefined,
         cabangOlahragaLain: form.cabangOlahragaLain,
         statusAtlet: form.statusAtlet,
-        tanggalCedera: form.statusAtlet === "INJURED" && form.tanggalCedera ? form.tanggalCedera : undefined,
-        keteranganCedera: form.statusAtlet === "INJURED" && form.keteranganCedera ? form.keteranganCedera : undefined,
+        // null (not undefined) so emptying a field actually clears the stored value.
+        tanggalCedera: form.statusAtlet === "INJURED" ? form.tanggalCedera || null : null,
+        keteranganCedera: form.statusAtlet === "INJURED" ? form.keteranganCedera || null : null,
         tingkatAtlet: form.tingkatAtlet || undefined,
         pendidikan: form.pendidikan || undefined,
         pekerjaan: form.pekerjaan || undefined,

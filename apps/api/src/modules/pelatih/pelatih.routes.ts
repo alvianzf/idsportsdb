@@ -258,7 +258,11 @@ pelatihRouter.delete(
   requireRole(["SUPER_ADMIN_KONI"]),
   asyncHandler(async (req, res) => {
     try {
-      await prisma.pelatih.delete({ where: { id: req.params.id } });
+      const deleted = await prisma.pelatih.delete({ where: { id: req.params.id } });
+      // Uploaded files are removed together with their DB record.
+      if (deleted.lisensiFileUrl) {
+        fs.unlink(path.join(uploadRoot, deleted.lisensiFileUrl.replace("/uploads/", "")), () => undefined);
+      }
       writeAudit(req.user!.id, "PERMANENT_DELETE", "Pelatih", req.params.id);
       res.status(204).send();
     } catch (err) {

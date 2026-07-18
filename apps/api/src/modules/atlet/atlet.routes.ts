@@ -190,11 +190,21 @@ atletRouter.post(
     const { cabangOlahragaLain, ...rest } = parsed.data;
     // Cedera detail only applies to status INJURED.
     if (rest.statusAtlet !== "INJURED") {
-      rest.tanggalCedera = undefined;
-      rest.keteranganCedera = undefined;
+      rest.tanggalCedera = null;
+      rest.keteranganCedera = null;
     }
     const cabangOlahragaId = req.scopedCaborId ?? rest.cabangOlahragaId;
     const lainItems = dedupeCaborLain(cabangOlahragaLain, cabangOlahragaId);
+
+    // Revisi 2026-07-18: a deactivated cabor cannot receive new athletes.
+    const targetCabor = await prisma.cabangOlahraga.findUnique({
+      where: { id: cabangOlahragaId },
+      select: { isActive: true },
+    });
+    if (targetCabor && !targetCabor.isActive) {
+      res.status(400).json({ error: "Cabang olahraga tersebut sedang nonaktif" });
+      return;
+    }
 
     // #56 — an ADMIN_CABOR may only manage memberships in their own cabor, which
     // is already forced to be the primary here, so any secondary membership
@@ -259,8 +269,9 @@ atletRouter.patch(
 
     // specs/004-atlet/spec.md §3 — ADMIN_CABOR cannot change the primary cabor.
     const data: Prisma.AtletUncheckedUpdateInput = { ...rest };
-    // Cedera detail only applies to status INJURED — clear it on any other status.
-    if (rest.statusAtlet && rest.statusAtlet !== "INJURED") {
+    // Cedera detail only applies to status INJURED — clear it whenever the
+    // effective status (sent or already stored) is anything else.
+    if ((rest.statusAtlet ?? existing.statusAtlet) !== "INJURED") {
       data.tanggalCedera = null;
       data.keteranganCedera = null;
     }
@@ -282,12 +293,36 @@ atletRouter.patch(
       };
     }
 
+    // A status change to TRANSFERRED must go through the mutasi approval flow
+    // (see monitoring routes) — same rule as monitoring STATUS_CHANGE events.
+    const statusChanged = rest.statusAtlet && rest.statusAtlet !== existing.statusAtlet;
+    if (statusChanged && rest.statusAtlet === "TRANSFERRED") {
+      res.status(400).json({ error: "Status TRANSFERRED harus melalui proses mutasi" });
+      return;
+    }
+
     try {
       const atlet = await prisma.atlet.update({
         where: { id: req.params.id },
         data,
         include: { cabangOlahraga: caborSummary, ...caborTambahanInclude, documents: true },
       });
+      // Keep the monitoring timeline complete: a status change made from the
+      // atlet form is logged the same way as one made via the Monitoring module.
+      if (statusChanged) {
+        await prisma.monitoringEvent.create({
+          data: {
+            atletId: atlet.id,
+            type: "STATUS_CHANGE",
+            fromValue: existing.statusAtlet,
+            toValue: rest.statusAtlet,
+            description: rest.statusAtlet === "INJURED" ? rest.keteranganCedera ?? undefined : undefined,
+            eventDate: rest.statusAtlet === "INJURED" ? rest.tanggalCedera ?? undefined : undefined,
+            createdById: req.user!.id,
+          },
+        });
+        emit("monitoring:change");
+      }
       emit("atlet:change");
       writeAudit(req.user!.id, "UPDATE", "Atlet", atlet.id);
       res.json(atlet);
@@ -373,7 +408,13 @@ atletRouter.delete(
     // document, so dedupe to avoid unlinking the same path twice.
     const existing = await prisma.atlet.findUnique({
       where: { id: req.params.id },
-      select: { fotoUrl: true, documents: { select: { fileUrl: true } } },
+      select: {
+        fotoUrl: true,
+        documents: { select: { fileUrl: true } },
+        // Prestasi certificates cascade-delete with the athlete — unlink their
+        // files too (both the legacy single URL and the multi-file rows).
+        prestasis: { select: { sertifikatUrl: true, sertifikats: { select: { fileUrl: true } } } },
+      },
     });
     try {
       await prisma.$transaction(async (tx) => {
@@ -389,6 +430,10 @@ atletRouter.delete(
       writeAudit(req.user!.id, "PERMANENT_DELETE", "Atlet", req.params.id);
       const urls = new Set(existing?.documents.map((d) => d.fileUrl) ?? []);
       if (existing?.fotoUrl) urls.add(existing.fotoUrl);
+      for (const p of existing?.prestasis ?? []) {
+        if (p.sertifikatUrl) urls.add(p.sertifikatUrl);
+        for (const s of p.sertifikats) urls.add(s.fileUrl);
+      }
       for (const url of urls) {
         fs.unlink(path.join(uploadRoot, url.replace("/uploads/", "")), () => undefined);
       }

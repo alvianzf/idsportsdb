@@ -98,7 +98,17 @@ function censorName(name: string): string {
     .join(" ");
 }
 
+// Revisi 2026-07-18: championship levels rank above the legacy generic levels.
 const COMPETITION_LEVEL_RANK: Record<string, number> = {
+  OLIMPIADE: 13,
+  ASIAN_GAMES: 12,
+  SEA_GAMES: 11,
+  PON: 10,
+  BK_PON: 9,
+  PORWIL: 8,
+  PORPROV: 7,
+  KEJURNAS: 6,
+  KEJURDA: 5,
   INTERNASIONAL: 4,
   NASIONAL: 3,
   PROVINSI: 2,
@@ -117,9 +127,11 @@ publicRouter.get(
     const pageSize = Math.min(Number(req.query.pageSize) || 20, 50);
 
     // Revisi 2026-07-12: mutasi (TRANSFERRED) dan atlet non-aktif tidak
-    // ditampilkan di menu Data publik.
+    // ditampilkan di menu Data publik. Revisi 2026-07-18: pensiun (RETIRED) juga.
     const publicWhere = {
-      statusAtlet: { notIn: ["INACTIVE", "TRANSFERRED"] as ("INACTIVE" | "TRANSFERRED")[] },
+      statusAtlet: {
+        notIn: ["INACTIVE", "TRANSFERRED", "RETIRED"] as ("INACTIVE" | "TRANSFERRED" | "RETIRED")[],
+      },
       deletedAt: null,
     };
 

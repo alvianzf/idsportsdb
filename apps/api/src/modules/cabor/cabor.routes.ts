@@ -40,9 +40,12 @@ caborRouter.get(
     }
 
     const cabors = await prisma.cabangOlahraga.findMany({
-      where: parsed.data.search
-        ? { nama: { contains: parsed.data.search, mode: "insensitive" } }
-        : undefined,
+      where: {
+        ...(parsed.data.search
+          ? { nama: { contains: parsed.data.search, mode: "insensitive" } }
+          : {}),
+        ...(parsed.data.active !== undefined ? { isActive: parsed.data.active } : {}),
+      },
       include: { _count: { select: { atlets: true, pelatihs: true } } },
       orderBy: { nama: "asc" },
     });

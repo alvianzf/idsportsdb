@@ -84,7 +84,7 @@ export function PelatihFormPage() {
 
   useEffect(() => {
     if (isUnscopedAdmin) {
-      api.get<CaborOption[]>("/cabor").then((res) => setCabors(res.data));
+      api.get<CaborOption[]>(isEdit ? "/cabor" : "/cabor?active=true").then((res) => setCabors(res.data));
     }
   }, [isUnscopedAdmin]);
 

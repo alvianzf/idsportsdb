@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { KeyRound, Lock, LockOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import { ROLES, ROLE_LABELS, type Role } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Badge, Select, DataTable, type Column, type BulkAction } from "../../components/ui";
+import { ActionMenu, Card, PageHeader, Button, Badge, Select, DataTable, type Column, type BulkAction } from "../../components/ui";
 import { api } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 import { useAuthStore } from "../../store/authStore";
@@ -28,6 +28,7 @@ const ROLE_BADGE_TONE: Record<Role, "danger" | "info" | "warning" | "neutral"> =
 };
 
 export function UsersListPage() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [roleFilter, setRoleFilter] = useState<Role | "">("");
   const [error, setError] = useState<string | null>(null);
@@ -160,46 +161,17 @@ export function UsersListPage() {
       label: "Aksi",
       render: (user) =>
         canManage(user) ? (
-          <div className="flex flex-wrap gap-2">
-            {/* Edit — neutral outline */}
-            <Link to={`/users/${user.id}/edit`}>
-              <Button variant="outline">Edit</Button>
-            </Link>
-            {/* Reset Password — purple */}
-            <Button
-              variant="outline"
-              onClick={() => handleResetPassword(user)}
-              title="Reset kata sandi — kirim ulang email dengan kata sandi baru"
-              className="border-purple-300 text-purple-600 hover:bg-purple-50"
-            >
-              <RotateCcw size={14} /> Reset Password
-            </Button>
-            {/* Deactivate — amber/warning; Activate — green/success */}
-            {user.isActive ? (
-              <Button
-                variant="outline"
-                onClick={() => handleDeactivate(user)}
-                className="border-warning/40 text-warning hover:bg-warning/10"
-              >
-                Nonaktifkan
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                onClick={() => handleActivate(user)}
-                className="border-success/40 text-success hover:bg-success/10"
-              >
-                Aktifkan
-              </Button>
-            )}
-            {/* Hard delete — red/danger */}
-            <Button
-              variant="danger"
-              onClick={() => handleDelete(user)}
-            >
-              <Trash2 size={14} /> Hapus
-            </Button>
-          </div>
+          // Revisi 2026-07-18: all row actions live in a three-dots dropdown.
+          <ActionMenu
+            items={[
+              { label: "Edit", icon: Pencil, onClick: () => navigate(`/users/${user.id}/edit`) },
+              { label: "Reset kata sandi", icon: KeyRound, onClick: () => handleResetPassword(user) },
+              user.isActive
+                ? { label: "Nonaktifkan", icon: Lock, onClick: () => handleDeactivate(user) }
+                : { label: "Aktifkan", icon: LockOpen, onClick: () => handleActivate(user) },
+              { label: "Hapus permanen", icon: Trash2, danger: true, onClick: () => handleDelete(user) },
+            ]}
+          />
         ) : (
           <span className="text-sm text-neutral-400">—</span>
         ),

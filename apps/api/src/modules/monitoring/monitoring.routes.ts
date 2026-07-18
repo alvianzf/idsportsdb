@@ -110,8 +110,11 @@ atletMonitoringRouter.post(
           where: { id: req.params.atletId },
           data: {
             statusAtlet: toValue as AthleteStatus,
-            // Cedera detail only applies while status is INJURED.
-            ...(toValue !== "INJURED" ? { tanggalCedera: null, keteranganCedera: null } : {}),
+            // Cedera detail only applies while status is INJURED: populate it
+            // from the monitoring event on entry, clear it on exit.
+            ...(toValue === "INJURED"
+              ? { tanggalCedera: eventDate ?? new Date(), keteranganCedera: description ?? null }
+              : { tanggalCedera: null, keteranganCedera: null }),
           },
         });
       }

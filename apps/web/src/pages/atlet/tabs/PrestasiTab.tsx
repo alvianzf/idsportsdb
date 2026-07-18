@@ -209,14 +209,25 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
                 {(p.sertifikatUrl || p.sertifikats.length > 0) && (
                   <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                     {p.sertifikatUrl && (
-                      <a
-                        href={resolveFileUrl(p.sertifikatUrl)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                      >
-                        <FileText size={14} /> Sertifikat
-                      </a>
+                      <span className="inline-flex items-center gap-1 text-xs">
+                        <a
+                          href={resolveFileUrl(p.sertifikatUrl)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-primary hover:underline"
+                        >
+                          <FileText size={14} /> Sertifikat
+                        </a>
+                        {canManage && (
+                          <button
+                            onClick={() => handleDeleteCert(p, { id: "legacy", fileUrl: p.sertifikatUrl!, uploadedAt: "" })}
+                            aria-label="Hapus sertifikat"
+                            className="text-neutral-400 hover:text-danger"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </span>
                     )}
                     {p.sertifikats.map((s, i) => (
                       <span key={s.id} className="inline-flex items-center gap-1 text-xs">
