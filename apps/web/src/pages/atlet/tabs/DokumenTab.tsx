@@ -1,8 +1,8 @@
-import { useRef, useState, type ChangeEvent } from "react";
+import { useState } from "react";
 import { CheckCircle2, Eye, FileText, Trash2, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS, type DocumentType } from "@inasportdb/shared-types";
-import { Card, Badge, Modal } from "../../../components/ui";
+import { Card, Badge, DropZone, Modal } from "../../../components/ui";
 import { api, resolveFileUrl } from "../../../lib/api";
 import { confirmAction } from "../../../lib/confirm";
 import type { AtletDocument } from "../types";
@@ -17,9 +17,8 @@ interface DokumenTabProps {
 export function DokumenTab({ atletId, documents, canManage, onChange }: DokumenTabProps) {
   const [uploading, setUploading] = useState<DocumentType | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // preview before upload
-  const [pendingFile, setPendingFile] = useState<{ type: DocumentType; file: File; dataUrl: string } | null>(null);
-  const fileRefs = useRef<Partial<Record<DocumentType, HTMLInputElement>>>({});
+  // Revisi 2026-07-18: uploads go through a modal with a drag & drop zone + preview.
+  const [pendingFile, setPendingFile] = useState<{ type: DocumentType; file: File | null } | null>(null);
 
   const byType = Object.fromEntries(
     DOCUMENT_TYPES.map((t) => [t, documents.filter((d) => d.type === t)]),
@@ -29,21 +28,8 @@ export function DokumenTab({ atletId, documents, canManage, onChange }: DokumenT
   const uploadedTypeCount = DOCUMENT_TYPES.filter((t) => (byType[t]?.length ?? 0) > 0).length;
   const totalCount = DOCUMENT_TYPES.length;
 
-  // Show a preview modal before confirming the upload
-  function handleFileSelect(type: DocumentType, event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPendingFile({ type, file, dataUrl: e.target?.result as string });
-    };
-    reader.readAsDataURL(file);
-    // Reset input so the same file can be re-selected
-    event.target.value = "";
-  }
-
   async function confirmUpload() {
-    if (!pendingFile) return;
+    if (!pendingFile?.file) return;
     const { type, file } = pendingFile;
     setPendingFile(null);
     setError(null);
@@ -155,31 +141,25 @@ export function DokumenTab({ atletId, documents, canManage, onChange }: DokumenT
                 ))}
 
                 {canManage && (
-                  <label className="cursor-pointer">
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition ${
-                        uploading === type
-                          ? "border-neutral-200 text-neutral-400"
-                          : hasDoc && type !== "SERTIFIKAT_PRESTASI"
-                          ? "border-neutral-200 text-neutral-600 hover:border-neutral-300"
-                          : "border-primary/40 text-primary hover:border-primary"
-                      }`}
-                    >
-                      <Upload size={13} />
-                      {uploading === type
-                        ? "Mengunggah..."
+                  <button
+                    type="button"
+                    disabled={!!uploading}
+                    onClick={() => setPendingFile({ type, file: null })}
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition ${
+                      uploading === type
+                        ? "border-neutral-200 text-neutral-400"
                         : hasDoc && type !== "SERTIFIKAT_PRESTASI"
-                        ? "Ganti"
-                        : "Unggah"}
-                    </span>
-                    <input
-                      ref={(el) => { if (el) fileRefs.current[type] = el; }}
-                      type="file"
-                      className="hidden"
-                      disabled={!!uploading}
-                      onChange={(e) => handleFileSelect(type, e)}
-                    />
-                  </label>
+                        ? "border-neutral-200 text-neutral-600 hover:border-neutral-300"
+                        : "border-primary/40 text-primary hover:border-primary"
+                    }`}
+                  >
+                    <Upload size={13} />
+                    {uploading === type
+                      ? "Mengunggah..."
+                      : hasDoc && type !== "SERTIFIKAT_PRESTASI"
+                      ? "Ganti"
+                      : "Unggah"}
+                  </button>
                 )}
               </div>
             </li>
@@ -187,34 +167,23 @@ export function DokumenTab({ atletId, documents, canManage, onChange }: DokumenT
         })}
       </ul>
 
-      {/* Preview modal before confirming upload */}
+      {/* Drag & drop upload modal with preview (revisi 2026-07-18) */}
       {pendingFile && (
-        <Modal title={`Konfirmasi Unggah — ${DOCUMENT_TYPE_LABELS[pendingFile.type]}`} onClose={() => setPendingFile(null)}>
+        <Modal title={`Unggah ${DOCUMENT_TYPE_LABELS[pendingFile.type]}`} onClose={() => setPendingFile(null)}>
           <div className="space-y-4">
-            <div className="flex justify-center rounded-lg border border-neutral-200 bg-neutral-50 p-3">
-              {isImage(pendingFile.file.name) ? (
-                <img
-                  src={pendingFile.dataUrl}
-                  alt="Preview"
-                  className="max-h-64 max-w-full rounded object-contain"
-                />
-              ) : (
-                <div className="flex flex-col items-center gap-2 py-6 text-neutral-500">
-                  <FileText size={40} />
-                  <p className="text-sm">{pendingFile.file.name}</p>
-                  <p className="text-xs text-neutral-400">{(pendingFile.file.size / 1024).toFixed(1)} KB</p>
-                </div>
-              )}
-            </div>
-            <p className="text-sm text-neutral-600">
-              Unggah sebagai <strong>{DOCUMENT_TYPE_LABELS[pendingFile.type]}</strong>?
-            </p>
+            <DropZone
+              accept=".pdf,image/*"
+              value={pendingFile.file}
+              onChange={(file) => setPendingFile((p) => (p ? { ...p, file } : p))}
+              sublabel="PDF atau gambar"
+            />
             <div className="flex gap-2">
               <button
                 onClick={confirmUpload}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                disabled={!pendingFile.file}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
               >
-                Ya, Unggah
+                Unggah
               </button>
               <button
                 onClick={() => setPendingFile(null)}

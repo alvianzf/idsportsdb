@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { FileText, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -9,7 +9,7 @@ import {
   type CompetitionLevel,
   type Medal,
 } from "@inasportdb/shared-types";
-import { Card, Button, Badge, Field, Input, Select, Modal } from "../../../components/ui";
+import { Card, Button, Badge, DropZone, Field, Input, Select, Modal } from "../../../components/ui";
 import { api, resolveFileUrl } from "../../../lib/api";
 import { confirmAction } from "../../../lib/confirm";
 
@@ -80,6 +80,8 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [uploadTarget, setUploadTarget] = useState<Prestasi | null>(null);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
 
   function load() {
     api
@@ -160,13 +162,16 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
     }
   }
 
-  async function handleUploadCert(p: Prestasi, event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  // Revisi 2026-07-18: upload goes through a modal with a drag & drop zone + preview.
+  async function handleUploadCert() {
+    if (!uploadTarget || !uploadFile) return;
+    const p = uploadTarget;
+    setUploadTarget(null);
+    setUploadFile(null);
     setUploadingId(p.id);
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", uploadFile);
       await api.post(`/prestasi/${p.id}/sertifikat`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -176,7 +181,6 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
       toast.error("Gagal mengunggah sertifikat.");
     } finally {
       setUploadingId(null);
-      event.target.value = "";
     }
   }
 
@@ -257,15 +261,15 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
                 <Badge tone={MEDAL_TONE[p.medali]}>{MEDAL_LABELS[p.medali]}</Badge>
                 {canManage && (
                   <>
-                    <label className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100">
+                    <button
+                      onClick={() => setUploadTarget(p)}
+                      aria-label="Unggah sertifikat"
+                      title="Unggah sertifikat"
+                      disabled={uploadingId === p.id}
+                      className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100"
+                    >
                       <Upload size={16} className={uploadingId === p.id ? "animate-pulse" : ""} />
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={(e) => handleUploadCert(p, e)}
-                        disabled={uploadingId === p.id}
-                      />
-                    </label>
+                    </button>
                     <button
                       onClick={() => openEdit(p)}
                       aria-label="Ubah"
@@ -362,6 +366,40 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
               </Button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {/* Drag & drop certificate upload with preview (revisi 2026-07-18) */}
+      {uploadTarget && (
+        <Modal
+          title={`Unggah Sertifikat — ${uploadTarget.namaKejuaraan}`}
+          onClose={() => {
+            setUploadTarget(null);
+            setUploadFile(null);
+          }}
+        >
+          <div className="space-y-4">
+            <DropZone
+              accept=".pdf,image/*"
+              value={uploadFile}
+              onChange={setUploadFile}
+              sublabel="PDF atau gambar"
+            />
+            <div className="flex gap-2">
+              <Button onClick={handleUploadCert} disabled={!uploadFile}>
+                Unggah
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setUploadTarget(null);
+                  setUploadFile(null);
+                }}
+              >
+                Batal
+              </Button>
+            </div>
+          </div>
         </Modal>
       )}
     </Card>

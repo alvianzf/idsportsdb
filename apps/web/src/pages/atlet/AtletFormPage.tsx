@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle2, Upload, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   ATHLETE_LEVELS,
@@ -13,7 +13,7 @@ import {
   UNSCOPED_ADMIN_ROLES,
   type AthleteStatus,
 } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Field, Input, Select, Textarea, Combobox } from "../../components/ui";
+import { Card, PageHeader, Button, DropZone, Field, Input, Select, Textarea, Combobox } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 
@@ -109,8 +109,6 @@ export function AtletFormPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingDocs, setPendingDocs] = useState<Partial<Record<RegistrationDocType, File>>>({});
-  // refs for hidden file inputs so we can reset them
-  const fileInputRefs = useRef<Partial<Record<RegistrationDocType, HTMLInputElement | null>>>({});
   // Tracks an athlete created in a prior submit attempt so a retry after a
   // failed document upload continues rather than creating a duplicate.
   const createdAtletIdRef = useRef<string | undefined>(undefined);
@@ -166,12 +164,9 @@ export function AtletFormPage() {
     }));
   }
 
-  function handleDocSelect(type: RegistrationDocType, event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  function stageDoc(type: RegistrationDocType, file: File) {
     if (file.size > MAX_DOC_SIZE_MB * 1024 * 1024) {
       toast.error(`Ukuran file terlalu besar (maks. ${MAX_DOC_SIZE_MB} MB).`);
-      event.target.value = "";
       return;
     }
     setPendingDocs((d) => ({ ...d, [type]: file }));
@@ -179,8 +174,6 @@ export function AtletFormPage() {
 
   function removeDoc(type: RegistrationDocType) {
     setPendingDocs((d) => { const n = { ...d }; delete n[type]; return n; });
-    const input = fileInputRefs.current[type];
-    if (input) input.value = "";
   }
 
   function updateCaborLainField(caborId: string, field: "nomorIndukAtlet" | "nomorRegistrasi", value: string) {
@@ -537,30 +530,13 @@ export function AtletFormPage() {
                         )}
                         <span className="font-medium text-neutral-800">{label}</span>
                       </div>
-                      {file ? (
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="truncate text-xs text-neutral-500">{file.name}</span>
-                          <button
-                            type="button"
-                            onClick={() => removeDoc(type)}
-                            className="shrink-0 text-xs text-danger hover:underline"
-                          >
-                            Hapus
-                          </button>
-                        </div>
-                      ) : (
-                        <label className="flex cursor-pointer items-center gap-1.5 text-xs text-primary hover:underline">
-                          <Upload size={13} />
-                          Unggah
-                          <input
-                            type="file"
-                            accept=".pdf,image/*"
-                            className="hidden"
-                            ref={(el) => { fileInputRefs.current[type] = el; }}
-                            onChange={(e) => handleDocSelect(type, e)}
-                          />
-                        </label>
-                      )}
+                      {/* Revisi 2026-07-18: drag & drop with preview for every upload. */}
+                      <DropZone
+                        accept=".pdf,image/*"
+                        value={file ?? null}
+                        onChange={(f) => (f ? stageDoc(type, f) : removeDoc(type))}
+                        sublabel={`PDF atau gambar, maks. ${MAX_DOC_SIZE_MB} MB`}
+                      />
                     </div>
                   );
                 })}

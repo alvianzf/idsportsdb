@@ -1,7 +1,7 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { LICENSE_TIERS, UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Field, Input, Select, Textarea, Combobox } from "../../components/ui";
+import { Card, PageHeader, Button, DropZone, Field, Input, Select, Textarea, Combobox } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 
@@ -64,18 +64,13 @@ export function PelatihFormPage({ embedded = false, onDone }: { embedded?: boole
   const [lisensiFile, setLisensiFile] = useState<File | null>(null);
   const [lisensiFileUrl, setLisensiFileUrl] = useState<string | null>(null);
 
-  function handleLisensiSelect(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const ok = file.type === "application/pdf" || file.type === "image/jpeg";
-    if (!ok) {
-      setError("File lisensi harus PDF atau JPG.");
-      event.target.value = "";
+  function handleLisensiChange(file: File | null) {
+    if (!file) {
+      setLisensiFile(null);
       return;
     }
     if (file.size > MAX_LISENSI_SIZE_MB * 1024 * 1024) {
       setError(`Ukuran file lisensi maksimal ${MAX_LISENSI_SIZE_MB} MB.`);
-      event.target.value = "";
       return;
     }
     setError(null);
@@ -201,28 +196,17 @@ export function PelatihFormPage({ embedded = false, onDone }: { embedded?: boole
                 ]}
               />
             </Field>
-            <Field label="File Lisensi (PDF/JPG)" htmlFor="lisensiFile">
-              <div className="space-y-1">
-                <Input
-                  id="lisensiFile"
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,application/pdf,image/jpeg"
-                  onChange={handleLisensiSelect}
+            <div className="md:col-span-2">
+              <Field label="File Lisensi (PDF/JPG)" htmlFor="lisensiFile">
+                <DropZone
+                  accept=".pdf,.jpg,.jpeg"
+                  value={lisensiFile}
+                  existingUrl={lisensiFileUrl ? resolveFileUrl(lisensiFileUrl) : null}
+                  onChange={handleLisensiChange}
+                  sublabel={`PDF atau JPG, maks. ${MAX_LISENSI_SIZE_MB} MB`}
                 />
-                {lisensiFile ? (
-                  <p className="text-xs text-neutral-500">Akan diunggah: {lisensiFile.name}</p>
-                ) : lisensiFileUrl ? (
-                  <a
-                    href={resolveFileUrl(lisensiFileUrl)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs text-primary underline"
-                  >
-                    Lihat file lisensi saat ini
-                  </a>
-                ) : null}
-              </div>
-            </Field>
+              </Field>
+            </div>
             <Field label="Masa Berlaku Mulai" htmlFor="masaBerlakuMulai">
               <Input
                 id="masaBerlakuMulai"
