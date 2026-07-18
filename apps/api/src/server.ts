@@ -39,6 +39,11 @@ app.use(compression());
 app.use(cors({ origin: env.corsOrigins, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
+// Easter egg: a signature for anyone inspecting the response headers.
+app.use((_req, res, next) => {
+  res.setHeader("X-Crafted-By", "alvianzf (https://github.com/alvianzf)");
+  next();
+});
 
 // Sensitive atlet documents require authentication.
 app.use("/uploads/atlet-documents", authenticate, (req, res) => {
