@@ -72,8 +72,9 @@ export const EVENT_LEVEL_LABELS: Record<EventLevel, string> = {
   OLIMPIADE: "Olimpiade",
 };
 
-// Revisi 2026-07-12: pendidikan = pendidikan terakhir, picked from a fixed jenjang list.
-export const EDUCATION_LEVELS = ["SD", "SMP", "SMA/SMK", "D3", "S1", "S2", "S3"] as const;
+// Revisi 2026-07-18: pendidikan terakhir picked from the client's final jenjang list.
+// (Older records may hold legacy values like "S1"; forms preserve them in the select.)
+export const EDUCATION_LEVELS = ["Pendidikan Tinggi", "SMA/SMK/MA/MAK", "SMP/MTs", "SD/MI"] as const;
 export type EducationLevel = (typeof EDUCATION_LEVELS)[number];
 
 // Revisi 2026-07-18 (client spec F): tingkat kejuaraan offered for new prestasi records.
