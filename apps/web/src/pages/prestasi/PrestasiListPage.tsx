@@ -7,7 +7,6 @@ import {
   DATA_ADMIN_ROLES,
   MEDALS,
   MEDAL_LABELS,
-  UNSCOPED_ADMIN_ROLES,
   UNSCOPED_VIEW_ROLES,
   type CompetitionLevel,
   type Medal,
