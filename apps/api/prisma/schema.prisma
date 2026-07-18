@@ -79,8 +79,12 @@ enum CompetitionLevel {
   BK_PON
   PORWIL
   PORPROV
+  PORDA
+  POPDA
+  PORKOT
   KEJURNAS
   KEJURDA
+  EVENT_KHUSUS
 }
 
 enum Medal {
