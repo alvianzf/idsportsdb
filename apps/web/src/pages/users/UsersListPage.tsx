@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { KeyRound, Lock, LockOpen, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { KeyRound, Lock, LockOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import { ROLES, ROLE_LABELS, type Role } from "@inasportdb/shared-types";
-import { ActionMenu, Card, PageHeader, Button, Badge, Input, Modal, Select, DataTable, type Column, type BulkAction } from "../../components/ui";
+import { ActionMenu, Card, PageHeader, Button, Badge, Modal, SearchInput, Select, DataTable, type Column, type BulkAction } from "../../components/ui";
 import { UsersFormPage } from "./UsersFormPage";
 import { api } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
@@ -238,15 +238,13 @@ export function UsersListPage() {
       <Card className="mb-4">
         {/* Revisi 2026-07-18: search bar on the same row as the role filter. */}
         <div className="flex flex-col gap-3 md:flex-row">
-          <div className="relative flex-1">
-            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-            <Input
-              placeholder="Cari nama atau email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+          <SearchInput
+            className="flex-1"
+            placeholder="Cari nama atau email..."
+            value={search}
+            onChange={setSearch}
+            suggestions={(users ?? []).flatMap((u) => [u.fullName, u.email])}
+          />
           <Select
             value={roleFilter}
             onChange={(v) => setRoleFilter(v as Role | "")}

@@ -92,6 +92,7 @@ export const COMPETITION_LEVEL_CHOICES = [
   "KEJURNAS",
   "KEJURDA",
   "EVENT_KHUSUS",
+  "LAINNYA",
 ] as const;
 
 // All valid values: the championship list plus legacy levels kept for existing rows.
@@ -117,6 +118,7 @@ export const COMPETITION_LEVEL_LABELS: Record<CompetitionLevel, string> = {
   KEJURNAS: "Kejuaraan Nasional (Kejurnas)",
   KEJURDA: "Kejuaraan Daerah (Kejurda)",
   EVENT_KHUSUS: "Event Khusus",
+  LAINNYA: "Lainnya",
   KOTA: "Kota",
   PROVINSI: "Provinsi",
   NASIONAL: "Nasional",
@@ -147,6 +149,14 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   PAS_FOTO: "Pas Foto",
   SERTIFIKAT_PRESTASI: "Sertifikat Prestasi",
 };
+
+/** Display label for a prestasi tingkat, preferring the custom "Lainnya" text. */
+export function competitionLevelLabel(
+  tingkat: CompetitionLevel,
+  lainnya?: string | null,
+): string {
+  return tingkat === "LAINNYA" && lainnya ? lainnya : COMPETITION_LEVEL_LABELS[tingkat];
+}
 
 // Revisi 2026-07-18: tingkatan lisensi pelatih is a fixed choice (legacy
 // free-text values on old records are preserved by the forms/filters).

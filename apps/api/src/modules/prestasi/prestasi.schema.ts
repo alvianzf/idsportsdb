@@ -6,6 +6,8 @@ const currentYear = new Date().getFullYear();
 const prestasiFields = z.object({
   namaKejuaraan: z.string().min(1),
   tingkatKejuaraan: z.enum(COMPETITION_LEVELS),
+  // Revisi 2026-07-18: custom tingkat text when tingkatKejuaraan = LAINNYA.
+  tingkatLainnya: z.string().trim().min(1).optional(),
   tahun: z.coerce.number().int().min(1950).max(currentYear + 1),
   medali: z.enum(MEDALS),
   peringkat: z.coerce.number().int().min(1).optional(),
@@ -20,7 +22,12 @@ function refinePeringkat<T extends z.ZodTypeAny>(schema: T) {
   );
 }
 
-export const createPrestasiSchema = refinePeringkat(prestasiFields);
+export const createPrestasiSchema = refinePeringkat(
+  prestasiFields.refine(
+    (data) => data.tingkatKejuaraan !== "LAINNYA" || data.tingkatLainnya !== undefined,
+    { message: "Tingkat lainnya wajib diisi", path: ["tingkatLainnya"] },
+  ),
+);
 // Partial updates can't enforce the medali↔peringkat invariant at the schema
 // level: a PATCH { medali: "NONE" } may rely on a peringkat already stored on
 // the record. Keep the rule on create; leave it off the partial update schema.

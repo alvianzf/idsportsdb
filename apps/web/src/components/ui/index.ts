@@ -10,3 +10,4 @@ export * from "./RichTextEditor";
 export * from "./DataTable";
 export * from "./DropZone";
 export * from "./ActionMenu";
+export * from "./SearchInput";

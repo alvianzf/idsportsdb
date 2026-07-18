@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Users, UserCog, Building2, Trophy, Medal, ArrowLeftRight, UserPlus, Upload, CalendarPlus, Dumbbell, Search } from "lucide-react";
+import { Users, UserCog, Building2, Trophy, Medal, ArrowLeftRight, UserPlus, Upload, CalendarPlus, Dumbbell } from "lucide-react";
 import { DATA_ADMIN_ROLES } from "@inasportdb/shared-types";
-import { Card, PageHeader, Badge } from "../components/ui";
+import { Card, PageHeader, Badge, SearchInput } from "../components/ui";
 import { api, resolveFileUrl } from "../lib/api";
 import { getSocket } from "../lib/socket";
 import { useAuthStore } from "../store/authStore";
@@ -176,13 +176,12 @@ function CaborCarousel({ cabors }: { cabors: PerCaborStat[] }) {
 
   return (
     <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
-      <div className="relative mb-3 max-w-xs">
-        <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-        <input
+      <div className="mb-3 max-w-xs">
+        <SearchInput
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={setQuery}
           placeholder="Cari cabang olahraga..."
-          className="w-full rounded-lg border border-neutral-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-primary"
+          suggestions={cabors.map((c) => c.nama)}
         />
       </div>
 

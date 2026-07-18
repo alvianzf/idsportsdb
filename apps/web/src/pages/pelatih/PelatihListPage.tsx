@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Archive, ArchiveRestore, Plus, Search, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, Plus, Trash2 } from "lucide-react";
 import { DATA_ADMIN_ROLES, LICENSE_TIERS, UNSCOPED_ADMIN_ROLES, UNSCOPED_VIEW_ROLES } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Input, Badge, Modal, Pagination, Combobox, DataTable, Select, type Column, type BulkAction } from "../../components/ui";
+import { Card, PageHeader, Button, Badge, Modal, Pagination, Combobox, DataTable, SearchInput, Select, type Column, type BulkAction } from "../../components/ui";
 import { PelatihFormPage } from "./PelatihFormPage";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
@@ -250,18 +250,17 @@ export function PelatihListPage() {
       <Card className="mb-4">
         {/* Revisi 2026-07-18: search + filters share one row (like Pengguna). */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <div className="relative flex-1">
-            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-            <Input
-              placeholder="Cari nama pelatih atau nomor lisensi..."
-              value={search}
-              onChange={(e) => {
-                setPage(1);
-                setSearch(e.target.value);
-              }}
-              className="pl-9"
-            />
-          </div>
+          <SearchInput
+            className="flex-1"
+            placeholder="Cari nama pelatih atau nomor lisensi..."
+            value={search}
+            onChange={(v) => {
+              setPage(1);
+              setSearch(v);
+            }}
+            onSubmit={() => setDebouncedSearch(search)}
+            suggestions={items?.map((p) => p.namaPelatih) ?? []}
+          />
           {isUnscopedAdmin && (
             <Combobox
               value={cabor}

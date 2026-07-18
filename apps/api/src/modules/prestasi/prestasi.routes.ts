@@ -73,7 +73,12 @@ atletPrestasiRouter.post(
     }
 
     const prestasi = await prisma.prestasi.create({
-      data: { ...parsed.data, atletId: req.params.atletId },
+      data: {
+        ...parsed.data,
+        // Custom tingkat text only applies to LAINNYA.
+        tingkatLainnya: parsed.data.tingkatKejuaraan === "LAINNYA" ? parsed.data.tingkatLainnya : null,
+        atletId: req.params.atletId,
+      },
     });
     emit("prestasi:change");
     writeAudit(req.user!.id, "CREATE", "Prestasi", prestasi.id);
@@ -84,6 +89,26 @@ atletPrestasiRouter.post(
 /** Mounted at /api/v1/prestasi (specs/007-prestasi-atlet/spec.md §3). */
 export const prestasiRouter = Router();
 prestasiRouter.use(authenticate, scopeToCabor);
+
+// Revisi 2026-07-18: autocomplete for the custom "Lainnya" tingkat — distinct
+// values already stored, optionally filtered by ?q= while the user types.
+prestasiRouter.get(
+  "/tingkat-lainnya",
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA"]),
+  asyncHandler(async (req, res) => {
+    const q = typeof req.query.q === "string" ? req.query.q : undefined;
+    const rows = await prisma.prestasi.findMany({
+      where: {
+        tingkatLainnya: q ? { contains: q, mode: "insensitive" } : { not: null },
+      },
+      select: { tingkatLainnya: true },
+      distinct: ["tingkatLainnya"],
+      orderBy: { tingkatLainnya: "asc" },
+      take: 10,
+    });
+    res.json(rows.map((r) => r.tingkatLainnya).filter(Boolean));
+  }),
+);
 
 prestasiRouter.get(
   "/",
@@ -149,8 +174,17 @@ prestasiRouter.patch(
       return;
     }
 
+    // Custom tingkat text only applies to LAINNYA — clear it when the
+    // (effective) tingkat is anything else.
+    const effectiveTingkat = parsed.data.tingkatKejuaraan ?? prestasi.tingkatKejuaraan;
     try {
-      const updated = await prisma.prestasi.update({ where: { id: req.params.id }, data: parsed.data });
+      const updated = await prisma.prestasi.update({
+        where: { id: req.params.id },
+        data: {
+          ...parsed.data,
+          ...(effectiveTingkat !== "LAINNYA" ? { tingkatLainnya: null } : {}),
+        },
+      });
       emit("prestasi:change");
       writeAudit(req.user!.id, "UPDATE", "Prestasi", updated.id);
       res.json(updated);

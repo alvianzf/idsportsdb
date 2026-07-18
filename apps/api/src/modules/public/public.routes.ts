@@ -151,7 +151,7 @@ publicRouter.get(
           kecamatan: true,
           cabangOlahraga: { select: { nama: true } },
           prestasis: {
-            select: { namaKejuaraan: true, tingkatKejuaraan: true, medali: true, tahun: true },
+            select: { namaKejuaraan: true, tingkatKejuaraan: true, tingkatLainnya: true, medali: true, tahun: true },
           },
         },
         orderBy: { namaLengkap: "asc" },

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type TouchEvent } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, MapPin, Rows3, Search, Table2 } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, MapPin, Rows3, Table2 } from "lucide-react";
 import {
   EVENT_LEVELS,
   EVENT_LEVEL_LABELS,
@@ -7,7 +7,7 @@ import {
   EVENT_STATUS_LABELS,
   type EventStatus,
 } from "@inasportdb/shared-types";
-import { Badge, Card, DataTable, Input, Select, type Column } from "../../components/ui";
+import { Badge, Card, DataTable, Input, SearchInput, Select, type Column } from "../../components/ui";
 import { EVENT_STATUS_TONE, formatEventDate, type PublicEvent } from "../public/eventShared";
 import {
   addDays,
@@ -72,15 +72,13 @@ export function EventFilterBar({
   return (
     <Card className="mb-4 space-y-3">
       <div className="flex flex-col gap-2 lg:flex-row">
-        <div className="relative flex-1">
-          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-          <Input
-            placeholder="Cari nama kejuaraan atau cabor..."
-            value={filters.search}
-            onChange={(e) => set({ search: e.target.value })}
-            className="pl-9"
-          />
-        </div>
+        <SearchInput
+          className="flex-1"
+          placeholder="Cari nama kejuaraan atau cabor..."
+          value={filters.search}
+          onChange={(v) => set({ search: v })}
+          suggestions={events.map((e) => e.namaKejuaraan)}
+        />
         <Input
           type="date"
           value={filters.date}
