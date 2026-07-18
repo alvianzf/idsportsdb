@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { KeyRound, Lock, LockOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import { ROLES, ROLE_LABELS, type Role } from "@inasportdb/shared-types";
-import { ActionMenu, Card, PageHeader, Button, Badge, Select, DataTable, type Column, type BulkAction } from "../../components/ui";
+import { ActionMenu, Card, PageHeader, Button, Badge, Modal, Select, DataTable, type Column, type BulkAction } from "../../components/ui";
+import { UsersFormPage } from "./UsersFormPage";
 import { api } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 import { useAuthStore } from "../../store/authStore";
@@ -30,6 +31,7 @@ const ROLE_BADGE_TONE: Record<Role, "danger" | "info" | "warning" | "neutral"> =
 export function UsersListPage() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserRow[] | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
   const [roleFilter, setRoleFilter] = useState<Role | "">("");
   const [error, setError] = useState<string | null>(null);
   const currentRole = useAuthStore((state) => state.user?.role);
@@ -148,6 +150,14 @@ export function UsersListPage() {
       getValue: (r) => r.role,
       render: (r) => <Badge tone={ROLE_BADGE_TONE[r.role]}>{ROLE_LABELS[r.role]}</Badge>,
     },
+    // Revisi 2026-07-18: show the account's cabor (ADMIN_CABOR / ATLET logins).
+    {
+      key: "cabor",
+      label: "Cabor",
+      sortable: true,
+      getValue: (r) => r.cabangOlahraga?.nama ?? "",
+      render: (r) => <span className="text-neutral-600">{r.cabangOlahraga?.nama ?? "-"}</span>,
+    },
     {
       key: "isActive",
       label: "Status",
@@ -188,14 +198,31 @@ export function UsersListPage() {
         title="Pengguna"
         description="Kelola akun pengguna sistem"
         actions={
-          <Link to="/users/new">
-            <Button>
-              <Plus size={16} />
-              Tambah Pengguna
-            </Button>
-          </Link>
+          // Revisi 2026-07-18: create form opens in a modal instead of a page.
+          <Button onClick={() => setShowCreate(true)} title="Tambah pengguna baru">
+            <Plus size={16} />
+            Tambah Pengguna
+          </Button>
         }
       />
+
+      {showCreate && (
+        <Modal
+          title="Tambah Pengguna"
+          onClose={() => {
+            setShowCreate(false);
+            load();
+          }}
+        >
+          <UsersFormPage
+            embedded
+            onDone={() => {
+              setShowCreate(false);
+              load();
+            }}
+          />
+        </Modal>
+      )}
 
       <Card className="mb-4">
         <Select

@@ -30,7 +30,9 @@ function extractError(err: unknown): string {
   return "Gagal menyimpan data.";
 }
 
-export function UsersFormPage() {
+// Revisi 2026-07-18: `embedded` renders the create form inside a modal on the
+// users list — no PageHeader, and `onDone` replaces navigation when finished.
+export function UsersFormPage({ embedded = false, onDone }: { embedded?: boolean; onDone?: () => void } = {}) {
   const { id } = useParams<{ id: string }>();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
@@ -202,6 +204,10 @@ export function UsersFormPage() {
   }
 
   function finishCreate() {
+    if (embedded) {
+      onDone?.();
+      return;
+    }
     navigate(athleteLocked ? `/atlet/${athleteIdParam}` : "/users");
   }
 
@@ -228,7 +234,7 @@ export function UsersFormPage() {
   if (created) {
     return (
       <div>
-        <PageHeader title="Akun Berhasil Dibuat" />
+        {!embedded && <PageHeader title="Akun Berhasil Dibuat" />}
         <Card className="space-y-4">
           <p className="text-sm text-neutral-600">
             {created.emailSent
@@ -269,7 +275,7 @@ export function UsersFormPage() {
 
   return (
     <div>
-      <PageHeader title={isEdit ? "Ubah Pengguna" : "Tambah Pengguna"} />
+      {!embedded && <PageHeader title={isEdit ? "Ubah Pengguna" : "Tambah Pengguna"} />}
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -344,7 +350,7 @@ export function UsersFormPage() {
             <Button type="submit" disabled={saving}>
               {saving ? "Menyimpan..." : "Simpan"}
             </Button>
-            <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+            <Button type="button" variant="outline" onClick={() => (embedded ? onDone?.() : navigate(-1))}>
               Batal
             </Button>
           </div>

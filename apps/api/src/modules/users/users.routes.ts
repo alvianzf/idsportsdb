@@ -184,9 +184,11 @@ usersRouter.get(
 
     const users = await prisma.user.findMany({
       where: parsed.data.role ? { role: parsed.data.role } : undefined,
+      // Revisi 2026-07-18: the list shows each account's cabor.
+      include: { cabangOlahraga: { select: { id: true, nama: true } } },
       orderBy: { createdAt: "asc" },
     });
-    res.json(users.map(toSafeUser));
+    res.json(users.map((u) => ({ ...toSafeUser(u), cabangOlahraga: u.cabangOlahraga })));
   }),
 );
 
