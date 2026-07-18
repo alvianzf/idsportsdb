@@ -36,7 +36,7 @@ export function Sidebar({ items }: { items: NavItem[] }) {
           <NavLink
             key={to}
             to={to}
-            title={collapsed ? label : undefined}
+            title={label}
             className="block"
           >
             {({ isActive }) => (

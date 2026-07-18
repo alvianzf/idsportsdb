@@ -13,6 +13,11 @@ export const imageFileFilter: multer.Options["fileFilter"] = (_req, file, cb) =>
   cb(null, /^image\//.test(file.mimetype));
 };
 
+/** Accepts JPEG images and PDFs only (license scans, revisi 2026-07-18). */
+export const pdfOrJpgFileFilter: multer.Options["fileFilter"] = (_req, file, cb) => {
+  cb(null, file.mimetype === "image/jpeg" || file.mimetype === "application/pdf");
+};
+
 /** Accepts image files and PDFs (documents/certificates). */
 export const documentFileFilter: multer.Options["fileFilter"] = (_req, file, cb) => {
   cb(null, /^image\//.test(file.mimetype) || file.mimetype === "application/pdf");

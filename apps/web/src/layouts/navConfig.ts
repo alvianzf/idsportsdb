@@ -26,7 +26,10 @@ export interface NavItem {
   roles: Role[];
 }
 
-export const ADMIN_ROLES: Role[] = ["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"];
+// ADMIN_DISPORA is read-only oversight: it reaches the same pages, but write
+// actions stay hidden via DATA_ADMIN_ROLES/UNSCOPED_ADMIN_ROLES checks and the
+// API rejects its writes.
+export const ADMIN_ROLES: Role[] = ["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA"];
 
 export const ADMIN_NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, mobile: true, roles: ADMIN_ROLES },

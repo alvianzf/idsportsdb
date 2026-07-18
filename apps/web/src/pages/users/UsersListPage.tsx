@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Plus, RotateCcw, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { KeyRound, Lock, LockOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import { ROLES, ROLE_LABELS, type Role } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Badge, Select, DataTable, type Column, type BulkAction } from "../../components/ui";
+import { ActionMenu, Card, PageHeader, Button, Badge, Modal, Select, DataTable, type Column, type BulkAction } from "../../components/ui";
+import { UsersFormPage } from "./UsersFormPage";
 import { api } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 import { useAuthStore } from "../../store/authStore";
@@ -23,11 +24,14 @@ const ROLE_BADGE_TONE: Record<Role, "danger" | "info" | "warning" | "neutral"> =
   SUPER_ADMIN_KONI: "danger",
   ADMIN_KONI: "info",
   ADMIN_CABOR: "warning",
+  ADMIN_DISPORA: "info",
   ATLET: "neutral",
 };
 
 export function UsersListPage() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<UserRow[] | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
   const [roleFilter, setRoleFilter] = useState<Role | "">("");
   const [error, setError] = useState<string | null>(null);
   const currentRole = useAuthStore((state) => state.user?.role);
@@ -75,6 +79,17 @@ export function UsersListPage() {
       load();
     } catch {
       toast.error("Gagal menonaktifkan akun.");
+    }
+  }
+
+  // Revisi 2026-07-18: reactivate a deactivated account.
+  async function handleActivate(user: UserRow) {
+    try {
+      await api.patch(`/users/${user.id}`, { isActive: true });
+      toast.success("Akun berhasil diaktifkan.");
+      load();
+    } catch {
+      toast.error("Gagal mengaktifkan akun.");
     }
   }
 
@@ -135,6 +150,14 @@ export function UsersListPage() {
       getValue: (r) => r.role,
       render: (r) => <Badge tone={ROLE_BADGE_TONE[r.role]}>{ROLE_LABELS[r.role]}</Badge>,
     },
+    // Revisi 2026-07-18: show the account's cabor (ADMIN_CABOR / ATLET logins).
+    {
+      key: "cabor",
+      label: "Cabor",
+      sortable: true,
+      getValue: (r) => r.cabangOlahraga?.nama ?? "",
+      render: (r) => <span className="text-neutral-600">{r.cabangOlahraga?.nama ?? "-"}</span>,
+    },
     {
       key: "isActive",
       label: "Status",
@@ -148,38 +171,17 @@ export function UsersListPage() {
       label: "Aksi",
       render: (user) =>
         canManage(user) ? (
-          <div className="flex flex-wrap gap-2">
-            {/* Edit — neutral outline */}
-            <Link to={`/users/${user.id}/edit`}>
-              <Button variant="outline">Edit</Button>
-            </Link>
-            {/* Reset Password — purple */}
-            <Button
-              variant="outline"
-              onClick={() => handleResetPassword(user)}
-              title="Reset kata sandi — kirim ulang email dengan kata sandi baru"
-              className="border-purple-300 text-purple-600 hover:bg-purple-50"
-            >
-              <RotateCcw size={14} /> Reset Password
-            </Button>
-            {/* Deactivate — amber/warning */}
-            {user.isActive && (
-              <Button
-                variant="outline"
-                onClick={() => handleDeactivate(user)}
-                className="border-warning/40 text-warning hover:bg-warning/10"
-              >
-                Nonaktifkan
-              </Button>
-            )}
-            {/* Hard delete — red/danger */}
-            <Button
-              variant="danger"
-              onClick={() => handleDelete(user)}
-            >
-              <Trash2 size={14} /> Hapus
-            </Button>
-          </div>
+          // Revisi 2026-07-18: all row actions live in a three-dots dropdown.
+          <ActionMenu
+            items={[
+              { label: "Edit", icon: Pencil, onClick: () => navigate(`/users/${user.id}/edit`) },
+              { label: "Reset kata sandi", icon: KeyRound, onClick: () => handleResetPassword(user) },
+              user.isActive
+                ? { label: "Nonaktifkan", icon: Lock, onClick: () => handleDeactivate(user) }
+                : { label: "Aktifkan", icon: LockOpen, onClick: () => handleActivate(user) },
+              { label: "Hapus permanen", icon: Trash2, danger: true, onClick: () => handleDelete(user) },
+            ]}
+          />
         ) : (
           <span className="text-sm text-neutral-400">—</span>
         ),
@@ -196,14 +198,31 @@ export function UsersListPage() {
         title="Pengguna"
         description="Kelola akun pengguna sistem"
         actions={
-          <Link to="/users/new">
-            <Button>
-              <Plus size={16} />
-              Tambah Pengguna
-            </Button>
-          </Link>
+          // Revisi 2026-07-18: create form opens in a modal instead of a page.
+          <Button onClick={() => setShowCreate(true)} title="Tambah pengguna baru">
+            <Plus size={16} />
+            Tambah Pengguna
+          </Button>
         }
       />
+
+      {showCreate && (
+        <Modal
+          title="Tambah Pengguna"
+          onClose={() => {
+            setShowCreate(false);
+            load();
+          }}
+        >
+          <UsersFormPage
+            embedded
+            onDone={() => {
+              setShowCreate(false);
+              load();
+            }}
+          />
+        </Modal>
+      )}
 
       <Card className="mb-4">
         <Select

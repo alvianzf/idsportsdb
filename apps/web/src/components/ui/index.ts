@@ -9,3 +9,4 @@ export * from "./Combobox";
 export * from "./RichTextEditor";
 export * from "./DataTable";
 export * from "./DropZone";
+export * from "./ActionMenu";

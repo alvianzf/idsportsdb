@@ -1,6 +1,9 @@
+import fs from "node:fs";
+import path from "node:path";
 import { Router } from "express";
 import type { Prisma } from "@prisma/client";
 import { DATA_ADMIN_ROLES } from "@inasportdb/shared-types";
+import { uploader, publicUrl, uploadRoot, pdfOrJpgFileFilter } from "../../lib/storage.js";
 import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole, scopeToCabor } from "../../middleware/auth.js";
@@ -21,7 +24,7 @@ pelatihRouter.use(authenticate, scopeToCabor);
 // specs/005-pelatih/spec.md §3
 pelatihRouter.get(
   "/",
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA"]),
   asyncHandler(async (req, res) => {
     const parsed = listPelatihQuerySchema.safeParse(req.query);
     if (!parsed.success) {
@@ -68,7 +71,7 @@ pelatihRouter.get(
 
 pelatihRouter.get(
   "/:id",
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA"]),
   asyncHandler(async (req, res) => {
     const pelatih = await prisma.pelatih.findFirst({
       where: { id: req.params.id, deletedAt: null },
@@ -167,6 +170,51 @@ pelatihRouter.patch(
   }),
 );
 
+const lisensiUpload = uploader("pelatih-lisensi", undefined, pdfOrJpgFileFilter);
+
+// Revisi 2026-07-18: upload/replace the license scan (PDF or JPG only).
+pelatihRouter.post(
+  "/:id/lisensi",
+  requireRole(DATA_ADMIN_ROLES),
+  lisensiUpload.single("file"),
+  asyncHandler(async (req, res) => {
+    // multer has already written the upload to disk; clean it up on any early
+    // exit so a failed existence/access check never orphans the file.
+    const cleanupUpload = () => {
+      if (req.file) fs.unlink(req.file.path, () => undefined);
+    };
+
+    const pelatih = await prisma.pelatih.findFirst({
+      where: { id: req.params.id, deletedAt: null },
+    });
+    if (!pelatih) {
+      cleanupUpload();
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (req.scopedCaborId && pelatih.cabangOlahragaId !== req.scopedCaborId) {
+      cleanupUpload();
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    if (!req.file) {
+      res.status(400).json({ error: "File lisensi harus PDF atau JPG" });
+      return;
+    }
+
+    const lisensiFileUrl = publicUrl("pelatih-lisensi", req.file.filename);
+    const updated = await prisma.pelatih.update({
+      where: { id: req.params.id },
+      data: { lisensiFileUrl },
+    });
+    if (pelatih.lisensiFileUrl) {
+      fs.unlink(path.join(uploadRoot, pelatih.lisensiFileUrl.replace("/uploads/", "")), () => undefined);
+    }
+    writeAudit(req.user!.id, "UPDATE", "Pelatih", req.params.id);
+    res.json(updated);
+  }),
+);
+
 // #70 — soft-delete: archive instead of destroying, so an accidental (bulk)
 // delete can be recovered.
 pelatihRouter.delete(
@@ -210,7 +258,11 @@ pelatihRouter.delete(
   requireRole(["SUPER_ADMIN_KONI"]),
   asyncHandler(async (req, res) => {
     try {
-      await prisma.pelatih.delete({ where: { id: req.params.id } });
+      const deleted = await prisma.pelatih.delete({ where: { id: req.params.id } });
+      // Uploaded files are removed together with their DB record.
+      if (deleted.lisensiFileUrl) {
+        fs.unlink(path.join(uploadRoot, deleted.lisensiFileUrl.replace("/uploads/", "")), () => undefined);
+      }
       writeAudit(req.user!.id, "PERMANENT_DELETE", "Pelatih", req.params.id);
       res.status(204).send();
     } catch (err) {

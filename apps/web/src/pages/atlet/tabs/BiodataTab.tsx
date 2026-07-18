@@ -15,6 +15,7 @@ const STATUS_TONE: Record<AthleteStatus, "success" | "danger" | "warning" | "inf
   INJURED: "danger",
   TRAINING_CAMP: "info",
   TRANSFERRED: "warning",
+  RETIRED: "neutral",
 };
 
 function formatDate(value: string) {
@@ -96,6 +97,15 @@ export function BiodataTab({ atlet }: { atlet: AtletDetail }) {
             <dd className="font-medium text-neutral-900">
               {atlet.tempatLahir ?? "-"}
               {atlet.tanggalLahir ? `, ${formatDate(atlet.tanggalLahir)}` : ""}
+            </dd>
+          </div>
+        )}
+        {atlet.statusAtlet === "INJURED" && (
+          <div className="md:col-span-2">
+            <dt className="text-neutral-500">Cedera</dt>
+            <dd className="font-medium text-neutral-900">
+              {atlet.tanggalCedera ? formatDate(atlet.tanggalCedera) : "-"}
+              {atlet.keteranganCedera ? ` — ${atlet.keteranganCedera}` : ""}
             </dd>
           </div>
         )}

@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import { AppLayout } from "../layouts/AppLayout";
 import { RequireRole } from "../components/RequireRole";
+import { DATA_ADMIN_ROLES, UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
 import { ADMIN_ROLES } from "../layouts/navConfig";
 
 // Helper so named-export pages work with React.lazy (which needs a default export).
@@ -146,21 +147,21 @@ const router = createBrowserRouter([
 
       // Module E
       { path: "cabor", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><CaborListPage /></Suspense></RequireRole> },
-      { path: "cabor/new", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><CaborFormPage /></Suspense></RequireRole> },
+      { path: "cabor/new", element: <RequireRole roles={UNSCOPED_ADMIN_ROLES}><Suspense fallback={<PageLoader />}><CaborFormPage /></Suspense></RequireRole> },
       { path: "cabor/:id", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><CaborDetailPage /></Suspense></RequireRole> },
-      { path: "cabor/:id/edit", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><CaborFormPage /></Suspense></RequireRole> },
+      { path: "cabor/:id/edit", element: <RequireRole roles={UNSCOPED_ADMIN_ROLES}><Suspense fallback={<PageLoader />}><CaborFormPage /></Suspense></RequireRole> },
 
       // Module B
       { path: "atlet", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><AtletListPage /></Suspense></RequireRole> },
-      { path: "atlet/new", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><AtletFormPage /></Suspense></RequireRole> },
+      { path: "atlet/new", element: <RequireRole roles={DATA_ADMIN_ROLES}><Suspense fallback={<PageLoader />}><AtletFormPage /></Suspense></RequireRole> },
       { path: "atlet/:id", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><AtletDetailPage /></Suspense></RequireRole> },
-      { path: "atlet/:id/edit", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><AtletFormPage /></Suspense></RequireRole> },
+      { path: "atlet/:id/edit", element: <RequireRole roles={DATA_ADMIN_ROLES}><Suspense fallback={<PageLoader />}><AtletFormPage /></Suspense></RequireRole> },
 
       // Module C
       { path: "pelatih", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><PelatihListPage /></Suspense></RequireRole> },
-      { path: "pelatih/new", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><PelatihFormPage /></Suspense></RequireRole> },
+      { path: "pelatih/new", element: <RequireRole roles={DATA_ADMIN_ROLES}><Suspense fallback={<PageLoader />}><PelatihFormPage /></Suspense></RequireRole> },
       { path: "pelatih/:id", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><PelatihDetailPage /></Suspense></RequireRole> },
-      { path: "pelatih/:id/edit", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><PelatihFormPage /></Suspense></RequireRole> },
+      { path: "pelatih/:id/edit", element: <RequireRole roles={DATA_ADMIN_ROLES}><Suspense fallback={<PageLoader />}><PelatihFormPage /></Suspense></RequireRole> },
 
       // Module F
       { path: "prestasi", element: <RequireRole roles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><PrestasiListPage /></Suspense></RequireRole> },

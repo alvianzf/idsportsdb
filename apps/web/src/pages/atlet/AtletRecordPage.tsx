@@ -32,6 +32,7 @@ const STATUS_TONE: Record<AthleteStatus, "success" | "danger" | "warning" | "inf
   INJURED: "danger",
   TRAINING_CAMP: "info",
   TRANSFERRED: "warning",
+  RETIRED: "neutral",
 };
 
 const MEDAL_TONE: Record<Medal, "gold" | "silver" | "bronze" | "neutral"> = {

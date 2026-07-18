@@ -126,7 +126,7 @@ function drawAtletDetailPdf(doc: PDFKit.PDFDocument, atlets: AtletDetailRow[]) {
 
 reportsRouter.use(
   authenticate,
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA"]),
   scopeToCabor,
 );
 

@@ -18,6 +18,7 @@ enum Role {
   SUPER_ADMIN_KONI
   ADMIN_KONI
   ADMIN_CABOR
+  ADMIN_DISPORA // read-only oversight across all cabor (revisi 2026-07-18)
   ATLET
 }
 
@@ -32,6 +33,7 @@ enum AthleteStatus {
   INJURED
   TRAINING_CAMP // pemusatan latihan
   TRANSFERRED // mutasi
+  RETIRED // pensiun (revisi 2026-07-18)
 }
 
 // Revisi 2026-07-12: tingkat atlet final — Kota/Provinsi/Nasional/Internasional.
@@ -40,6 +42,8 @@ enum AthleteLevel {
   PROVINSI
   NASIONAL
   INTERNASIONAL
+  PON // revisi 2026-07-18
+  OLIMPIADE // revisi 2026-07-18
 }
 
 // Revisi 2026-07-12: kalender event (spec 017).
@@ -56,13 +60,27 @@ enum EventLevel {
   NASIONAL
   INTERNASIONAL
   OPEN
+  PON // revisi 2026-07-18
+  OLIMPIADE // revisi 2026-07-18
 }
 
+// Revisi 2026-07-18 (client spec F — Data Prestasi Atlet): tingkat kejuaraan is
+// now a fixed championship list. KOTA/PROVINSI/NASIONAL/INTERNASIONAL are legacy
+// values kept for existing rows; new records pick from the championship list.
 enum CompetitionLevel {
   KOTA
   PROVINSI
   NASIONAL
   INTERNASIONAL
+  OLIMPIADE
+  ASIAN_GAMES
+  SEA_GAMES
+  PON
+  BK_PON
+  PORWIL
+  PORPROV
+  KEJURNAS
+  KEJURDA
 }
 
 enum Medal {
@@ -137,6 +155,8 @@ model CabangOlahraga {
   // National sports organisation for this discipline (e.g. FORKI for Karate)
   organisasiNasional  String?
   logoOrganisasiUrl   String?
+  // Revisi 2026-07-18: SUPER_ADMIN can deactivate a cabor (shown as Nonaktif).
+  isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -225,6 +245,9 @@ model Atlet {
   cabangOlahraga    CabangOlahraga @relation(fields: [cabangOlahragaId], references: [id])
 
   statusAtlet       AthleteStatus @default(ACTIVE)
+  // Revisi 2026-07-18: cedera detail, only meaningful while statusAtlet = INJURED.
+  tanggalCedera     DateTime?
+  keteranganCedera  String?  @db.Text
   // Revisi 2026-07-12: tingkat atlet TBD — optional until the client finalizes levels.
   tingkatAtlet      AthleteLevel?
   pendidikan        String?
@@ -286,6 +309,8 @@ model Pelatih {
   cabangOlahragaId   String
   cabangOlahraga     CabangOlahraga @relation(fields: [cabangOlahragaId], references: [id])
   tingkatanLisensi   String
+  // Revisi 2026-07-18: scan of the license document (PDF or JPG).
+  lisensiFileUrl     String?
   masaBerlakuMulai   DateTime?
   masaBerlakuAkhir   DateTime?
   // Free text for v1; normalize to a separate table if structured history is needed (spec 005).
@@ -331,7 +356,10 @@ model Prestasi {
   tahun            Int
   medali           Medal
   peringkat        Int?
+  // Legacy single certificate (pre revisi 2026-07-18); new uploads go to `sertifikats`.
   sertifikatUrl    String?
+
+  sertifikats      PrestasiSertifikat[]
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -341,6 +369,17 @@ model Prestasi {
   @@index([medali])
   @@index([tingkatKejuaraan])
   @@index([tahun, tingkatKejuaraan, medali])
+}
+
+// Revisi 2026-07-18: a prestasi can hold multiple certificate files.
+model PrestasiSertifikat {
+  id         String   @id @default(uuid())
+  prestasiId String
+  prestasi   Prestasi @relation(fields: [prestasiId], references: [id], onDelete: Cascade)
+  fileUrl    String
+  uploadedAt DateTime @default(now())
+
+  @@index([prestasiId])
 }
 
 // Unified monitoring/timeline log for Modul G (cedera, mutasi, pemusatan latihan,

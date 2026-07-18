@@ -2,7 +2,7 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { FileText, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import {
-  COMPETITION_LEVELS,
+  COMPETITION_LEVEL_CHOICES,
   COMPETITION_LEVEL_LABELS,
   MEDALS,
   MEDAL_LABELS,
@@ -13,6 +13,12 @@ import { Card, Button, Badge, Field, Input, Select, Modal } from "../../../compo
 import { api, resolveFileUrl } from "../../../lib/api";
 import { confirmAction } from "../../../lib/confirm";
 
+interface PrestasiSertifikat {
+  id: string;
+  fileUrl: string;
+  uploadedAt: string;
+}
+
 interface Prestasi {
   id: string;
   namaKejuaraan: string;
@@ -20,7 +26,9 @@ interface Prestasi {
   tahun: number;
   medali: Medal;
   peringkat: number | null;
+  // Legacy single certificate; new uploads land in `sertifikats`.
   sertifikatUrl: string | null;
+  sertifikats: PrestasiSertifikat[];
 }
 
 interface PrestasiForm {
@@ -33,7 +41,7 @@ interface PrestasiForm {
 
 const emptyForm: PrestasiForm = {
   namaKejuaraan: "",
-  tingkatKejuaraan: "KOTA",
+  tingkatKejuaraan: "KEJURDA",
   tahun: String(new Date().getFullYear()),
   medali: "GOLD",
   peringkat: "",
@@ -141,6 +149,17 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
     }
   }
 
+  async function handleDeleteCert(p: Prestasi, s: PrestasiSertifikat) {
+    if (!(await confirmAction({ text: "Hapus sertifikat ini?" }))) return;
+    try {
+      await api.delete(`/prestasi/${p.id}/sertifikat/${s.id}`);
+      toast.success("Sertifikat berhasil dihapus.");
+      load();
+    } catch {
+      toast.error("Gagal menghapus sertifikat.");
+    }
+  }
+
   async function handleUploadCert(p: Prestasi, event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -187,15 +206,51 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
                   {COMPETITION_LEVEL_LABELS[p.tingkatKejuaraan]} &middot; {p.tahun}
                   {p.peringkat ? ` · Peringkat ${p.peringkat}` : ""}
                 </p>
-                {p.sertifikatUrl && (
-                  <a
-                    href={resolveFileUrl(p.sertifikatUrl)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                  >
-                    <FileText size={14} /> Lihat sertifikat
-                  </a>
+                {(p.sertifikatUrl || p.sertifikats.length > 0) && (
+                  <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    {p.sertifikatUrl && (
+                      <span className="inline-flex items-center gap-1 text-xs">
+                        <a
+                          href={resolveFileUrl(p.sertifikatUrl)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-primary hover:underline"
+                        >
+                          <FileText size={14} /> Sertifikat
+                        </a>
+                        {canManage && (
+                          <button
+                            onClick={() => handleDeleteCert(p, { id: "legacy", fileUrl: p.sertifikatUrl!, uploadedAt: "" })}
+                            aria-label="Hapus sertifikat"
+                            className="text-neutral-400 hover:text-danger"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </span>
+                    )}
+                    {p.sertifikats.map((s, i) => (
+                      <span key={s.id} className="inline-flex items-center gap-1 text-xs">
+                        <a
+                          href={resolveFileUrl(s.fileUrl)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-primary hover:underline"
+                        >
+                          <FileText size={14} /> Sertifikat {p.sertifikatUrl ? i + 2 : i + 1}
+                        </a>
+                        {canManage && (
+                          <button
+                            onClick={() => handleDeleteCert(p, s)}
+                            aria-label="Hapus sertifikat"
+                            className="text-neutral-400 hover:text-danger"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                  </span>
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -251,7 +306,13 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
                   required
                   value={form.tingkatKejuaraan}
                   onChange={(v) => setForm((f) => ({ ...f, tingkatKejuaraan: v as CompetitionLevel }))}
-                  options={COMPETITION_LEVELS.map((l) => ({ value: l, label: COMPETITION_LEVEL_LABELS[l] }))}
+                  options={[
+                    ...COMPETITION_LEVEL_CHOICES.map((l) => ({ value: l, label: COMPETITION_LEVEL_LABELS[l] })),
+                    // Preserve a legacy level (Kota/Provinsi/...) already on the record.
+                    ...(COMPETITION_LEVEL_CHOICES.includes(form.tingkatKejuaraan as (typeof COMPETITION_LEVEL_CHOICES)[number])
+                      ? []
+                      : [{ value: form.tingkatKejuaraan, label: COMPETITION_LEVEL_LABELS[form.tingkatKejuaraan] }]),
+                  ]}
                 />
               </Field>
               <Field label="Tahun" required htmlFor="tahun">

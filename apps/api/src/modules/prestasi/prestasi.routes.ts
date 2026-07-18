@@ -25,7 +25,7 @@ atletPrestasiRouter.use(authenticate, scopeToCabor);
 
 atletPrestasiRouter.get(
   "/:atletId/prestasi",
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ATLET"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA", "ATLET"]),
   asyncHandler(async (req, res) => {
     const atlet = await prisma.atlet.findFirst({
       where: { id: req.params.atletId, ...atletNotDeleted },
@@ -42,6 +42,7 @@ atletPrestasiRouter.get(
 
     const prestasis = await prisma.prestasi.findMany({
       where: { atletId: req.params.atletId },
+      include: { sertifikats: { orderBy: { uploadedAt: "desc" } } },
       orderBy: { tahun: "desc" },
     });
     res.json(prestasis);
@@ -86,7 +87,7 @@ prestasiRouter.use(authenticate, scopeToCabor);
 
 prestasiRouter.get(
   "/",
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA"]),
   asyncHandler(async (req, res) => {
     const parsed = listPrestasiQuerySchema.safeParse(req.query);
     if (!parsed.success) {
@@ -177,7 +178,16 @@ prestasiRouter.delete(
       return;
     }
 
+    // Collect certificate files before the cascade delete wipes their rows,
+    // then unlink them so no orphaned (still publicly served) files remain.
+    const sertifikats = await prisma.prestasiSertifikat.findMany({
+      where: { prestasiId: req.params.id },
+      select: { fileUrl: true },
+    });
     await prisma.prestasi.delete({ where: { id: req.params.id } });
+    for (const url of [prestasi.sertifikatUrl, ...sertifikats.map((s) => s.fileUrl)]) {
+      if (url) fs.unlink(path.join(uploadRoot, url.replace("/uploads/", "")), () => undefined);
+    }
     emit("prestasi:change");
     writeAudit(req.user!.id, "DELETE", "Prestasi", req.params.id);
     res.status(204).send();
@@ -211,14 +221,64 @@ prestasiRouter.post(
       return;
     }
 
-    const sertifikatUrl = publicUrl("prestasi-sertifikat", req.file.filename);
-    const updated = await prisma.prestasi.update({
-      where: { id: req.params.id },
-      data: { sertifikatUrl },
+    // Revisi 2026-07-18: certificates accumulate (multiple per prestasi)
+    // instead of replacing a single file.
+    await prisma.prestasiSertifikat.create({
+      data: {
+        prestasiId: req.params.id,
+        fileUrl: publicUrl("prestasi-sertifikat", req.file.filename),
+      },
     });
-    if (prestasi.sertifikatUrl) {
-      fs.unlink(path.join(uploadRoot, prestasi.sertifikatUrl.replace("/uploads/", "")), () => undefined);
-    }
+    const updated = await prisma.prestasi.findUnique({
+      where: { id: req.params.id },
+      include: { sertifikats: { orderBy: { uploadedAt: "desc" } } },
+    });
+    writeAudit(req.user!.id, "UPDATE", "Prestasi", req.params.id);
     res.json(updated);
+  }),
+);
+
+// Revisi 2026-07-18: remove one certificate file from a prestasi. The literal
+// id "legacy" removes the pre-revision single certificate (Prestasi.sertifikatUrl).
+prestasiRouter.delete(
+  "/:id/sertifikat/:sertifikatId",
+  requireRole(DATA_ADMIN_ROLES),
+  asyncHandler(async (req, res) => {
+    const { prestasi, allowed } = await loadPrestasiWithAccessCheck(req);
+    if (!prestasi) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (!allowed) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    if (req.params.sertifikatId === "legacy") {
+      if (!prestasi.sertifikatUrl) {
+        res.status(404).json({ error: "Not found" });
+        return;
+      }
+      await prisma.prestasi.update({
+        where: { id: req.params.id },
+        data: { sertifikatUrl: null },
+      });
+      fs.unlink(path.join(uploadRoot, prestasi.sertifikatUrl.replace("/uploads/", "")), () => undefined);
+      writeAudit(req.user!.id, "UPDATE", "Prestasi", req.params.id);
+      res.status(204).send();
+      return;
+    }
+
+    const sertifikat = await prisma.prestasiSertifikat.findFirst({
+      where: { id: req.params.sertifikatId, prestasiId: req.params.id },
+    });
+    if (!sertifikat) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    await prisma.prestasiSertifikat.delete({ where: { id: sertifikat.id } });
+    fs.unlink(path.join(uploadRoot, sertifikat.fileUrl.replace("/uploads/", "")), () => undefined);
+    writeAudit(req.user!.id, "UPDATE", "Prestasi", req.params.id);
+    res.status(204).send();
   }),
 );

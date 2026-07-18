@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Search, Trash2 } from "lucide-react";
 import { UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Input, DataTable, type Column, type BulkAction } from "../../components/ui";
+import { Card, PageHeader, Button, Badge, Input, DataTable, type Column, type BulkAction } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import { confirmAction } from "../../lib/confirm";
@@ -17,12 +17,14 @@ interface CaborRow {
   logoOrganisasiUrl: string | null;
   jumlahAtlet: number;
   jumlahPelatih: number;
+  isActive: boolean;
 }
 
 /** Module E — Cabang Olahraga list. See specs/003-cabang-olahraga/spec.md. */
 export function CaborListPage() {
   const role = useAuthStore((state) => state.user?.role);
   const canCreate = role && UNSCOPED_ADMIN_ROLES.includes(role);
+  const canToggleActive = role === "SUPER_ADMIN_KONI";
 
   const [items, setItems] = useState<CaborRow[] | null>(null);
   const [search, setSearch] = useState("");
@@ -60,6 +62,25 @@ export function CaborListPage() {
       toast.error(`${failed} dari ${ids.length} cabang olahraga gagal dihapus.`);
     }
     setReloadKey((k) => k + 1);
+  }
+
+  async function handleToggleActive(c: CaborRow) {
+    const next = !c.isActive;
+    if (!next) {
+      const confirmed = await confirmAction({
+        text: `Nonaktifkan ${c.nama}? Akun admin cabor ini juga akan dinonaktifkan.`,
+        danger: true,
+        confirmText: "Nonaktifkan",
+      });
+      if (!confirmed) return;
+    }
+    try {
+      await api.patch(`/cabor/${c.id}/active`, { isActive: next });
+      toast.success(next ? "Cabang olahraga diaktifkan." : "Cabang olahraga dinonaktifkan.");
+      setReloadKey((k) => k + 1);
+    } catch {
+      toast.error("Gagal mengubah status cabang olahraga.");
+    }
   }
 
   const columns: Column<CaborRow>[] = [
@@ -119,6 +140,36 @@ export function CaborListPage() {
       getValue: (c) => c.jumlahPelatih,
       render: (c) => <span className="text-neutral-600">{c.jumlahPelatih} pelatih</span>,
     },
+    // Revisi 2026-07-18: SUPER_ADMIN can deactivate/reactivate a cabor.
+    {
+      key: "isActive",
+      label: "Status",
+      sortable: true,
+      getValue: (c) => (c.isActive ? "1" : "0"),
+      render: (c) =>
+        c.isActive ? <Badge tone="success">Aktif</Badge> : <Badge tone="neutral">Nonaktif</Badge>,
+    },
+    ...(canToggleActive
+      ? [
+          {
+            key: "aksi",
+            label: "Aksi",
+            render: (c) => (
+              <Button
+                variant="outline"
+                onClick={() => handleToggleActive(c)}
+                className={
+                  c.isActive
+                    ? "border-warning/40 text-warning hover:bg-warning/10"
+                    : "border-success/40 text-success hover:bg-success/10"
+                }
+              >
+                {c.isActive ? "Nonaktifkan" : "Aktifkan"}
+              </Button>
+            ),
+          } satisfies Column<CaborRow>,
+        ]
+      : []),
   ];
 
   const bulkActions: BulkAction[] = canCreate
