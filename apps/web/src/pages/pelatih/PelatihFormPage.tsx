@@ -43,8 +43,12 @@ function extractError(err: unknown): string {
   return "Gagal menyimpan data.";
 }
 
-/** Module C — create/edit Pelatih. See specs/005-pelatih/spec.md. */
-export function PelatihFormPage() {
+/**
+ * Module C — create/edit Pelatih. See specs/005-pelatih/spec.md.
+ * Revisi 2026-07-18: `embedded` renders the create form inside a modal on the
+ * pelatih list — no PageHeader, and `onDone` replaces navigation when finished.
+ */
+export function PelatihFormPage({ embedded = false, onDone }: { embedded?: boolean; onDone?: () => void } = {}) {
   const { id } = useParams<{ id: string }>();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
@@ -131,6 +135,10 @@ export function PelatihFormPage() {
         fd.append("file", lisensiFile);
         await api.post(`/pelatih/${pelatihId}/lisensi`, fd);
       }
+      if (embedded) {
+        onDone?.();
+        return;
+      }
       navigate(`/pelatih/${pelatihId}`);
     } catch (err) {
       setError(extractError(err));
@@ -145,7 +153,7 @@ export function PelatihFormPage() {
 
   return (
     <div>
-      <PageHeader title={isEdit ? "Ubah Pelatih" : "Tambah Pelatih"} />
+      {!embedded && <PageHeader title={isEdit ? "Ubah Pelatih" : "Tambah Pelatih"} />}
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -246,7 +254,7 @@ export function PelatihFormPage() {
             <Button type="submit" disabled={saving}>
               {saving ? "Menyimpan..." : "Simpan"}
             </Button>
-            <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+            <Button type="button" variant="outline" onClick={() => (embedded ? onDone?.() : navigate(-1))}>
               Batal
             </Button>
           </div>
