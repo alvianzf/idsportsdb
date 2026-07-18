@@ -7,6 +7,7 @@ import {
   BATAM_KECAMATAN,
   DATA_ADMIN_ROLES,
   UNSCOPED_ADMIN_ROLES,
+  UNSCOPED_VIEW_ROLES,
   type AthleteStatus,
 } from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Input, Select, Badge, Pagination, Combobox, DataTable, DropZone, Modal, type Column, type BulkAction } from "../../components/ui";
@@ -45,7 +46,7 @@ export function AtletListPage() {
   const role = useAuthStore((state) => state.user?.role);
   const canCreate = role && DATA_ADMIN_ROLES.includes(role);
   const canDelete = role && UNSCOPED_ADMIN_ROLES.includes(role);
-  const isUnscopedAdmin = role && UNSCOPED_ADMIN_ROLES.includes(role);
+  const isUnscopedAdmin = role && UNSCOPED_VIEW_ROLES.includes(role);
   // #70 — soft-delete recovery. Admins can toggle an archive view and restore;
   // only SUPER_ADMIN can permanently purge.
   const canRestore = role && UNSCOPED_ADMIN_ROLES.includes(role);

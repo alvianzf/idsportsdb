@@ -47,7 +47,7 @@ export function UsersFormPage() {
     currentRole === "ADMIN_CABOR"
       ? (["ATLET"] as const)
       : currentRole === "ADMIN_KONI"
-        ? (["ADMIN_CABOR", "ATLET"] as const)
+        ? (["ADMIN_CABOR", "ADMIN_DISPORA", "ATLET"] as const)
         : ROLES;
   const defaultRole: Role =
     athleteLocked || currentRole === "ADMIN_CABOR"

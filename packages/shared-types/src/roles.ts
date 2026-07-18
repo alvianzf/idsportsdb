@@ -19,6 +19,9 @@ export const ROLE_LABELS: Record<Role, string> = {
 /** Roles with read-only access to all data across cabor (government oversight). */
 export const OVERSIGHT_ROLES: Role[] = ["ADMIN_DISPORA"];
 
+/** Roles that can VIEW data across all cabor: unscoped admins + read-only oversight. */
+export const UNSCOPED_VIEW_ROLES: Role[] = [...UNSCOPED_ADMIN_ROLES, ...OVERSIGHT_ROLES];
+
 /** Roles that can manage data across all cabor (not scoped to a single cabangOlahragaId). */
 export const UNSCOPED_ADMIN_ROLES: Role[] = ["SUPER_ADMIN_KONI", "ADMIN_KONI"];
 

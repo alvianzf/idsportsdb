@@ -8,6 +8,7 @@ import {
   MEDALS,
   MEDAL_LABELS,
   UNSCOPED_ADMIN_ROLES,
+  UNSCOPED_VIEW_ROLES,
   type CompetitionLevel,
   type Medal,
 } from "@inasportdb/shared-types";
@@ -47,7 +48,7 @@ const MEDAL_TONE: Record<Medal, "gold" | "silver" | "bronze" | "neutral"> = {
 /** Module F — Prestasi Atlet list. See specs/007-prestasi-atlet/spec.md. */
 export function PrestasiListPage() {
   const role = useAuthStore((state) => state.user?.role);
-  const isUnscopedAdmin = role && UNSCOPED_ADMIN_ROLES.includes(role);
+  const isUnscopedAdmin = role && UNSCOPED_VIEW_ROLES.includes(role);
   const canDelete = role && DATA_ADMIN_ROLES.includes(role);
 
   const [items, setItems] = useState<PrestasiRow[] | null>(null);

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Archive, ArchiveRestore, Plus, Search, Trash2 } from "lucide-react";
-import { DATA_ADMIN_ROLES, UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
+import { DATA_ADMIN_ROLES, UNSCOPED_ADMIN_ROLES, UNSCOPED_VIEW_ROLES } from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Input, Badge, Pagination, Combobox, DataTable, type Column, type BulkAction } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
@@ -27,7 +27,7 @@ export function PelatihListPage() {
   const role = useAuthStore((state) => state.user?.role);
   const canCreate = role && DATA_ADMIN_ROLES.includes(role);
   const canDelete = role && UNSCOPED_ADMIN_ROLES.includes(role);
-  const isUnscopedAdmin = role && UNSCOPED_ADMIN_ROLES.includes(role);
+  const isUnscopedAdmin = role && UNSCOPED_VIEW_ROLES.includes(role);
   // #70 — soft-delete recovery. Admins can view the archive and restore;
   // only SUPER_ADMIN can permanently purge.
   const canRestore = role && UNSCOPED_ADMIN_ROLES.includes(role);
