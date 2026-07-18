@@ -2,7 +2,7 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { FileText, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import {
-  COMPETITION_LEVELS,
+  COMPETITION_LEVEL_CHOICES,
   COMPETITION_LEVEL_LABELS,
   MEDALS,
   MEDAL_LABELS,
@@ -33,7 +33,7 @@ interface PrestasiForm {
 
 const emptyForm: PrestasiForm = {
   namaKejuaraan: "",
-  tingkatKejuaraan: "KOTA",
+  tingkatKejuaraan: "KEJURDA",
   tahun: String(new Date().getFullYear()),
   medali: "GOLD",
   peringkat: "",
@@ -251,7 +251,13 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
                   required
                   value={form.tingkatKejuaraan}
                   onChange={(v) => setForm((f) => ({ ...f, tingkatKejuaraan: v as CompetitionLevel }))}
-                  options={COMPETITION_LEVELS.map((l) => ({ value: l, label: COMPETITION_LEVEL_LABELS[l] }))}
+                  options={[
+                    ...COMPETITION_LEVEL_CHOICES.map((l) => ({ value: l, label: COMPETITION_LEVEL_LABELS[l] })),
+                    // Preserve a legacy level (Kota/Provinsi/...) already on the record.
+                    ...(COMPETITION_LEVEL_CHOICES.includes(form.tingkatKejuaraan as (typeof COMPETITION_LEVEL_CHOICES)[number])
+                      ? []
+                      : [{ value: form.tingkatKejuaraan, label: COMPETITION_LEVEL_LABELS[form.tingkatKejuaraan] }]),
+                  ]}
                 />
               </Field>
               <Field label="Tahun" required htmlFor="tahun">

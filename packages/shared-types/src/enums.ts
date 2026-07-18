@@ -29,6 +29,8 @@ export const ATHLETE_LEVELS = [
   "PROVINSI",
   "NASIONAL",
   "INTERNASIONAL",
+  "PON",
+  "OLIMPIADE",
 ] as const;
 export type AthleteLevel = (typeof ATHLETE_LEVELS)[number];
 export const ATHLETE_LEVEL_LABELS: Record<AthleteLevel, string> = {
@@ -36,6 +38,8 @@ export const ATHLETE_LEVEL_LABELS: Record<AthleteLevel, string> = {
   PROVINSI: "Provinsi",
   NASIONAL: "Nasional",
   INTERNASIONAL: "Internasional",
+  PON: "PON",
+  OLIMPIADE: "Olimpiade",
 };
 
 // Revisi 2026-07-12: kalender event (spec 017-event-calendar).
@@ -54,6 +58,8 @@ export const EVENT_LEVELS = [
   "NASIONAL",
   "INTERNASIONAL",
   "OPEN",
+  "PON",
+  "OLIMPIADE",
 ] as const;
 export type EventLevel = (typeof EVENT_LEVELS)[number];
 export const EVENT_LEVEL_LABELS: Record<EventLevel, string> = {
@@ -62,13 +68,30 @@ export const EVENT_LEVEL_LABELS: Record<EventLevel, string> = {
   NASIONAL: "Nasional",
   INTERNASIONAL: "Internasional",
   OPEN: "Open",
+  PON: "PON",
+  OLIMPIADE: "Olimpiade",
 };
 
 // Revisi 2026-07-12: pendidikan = pendidikan terakhir, picked from a fixed jenjang list.
 export const EDUCATION_LEVELS = ["SD", "SMP", "SMA/SMK", "D3", "S1", "S2", "S3"] as const;
 export type EducationLevel = (typeof EDUCATION_LEVELS)[number];
 
+// Revisi 2026-07-18 (client spec F): tingkat kejuaraan offered for new prestasi records.
+export const COMPETITION_LEVEL_CHOICES = [
+  "OLIMPIADE",
+  "ASIAN_GAMES",
+  "SEA_GAMES",
+  "PON",
+  "BK_PON",
+  "PORWIL",
+  "PORPROV",
+  "KEJURNAS",
+  "KEJURDA",
+] as const;
+
+// All valid values: the championship list plus legacy levels kept for existing rows.
 export const COMPETITION_LEVELS = [
+  ...COMPETITION_LEVEL_CHOICES,
   "KOTA",
   "PROVINSI",
   "NASIONAL",
@@ -76,6 +99,15 @@ export const COMPETITION_LEVELS = [
 ] as const;
 export type CompetitionLevel = (typeof COMPETITION_LEVELS)[number];
 export const COMPETITION_LEVEL_LABELS: Record<CompetitionLevel, string> = {
+  OLIMPIADE: "Olimpiade",
+  ASIAN_GAMES: "Asian Games",
+  SEA_GAMES: "SEA Games",
+  PON: "PON",
+  BK_PON: "BK PON (Pra PON)",
+  PORWIL: "Pekan Olahraga Wilayah (Porwil)",
+  PORPROV: "Pekan Olahraga Provinsi (Porprov)",
+  KEJURNAS: "Kejuaraan Nasional (Kejurnas)",
+  KEJURDA: "Kejuaraan Daerah (Kejurda)",
   KOTA: "Kota",
   PROVINSI: "Provinsi",
   NASIONAL: "Nasional",

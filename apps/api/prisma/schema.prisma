@@ -42,6 +42,8 @@ enum AthleteLevel {
   PROVINSI
   NASIONAL
   INTERNASIONAL
+  PON // revisi 2026-07-18
+  OLIMPIADE // revisi 2026-07-18
 }
 
 // Revisi 2026-07-12: kalender event (spec 017).
@@ -58,13 +60,27 @@ enum EventLevel {
   NASIONAL
   INTERNASIONAL
   OPEN
+  PON // revisi 2026-07-18
+  OLIMPIADE // revisi 2026-07-18
 }
 
+// Revisi 2026-07-18 (client spec F — Data Prestasi Atlet): tingkat kejuaraan is
+// now a fixed championship list. KOTA/PROVINSI/NASIONAL/INTERNASIONAL are legacy
+// values kept for existing rows; new records pick from the championship list.
 enum CompetitionLevel {
   KOTA
   PROVINSI
   NASIONAL
   INTERNASIONAL
+  OLIMPIADE
+  ASIAN_GAMES
+  SEA_GAMES
+  PON
+  BK_PON
+  PORWIL
+  PORPROV
+  KEJURNAS
+  KEJURDA
 }
 
 enum Medal {
