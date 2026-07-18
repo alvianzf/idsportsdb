@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Archive, ArchiveRestore, Plus, Trash2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Archive, ArchiveRestore, Pencil, Plus, Trash2 } from "lucide-react";
 import { DATA_ADMIN_ROLES, LICENSE_TIERS, UNSCOPED_ADMIN_ROLES, UNSCOPED_VIEW_ROLES } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Badge, Modal, Pagination, Combobox, DataTable, SearchInput, Select, type Column, type BulkAction } from "../../components/ui";
+import { ActionMenu, Card, PageHeader, Button, Badge, Modal, Pagination, Combobox, DataTable, SearchInput, Select, type Column, type BulkAction } from "../../components/ui";
 import { PelatihFormPage } from "./PelatihFormPage";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
@@ -25,6 +25,7 @@ interface CaborOption {
 
 /** Module C — Data Pelatih list. See specs/005-pelatih/spec.md. */
 export function PelatihListPage() {
+  const navigate = useNavigate();
   const role = useAuthStore((state) => state.user?.role);
   const canCreate = role && DATA_ADMIN_ROLES.includes(role);
   const canDelete = role && UNSCOPED_ADMIN_ROLES.includes(role);
@@ -94,6 +95,22 @@ export function PelatihListPage() {
     if (!date) return false;
     const days = (new Date(date).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
     return days <= 90;
+  }
+
+  async function handleDeleteOne(p: PelatihRow) {
+    const confirmed = await confirmAction({
+      text: `Hapus pelatih ${p.namaPelatih}? Data dipindahkan ke arsip.`,
+      danger: true,
+      confirmText: "Hapus",
+    });
+    if (!confirmed) return;
+    try {
+      await api.delete(`/pelatih/${p.id}`);
+      toast.success("Pelatih berhasil dihapus.");
+      setReloadKey((k) => k + 1);
+    } catch {
+      toast.error("Gagal menghapus pelatih.");
+    }
   }
 
   async function handleBulkDelete(ids: string[]) {
@@ -196,6 +213,27 @@ export function PelatihListPage() {
           <span className="text-neutral-600">-</span>
         ),
     },
+    // Revisi 2026-07-18: row actions in a three-dots dropdown (edit + delete).
+    ...(!showArchive && (canCreate || canDelete)
+      ? [
+          {
+            key: "aksi",
+            label: "Aksi",
+            render: (p) => (
+              <ActionMenu
+                items={[
+                  ...(canCreate
+                    ? [{ label: "Edit", icon: Pencil, onClick: () => navigate(`/pelatih/${p.id}/edit`) }]
+                    : []),
+                  ...(canDelete
+                    ? [{ label: "Hapus", icon: Trash2, danger: true, onClick: () => handleDeleteOne(p) }]
+                    : []),
+                ]}
+              />
+            ),
+          } satisfies Column<PelatihRow>,
+        ]
+      : []),
   ];
 
   const bulkActions: BulkAction[] = showArchive
