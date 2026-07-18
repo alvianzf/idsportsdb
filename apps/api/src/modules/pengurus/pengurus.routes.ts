@@ -3,31 +3,11 @@ import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole } from "../../middleware/auth.js";
 import { isForeignKeyConstraintError, isNotFoundError } from "../../lib/prismaErrors.js";
-import { createPengurusSchema, updatePengurusSchema, listPengurusQuerySchema, swapPengurusSchema } from "./pengurus.schema.js";
+import { createPengurusSchema, updatePengurusSchema, swapPengurusSchema } from "./pengurus.schema.js";
 
 /** Mounted at /api/v1/cabor — `/:caborId/pengurus` (specs/006-pengurus-cabor/spec.md §3). */
 export const caborPengurusRouter = Router();
 caborPengurusRouter.use(authenticate);
-
-caborPengurusRouter.get(
-  "/:caborId/pengurus",
-  asyncHandler(async (req, res) => {
-    const parsed = listPengurusQuerySchema.safeParse(req.query);
-    if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.flatten() });
-      return;
-    }
-
-    const pengurus = await prisma.pengurusCabor.findMany({
-      where: {
-        cabangOlahragaId: req.params.caborId,
-        ...(parsed.data.active ? { masaBaktiAkhir: { gte: new Date() } } : {}),
-      },
-      orderBy: { masaBaktiAkhir: "desc" },
-    });
-    res.json(pengurus);
-  }),
-);
 
 caborPengurusRouter.post(
   "/:caborId/pengurus",

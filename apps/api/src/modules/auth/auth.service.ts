@@ -44,9 +44,3 @@ export async function refresh(refreshToken: string): Promise<AuthResult | null> 
 
   return issueTokens(user);
 }
-
-export async function getActiveUserById(id: string): Promise<SafeUser | null> {
-  const user = await prisma.user.findUnique({ where: { id } });
-  if (!user || !user.isActive) return null;
-  return toSafeUser(user);
-}

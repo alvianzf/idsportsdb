@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole, scopeToCabor } from "../../middleware/auth.js";
-import { prestasiStatsQuerySchema, summaryQuerySchema } from "./dashboard.schema.js";
+import { summaryQuerySchema } from "./dashboard.schema.js";
 
 export const dashboardRouter = Router();
 
@@ -130,90 +130,3 @@ dashboardRouter.get(
   }),
 );
 
-dashboardRouter.get(
-  "/summary",
-  asyncHandler(async (req, res) => {
-    const parsed = summaryQuerySchema.safeParse(req.query);
-    if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.flatten() });
-      return;
-    }
-    const tahun = parsed.data.tahun ?? new Date().getFullYear();
-    const { summary } = await fetchAll(req.scopedCaborId, tahun);
-    res.json(summary);
-  }),
-);
-
-// Not shown to ADMIN_CABOR (single-cabor view makes this redundant).
-dashboardRouter.get(
-  "/stats/per-cabor",
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI"]),
-  asyncHandler(async (_req, res) => {
-    const cabors = await prisma.cabangOlahraga.findMany({
-      select: {
-        id: true,
-        nama: true,
-        // #70 — don't count soft-deleted athletes/coaches.
-        _count: { select: { atlets: { where: { deletedAt: null } }, pelatihs: { where: { deletedAt: null } } } },
-      },
-      orderBy: { nama: "asc" },
-    });
-
-    res.json(
-      cabors.map((c) => ({
-        cabangOlahragaId: c.id,
-        nama: c.nama,
-        atletCount: c._count.atlets,
-        pelatihCount: c._count.pelatihs,
-      })),
-    );
-  }),
-);
-
-dashboardRouter.get(
-  "/stats/prestasi",
-  asyncHandler(async (req, res) => {
-    const parsed = prestasiStatsQuerySchema.safeParse(req.query);
-    if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.flatten() });
-      return;
-    }
-
-    const caborId = req.scopedCaborId;
-    // #70 — exclude prestasi belonging to soft-deleted athletes.
-    const prestasiCaborFilter = caborId
-      ? Prisma.sql`AND "atletId" IN (SELECT id FROM "Atlet" WHERE "deletedAt" IS NULL AND "cabangOlahragaId" = ${caborId})`
-      : Prisma.sql`AND "atletId" IN (SELECT id FROM "Atlet" WHERE "deletedAt" IS NULL)`;
-
-    switch (parsed.data.groupBy) {
-      case "tahun": {
-        const rows = await prisma.$queryRaw<{ key: number; count: bigint }[]>`
-          SELECT tahun AS key, COUNT(*) AS count FROM "Prestasi"
-          WHERE TRUE ${prestasiCaborFilter}
-          GROUP BY tahun ORDER BY tahun
-        `;
-        res.json(rows.map((r) => ({ key: r.key, count: Number(r.count) })));
-        return;
-      }
-      case "tingkatKejuaraan": {
-        const rows = await prisma.$queryRaw<{ key: string; count: bigint }[]>`
-          SELECT "tingkatKejuaraan" AS key, COUNT(*) AS count FROM "Prestasi"
-          WHERE TRUE ${prestasiCaborFilter}
-          GROUP BY "tingkatKejuaraan"
-        `;
-        res.json(rows.map((r) => ({ key: r.key, count: Number(r.count) })));
-        return;
-      }
-      case "medali":
-      default: {
-        const rows = await prisma.$queryRaw<{ key: string; count: bigint }[]>`
-          SELECT medali AS key, COUNT(*) AS count FROM "Prestasi"
-          WHERE TRUE ${prestasiCaborFilter}
-          GROUP BY medali
-        `;
-        res.json(rows.map((r) => ({ key: r.key, count: Number(r.count) })));
-        return;
-      }
-    }
-  }),
-);

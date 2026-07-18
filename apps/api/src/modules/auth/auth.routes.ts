@@ -107,20 +107,6 @@ authRouter.post("/logout", authenticate, (_req, res) => {
   res.status(204).send();
 });
 
-authRouter.get(
-  "/me",
-  authenticate,
-  asyncHandler(async (req, res) => {
-    const user = await authService.getActiveUserById(req.user!.id);
-    if (!user) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-
-    res.json({ user });
-  }),
-);
-
 // ── Forgot / reset password ───────────────────────────────────────────────
 
 authRouter.post(
@@ -200,7 +186,8 @@ authRouter.patch(
       return;
     }
 
-    const { password, isActive, ...rest } = parsed.data;
+    // Strip isActive: a user must not be able to (re)activate their own account.
+    const { password, isActive: _isActive, ...rest } = parsed.data;
     try {
       const user = await prisma.user.update({
         where: { id: req.user!.id },
