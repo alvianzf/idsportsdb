@@ -10,7 +10,7 @@ import {
   type CompetitionLevel,
   type Medal,
 } from "@inasportdb/shared-types";
-import { Card, Button, Badge, DropZone, Field, Input, Select, Modal } from "../../../components/ui";
+import { Card, Button, Badge, DropZone, Field, Input, SearchInput, Select, Modal } from "../../../components/ui";
 import { api, resolveFileUrl } from "../../../lib/api";
 import { confirmAction } from "../../../lib/confirm";
 
@@ -388,19 +388,15 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
 
             {form.tingkatKejuaraan === "LAINNYA" && (
               <Field label="Tingkat Lainnya" required htmlFor="tingkatLainnya">
-                <Input
+                <SearchInput
                   id="tingkatLainnya"
                   required
-                  list="tingkatLainnyaOptions"
+                  showIcon={false}
                   placeholder="Tulis tingkat kejuaraan"
                   value={form.tingkatLainnya}
-                  onChange={(e) => setForm((f) => ({ ...f, tingkatLainnya: e.target.value }))}
+                  onChange={(v) => setForm((f) => ({ ...f, tingkatLainnya: v }))}
+                  suggestions={tingkatSuggestions}
                 />
-                <datalist id="tingkatLainnyaOptions">
-                  {tingkatSuggestions.map((s) => (
-                    <option key={s} value={s} />
-                  ))}
-                </datalist>
               </Field>
             )}
 
