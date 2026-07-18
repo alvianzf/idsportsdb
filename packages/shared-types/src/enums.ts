@@ -140,6 +140,11 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   SERTIFIKAT_PRESTASI: "Sertifikat Prestasi",
 };
 
+// Revisi 2026-07-18: tingkatan lisensi pelatih is a fixed choice (legacy
+// free-text values on old records are preserved by the forms/filters).
+export const LICENSE_TIERS = ["Nasional", "Cabang Olahraga"] as const;
+export type LicenseTier = (typeof LICENSE_TIERS)[number];
+
 export const MONITORING_EVENT_TYPES = [
   "INJURY",
   "MUTATION",
