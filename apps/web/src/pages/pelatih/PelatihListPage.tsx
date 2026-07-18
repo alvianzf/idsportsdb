@@ -226,30 +226,31 @@ export function PelatihListPage() {
         }
       />
 
-      <Card className="mb-4 space-y-3">
-        <div className="relative">
-          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-          <Input
-            placeholder="Cari nama pelatih atau nomor lisensi..."
-            value={search}
-            onChange={(e) => {
-              setPage(1);
-              setSearch(e.target.value);
-            }}
-            className="pl-9"
-          />
-        </div>
-        <div className="flex flex-col gap-2">
+      <Card className="mb-4">
+        {/* Revisi 2026-07-18: search + filters share one row (like Pengguna). */}
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <div className="relative flex-1">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+            <Input
+              placeholder="Cari nama pelatih atau nomor lisensi..."
+              value={search}
+              onChange={(e) => {
+                setPage(1);
+                setSearch(e.target.value);
+              }}
+              className="pl-9"
+            />
+          </div>
           {isUnscopedAdmin && (
             <Combobox
               value={cabor}
               onChange={(v) => { setPage(1); setCabor(v); }}
               options={[{ value: "", label: "Semua Cabor" }, ...cabors.map((c) => ({ value: c.id, label: c.nama }))]}
               placeholder="Semua Cabor"
-              className="w-full"
+              className="w-full md:w-64"
             />
           )}
-          <label className="flex items-center gap-2 text-sm text-neutral-700">
+          <label className="flex shrink-0 items-center gap-2 text-sm text-neutral-700">
             <input
               type="checkbox"
               checked={expiring}

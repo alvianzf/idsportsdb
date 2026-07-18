@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { KeyRound, Lock, LockOpen, Pencil, Plus, Trash2 } from "lucide-react";
+import { KeyRound, Lock, LockOpen, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { ROLES, ROLE_LABELS, type Role } from "@inasportdb/shared-types";
-import { ActionMenu, Card, PageHeader, Button, Badge, Modal, Select, DataTable, type Column, type BulkAction } from "../../components/ui";
+import { ActionMenu, Card, PageHeader, Button, Badge, Input, Modal, Select, DataTable, type Column, type BulkAction } from "../../components/ui";
 import { UsersFormPage } from "./UsersFormPage";
 import { api } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
@@ -32,6 +32,7 @@ export function UsersListPage() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<Role | "">("");
   const [error, setError] = useState<string | null>(null);
   const currentRole = useAuthStore((state) => state.user?.role);
@@ -192,6 +193,16 @@ export function UsersListPage() {
     { label: "Nonaktifkan", variant: "danger", onClick: handleBulkDeactivate },
   ];
 
+  // Client-side search — the full user list is already loaded.
+  const q = search.trim().toLowerCase();
+  const filteredUsers = (users ?? []).filter(
+    (u) =>
+      !q ||
+      u.fullName.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      (u.cabangOlahraga?.nama.toLowerCase().includes(q) ?? false),
+  );
+
   return (
     <div>
       <PageHeader
@@ -225,12 +236,24 @@ export function UsersListPage() {
       )}
 
       <Card className="mb-4">
-        <Select
-          value={roleFilter}
-          onChange={(v) => setRoleFilter(v as Role | "")}
-          options={[{ value: "", label: "Semua Role" }, ...ROLES.map((r) => ({ value: r, label: ROLE_LABELS[r] }))]}
-          className="w-full"
-        />
+        {/* Revisi 2026-07-18: search bar on the same row as the role filter. */}
+        <div className="flex flex-col gap-3 md:flex-row">
+          <div className="relative flex-1">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+            <Input
+              placeholder="Cari nama atau email..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select
+            value={roleFilter}
+            onChange={(v) => setRoleFilter(v as Role | "")}
+            options={[{ value: "", label: "Semua Role" }, ...ROLES.map((r) => ({ value: r, label: ROLE_LABELS[r] }))]}
+            className="w-full md:w-64"
+          />
+        </div>
       </Card>
 
       {error && <Card className="mb-4 text-sm text-danger">{error}</Card>}
@@ -239,7 +262,7 @@ export function UsersListPage() {
         {users === null ? (
           <p className="text-sm text-neutral-500">Memuat data...</p>
         ) : (
-          <DataTable columns={columns} rows={users} bulkActions={bulkActions} emptyMessage="Belum ada pengguna." />
+          <DataTable columns={columns} rows={filteredUsers} bulkActions={bulkActions} emptyMessage="Belum ada pengguna." />
         )}
       </Card>
     </div>
