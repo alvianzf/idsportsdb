@@ -184,11 +184,20 @@ usersRouter.get(
 
     const users = await prisma.user.findMany({
       where: parsed.data.role ? { role: parsed.data.role } : undefined,
-      // Revisi 2026-07-18: the list shows each account's cabor.
-      include: { cabangOlahraga: { select: { id: true, nama: true } } },
+      // Revisi 2026-07-18: the list shows each account's cabor. ADMIN_CABOR
+      // stores it on the user; ATLET carries it via the linked athlete record.
+      include: {
+        cabangOlahraga: { select: { id: true, nama: true } },
+        athlete: { select: { cabangOlahraga: { select: { id: true, nama: true } } } },
+      },
       orderBy: { createdAt: "asc" },
     });
-    res.json(users.map((u) => ({ ...toSafeUser(u), cabangOlahraga: u.cabangOlahraga })));
+    res.json(
+      users.map(({ athlete, ...u }) => ({
+        ...toSafeUser(u),
+        cabangOlahraga: u.cabangOlahraga ?? athlete?.cabangOlahraga ?? null,
+      })),
+    );
   }),
 );
 
