@@ -395,7 +395,7 @@ export function AtletListPage() {
                       <button
                         key={f}
                         onClick={() => handleExport(f)}
-                        className="block w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-50"
+                        className="block w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-primary-50"
                       >
                         {f === "xlsx" ? "Excel (.xlsx)" : f.toUpperCase()}
                       </button>

@@ -310,7 +310,7 @@ export function MonitoringPage() {
                     onClick={() => openEditStatus(event)}
                     title="Ubah status"
                     aria-label="Ubah status"
-                    className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
+                    className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-primary-50 hover:text-primary hover:text-neutral-700"
                   >
                     <SquarePen size={15} />
                   </button>

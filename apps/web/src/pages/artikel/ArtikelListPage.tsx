@@ -104,14 +104,14 @@ export function ArtikelListPage() {
                   {item.published ? "Jadikan Draf" : "Terbitkan"}
                 </Button>
                 <Link to={`/artikel/${item.id}/edit`}>
-                  <button aria-label="Ubah" className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100">
+                  <button aria-label="Ubah" className="rounded-md p-1.5 text-neutral-500 hover:bg-primary-50 hover:text-primary">
                     <Pencil size={16} />
                   </button>
                 </Link>
                 <button
                   onClick={() => handleDelete(item)}
                   aria-label="Hapus"
-                  className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100"
+                  className="rounded-md p-1.5 text-neutral-500 hover:bg-primary-50 hover:text-primary"
                 >
                   <Trash2 size={16} />
                 </button>

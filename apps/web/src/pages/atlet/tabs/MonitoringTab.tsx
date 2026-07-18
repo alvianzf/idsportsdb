@@ -207,7 +207,7 @@ export function MonitoringTab({ atletId, canManage, currentCabangOlahragaId }: M
                   <button
                     onClick={() => openEdit(event)}
                     aria-label="Ubah"
-                    className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100"
+                    className="rounded-md p-1.5 text-neutral-500 hover:bg-primary-50 hover:text-primary"
                   >
                     <Pencil size={16} />
                   </button>

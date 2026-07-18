@@ -323,7 +323,7 @@ export function ArtikelFormPage() {
             <button
               type="button"
               onClick={() => setShowArticlePreview(false)}
-              className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-neutral-600 hover:bg-neutral-100"
+              className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-neutral-600 hover:bg-primary-50 hover:text-primary"
             >
               <X size={16} /> Tutup Pratinjau
             </button>

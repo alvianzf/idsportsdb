@@ -174,7 +174,7 @@ export function DataTable<T extends { id: string }>({
               <Fragment key={row.id}>
                 <tr
                   onClick={hasExpand ? () => setExpandedRow((r) => r === row.id ? null : row.id) : undefined}
-                  className={`transition-colors ${hasExpand ? "cursor-pointer" : ""} ${selected.has(row.id) ? "bg-primary-50" : "hover:bg-neutral-50"}`}
+                  className={`transition-colors ${hasExpand ? "cursor-pointer" : ""} ${selected.has(row.id) ? "bg-primary-50" : "hover:bg-primary-50/40"}`}
                 >
                   {hasBulk && (
                     <td className="w-10 px-3 py-3">
