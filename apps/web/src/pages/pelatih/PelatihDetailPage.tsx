@@ -4,7 +4,7 @@ import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { DATA_ADMIN_ROLES, UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Badge } from "../../components/ui";
-import { api } from "../../lib/api";
+import { api, resolveFileUrl } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 import { useAuthStore } from "../../store/authStore";
 
@@ -13,6 +13,7 @@ interface PelatihDetail {
   namaPelatih: string;
   nomorLisensi: string;
   tingkatanLisensi: string;
+  lisensiFileUrl: string | null;
   masaBerlakuMulai: string | null;
   masaBerlakuAkhir: string | null;
   riwayatKepelatihan: string | null;
@@ -97,6 +98,23 @@ export function PelatihDetailPage() {
           <div>
             <dt className="text-neutral-500">Tingkatan Lisensi</dt>
             <dd className="font-medium text-neutral-900">{pelatih.tingkatanLisensi}</dd>
+          </div>
+          <div>
+            <dt className="text-neutral-500">File Lisensi</dt>
+            <dd className="font-medium text-neutral-900">
+              {pelatih.lisensiFileUrl ? (
+                <a
+                  href={resolveFileUrl(pelatih.lisensiFileUrl)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary underline"
+                >
+                  Lihat file
+                </a>
+              ) : (
+                "-"
+              )}
+            </dd>
           </div>
           <div>
             <dt className="text-neutral-500">Masa Berlaku Mulai</dt>

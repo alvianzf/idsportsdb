@@ -1,6 +1,9 @@
+import fs from "node:fs";
+import path from "node:path";
 import { Router } from "express";
 import type { Prisma } from "@prisma/client";
 import { DATA_ADMIN_ROLES } from "@inasportdb/shared-types";
+import { uploader, publicUrl, uploadRoot, pdfOrJpgFileFilter } from "../../lib/storage.js";
 import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole, scopeToCabor } from "../../middleware/auth.js";
@@ -164,6 +167,51 @@ pelatihRouter.patch(
       }
       throw err;
     }
+  }),
+);
+
+const lisensiUpload = uploader("pelatih-lisensi", undefined, pdfOrJpgFileFilter);
+
+// Revisi 2026-07-18: upload/replace the license scan (PDF or JPG only).
+pelatihRouter.post(
+  "/:id/lisensi",
+  requireRole(DATA_ADMIN_ROLES),
+  lisensiUpload.single("file"),
+  asyncHandler(async (req, res) => {
+    // multer has already written the upload to disk; clean it up on any early
+    // exit so a failed existence/access check never orphans the file.
+    const cleanupUpload = () => {
+      if (req.file) fs.unlink(req.file.path, () => undefined);
+    };
+
+    const pelatih = await prisma.pelatih.findFirst({
+      where: { id: req.params.id, deletedAt: null },
+    });
+    if (!pelatih) {
+      cleanupUpload();
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (req.scopedCaborId && pelatih.cabangOlahragaId !== req.scopedCaborId) {
+      cleanupUpload();
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    if (!req.file) {
+      res.status(400).json({ error: "File lisensi harus PDF atau JPG" });
+      return;
+    }
+
+    const lisensiFileUrl = publicUrl("pelatih-lisensi", req.file.filename);
+    const updated = await prisma.pelatih.update({
+      where: { id: req.params.id },
+      data: { lisensiFileUrl },
+    });
+    if (pelatih.lisensiFileUrl) {
+      fs.unlink(path.join(uploadRoot, pelatih.lisensiFileUrl.replace("/uploads/", "")), () => undefined);
+    }
+    writeAudit(req.user!.id, "UPDATE", "Pelatih", req.params.id);
+    res.json(updated);
   }),
 );
 

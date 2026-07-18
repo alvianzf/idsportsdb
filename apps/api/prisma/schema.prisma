@@ -307,6 +307,8 @@ model Pelatih {
   cabangOlahragaId   String
   cabangOlahraga     CabangOlahraga @relation(fields: [cabangOlahragaId], references: [id])
   tingkatanLisensi   String
+  // Revisi 2026-07-18: scan of the license document (PDF or JPG).
+  lisensiFileUrl     String?
   masaBerlakuMulai   DateTime?
   masaBerlakuAkhir   DateTime?
   // Free text for v1; normalize to a separate table if structured history is needed (spec 005).

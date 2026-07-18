@@ -1,9 +1,15 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Field, Input, Textarea, Combobox } from "../../components/ui";
-import { api } from "../../lib/api";
+import { Card, PageHeader, Button, Field, Input, Select, Textarea, Combobox } from "../../components/ui";
+import { api, resolveFileUrl } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
+
+// Revisi 2026-07-18: tingkatan lisensi is a fixed choice; legacy free-text
+// values already on a record are preserved in the select.
+const LICENSE_TIERS = ["Nasional", "Cabang Olahraga"] as const;
+
+const MAX_LISENSI_SIZE_MB = 5;
 
 interface CaborOption {
   id: string;
@@ -54,6 +60,27 @@ export function PelatihFormPage() {
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Revisi 2026-07-18: license scan (PDF/JPG), uploaded after the record saves.
+  const [lisensiFile, setLisensiFile] = useState<File | null>(null);
+  const [lisensiFileUrl, setLisensiFileUrl] = useState<string | null>(null);
+
+  function handleLisensiSelect(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const ok = file.type === "application/pdf" || file.type === "image/jpeg";
+    if (!ok) {
+      setError("File lisensi harus PDF atau JPG.");
+      event.target.value = "";
+      return;
+    }
+    if (file.size > MAX_LISENSI_SIZE_MB * 1024 * 1024) {
+      setError(`Ukuran file lisensi maksimal ${MAX_LISENSI_SIZE_MB} MB.`);
+      event.target.value = "";
+      return;
+    }
+    setError(null);
+    setLisensiFile(file);
+  }
 
   useEffect(() => {
     if (isUnscopedAdmin) {
@@ -76,6 +103,7 @@ export function PelatihFormPage() {
           masaBerlakuAkhir: p.masaBerlakuAkhir ? p.masaBerlakuAkhir.slice(0, 10) : "",
           riwayatKepelatihan: p.riwayatKepelatihan ?? "",
         });
+        setLisensiFileUrl(p.lisensiFileUrl ?? null);
       })
       .catch(() => setError("Gagal memuat data pelatih."))
       .finally(() => setLoading(false));
@@ -95,13 +123,19 @@ export function PelatihFormPage() {
         masaBerlakuAkhir: form.masaBerlakuAkhir || undefined,
         riwayatKepelatihan: form.riwayatKepelatihan || undefined,
       };
+      let pelatihId = id;
       if (isEdit) {
         await api.patch(`/pelatih/${id}`, payload);
-        navigate(`/pelatih/${id}`);
       } else {
         const res = await api.post("/pelatih", payload);
-        navigate(`/pelatih/${res.data.id}`);
+        pelatihId = res.data.id;
       }
+      if (lisensiFile && pelatihId) {
+        const fd = new FormData();
+        fd.append("file", lisensiFile);
+        await api.post(`/pelatih/${pelatihId}/lisensi`, fd);
+      }
+      navigate(`/pelatih/${pelatihId}`);
     } catch (err) {
       setError(extractError(err));
     } finally {
@@ -148,13 +182,42 @@ export function PelatihFormPage() {
               </Field>
             )}
             <Field label="Tingkatan Lisensi" required htmlFor="tingkatanLisensi">
-              <Input
+              <Select
                 id="tingkatanLisensi"
                 required
-                placeholder="contoh: Nasional, Internasional"
                 value={form.tingkatanLisensi}
-                onChange={(e) => setForm((f) => ({ ...f, tingkatanLisensi: e.target.value }))}
+                onChange={(v) => setForm((f) => ({ ...f, tingkatanLisensi: v }))}
+                options={[
+                  { value: "", label: "Pilih tingkatan" },
+                  ...LICENSE_TIERS.map((t) => ({ value: t, label: t })),
+                  // Preserve a legacy free-text value already on the record.
+                  ...(form.tingkatanLisensi && !LICENSE_TIERS.includes(form.tingkatanLisensi as (typeof LICENSE_TIERS)[number])
+                    ? [{ value: form.tingkatanLisensi, label: form.tingkatanLisensi }]
+                    : []),
+                ]}
               />
+            </Field>
+            <Field label="File Lisensi (PDF/JPG)" htmlFor="lisensiFile">
+              <div className="space-y-1">
+                <Input
+                  id="lisensiFile"
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,application/pdf,image/jpeg"
+                  onChange={handleLisensiSelect}
+                />
+                {lisensiFile ? (
+                  <p className="text-xs text-neutral-500">Akan diunggah: {lisensiFile.name}</p>
+                ) : lisensiFileUrl ? (
+                  <a
+                    href={resolveFileUrl(lisensiFileUrl)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-primary underline"
+                  >
+                    Lihat file lisensi saat ini
+                  </a>
+                ) : null}
+              </div>
             </Field>
             <Field label="Masa Berlaku Mulai" htmlFor="masaBerlakuMulai">
               <Input
