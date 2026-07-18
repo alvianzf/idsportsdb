@@ -31,7 +31,7 @@ pelatihRouter.get(
       res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
-    const { cabor, search, expiring, deleted, page, pageSize } = parsed.data;
+    const { cabor, search, expiring, tingkat, deleted, page, pageSize } = parsed.data;
 
     const conditions: Prisma.PelatihWhereInput[] = [];
     // #70 — default lists show only live coaches; ?deleted=true shows the archive.
@@ -47,10 +47,15 @@ pelatihRouter.get(
       });
     }
     if (expiring) {
+      // "Akan habis" = still valid now but ends within 90 days. Without the
+      // lower bound, long-expired licenses matched too and the filter looked
+      // like it did nothing (revisi 2026-07-18).
+      const now = new Date();
       const in90Days = new Date();
       in90Days.setDate(in90Days.getDate() + 90);
-      conditions.push({ masaBerlakuAkhir: { lte: in90Days } });
+      conditions.push({ masaBerlakuAkhir: { gte: now, lte: in90Days } });
     }
+    if (tingkat) conditions.push({ tingkatanLisensi: tingkat });
 
     const where: Prisma.PelatihWhereInput = conditions.length ? { AND: conditions } : {};
 

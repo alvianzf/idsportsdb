@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Archive, ArchiveRestore, Plus, Search, Trash2 } from "lucide-react";
-import { DATA_ADMIN_ROLES, UNSCOPED_ADMIN_ROLES, UNSCOPED_VIEW_ROLES } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Input, Badge, Pagination, Combobox, DataTable, type Column, type BulkAction } from "../../components/ui";
+import { DATA_ADMIN_ROLES, LICENSE_TIERS, UNSCOPED_ADMIN_ROLES, UNSCOPED_VIEW_ROLES } from "@inasportdb/shared-types";
+import { Card, PageHeader, Button, Input, Badge, Pagination, Combobox, DataTable, Select, type Column, type BulkAction } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import { confirmAction } from "../../lib/confirm";
@@ -39,6 +39,7 @@ export function PelatihListPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [cabor, setCabor] = useState("");
+  const [tingkat, setTingkat] = useState("");
   const [expiring, setExpiring] = useState(false);
   const [page, setPage] = useState(1);
   const [cabors, setCabors] = useState<CaborOption[]>([]);
@@ -67,6 +68,7 @@ export function PelatihListPage() {
         params: {
           search: debouncedSearch || undefined,
           cabor: cabor || undefined,
+          tingkat: tingkat || undefined,
           expiring: expiring || undefined,
           deleted: showArchive || undefined,
           page,
@@ -84,7 +86,7 @@ export function PelatihListPage() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedSearch, cabor, expiring, showArchive, page, reloadKey]);
+  }, [debouncedSearch, cabor, tingkat, expiring, showArchive, page, reloadKey]);
 
   function isExpiringSoon(date: string | null) {
     if (!date) return false;
@@ -250,6 +252,15 @@ export function PelatihListPage() {
               className="w-full md:w-64"
             />
           )}
+          <Select
+            value={tingkat}
+            onChange={(v) => { setPage(1); setTingkat(v); }}
+            options={[
+              { value: "", label: "Semua Tingkatan" },
+              ...LICENSE_TIERS.map((t) => ({ value: t, label: t })),
+            ]}
+            className="w-full md:w-48"
+          />
           <label className="flex shrink-0 items-center gap-2 text-sm text-neutral-700">
             <input
               type="checkbox"

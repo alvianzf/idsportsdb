@@ -1,13 +1,9 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
+import { LICENSE_TIERS, UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Field, Input, Select, Textarea, Combobox } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
-
-// Revisi 2026-07-18: tingkatan lisensi is a fixed choice; legacy free-text
-// values already on a record are preserved in the select.
-const LICENSE_TIERS = ["Nasional", "Cabang Olahraga"] as const;
 
 const MAX_LISENSI_SIZE_MB = 5;
 
