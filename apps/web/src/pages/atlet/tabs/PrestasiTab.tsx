@@ -82,6 +82,8 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [uploadTarget, setUploadTarget] = useState<Prestasi | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  // Certificate staged in the create/edit modal, uploaded after the record saves.
+  const [certFile, setCertFile] = useState<File | null>(null);
 
   function load() {
     api
@@ -95,6 +97,7 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
   function openCreate() {
     setEditing(null);
     setForm(emptyForm);
+    setCertFile(null);
     setFormError(null);
     setModalOpen(true);
   }
@@ -108,6 +111,7 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
       medali: p.medali,
       peringkat: p.peringkat != null ? String(p.peringkat) : "",
     });
+    setCertFile(null);
     setFormError(null);
     setModalOpen(true);
   }
@@ -124,12 +128,23 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
         medali: form.medali,
         peringkat: form.peringkat ? Number(form.peringkat) : undefined,
       };
+      let prestasiId: string;
       if (editing) {
         await api.patch(`/prestasi/${editing.id}`, payload);
+        prestasiId = editing.id;
         toast.success("Prestasi berhasil diubah.");
       } else {
-        await api.post(`/atlet/${atletId}/prestasi`, payload);
+        const res = await api.post(`/atlet/${atletId}/prestasi`, payload);
+        prestasiId = res.data.id;
         toast.success("Prestasi berhasil ditambahkan.");
+      }
+      // Revisi 2026-07-18: a certificate can be attached right in the modal.
+      if (certFile) {
+        const formData = new FormData();
+        formData.append("file", certFile);
+        await api.post(`/prestasi/${prestasiId}/sertifikat`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
       }
       setModalOpen(false);
       load();
@@ -354,6 +369,16 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
                 />
               </Field>
             </div>
+
+            {/* Revisi 2026-07-18: attach a certificate right here (full width). */}
+            <Field label="Sertifikat" htmlFor="sertifikatFile">
+              <DropZone
+                accept=".pdf,image/*"
+                value={certFile}
+                onChange={setCertFile}
+                sublabel="PDF atau gambar"
+              />
+            </Field>
 
             {formError && <p className="text-sm text-danger">{formError}</p>}
 
