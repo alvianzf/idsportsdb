@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { Archive, ArchiveRestore, Download, Plus, Tag, Trash2, Upload } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Archive, ArchiveRestore, Download, Pencil, Plus, Tag, Trash2, Upload } from "lucide-react";
 import {
   ATHLETE_STATUSES,
   ATHLETE_STATUS_LABELS,
@@ -10,7 +10,7 @@ import {
   UNSCOPED_VIEW_ROLES,
   type AthleteStatus,
 } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Select, Badge, Pagination, Combobox, DataTable, DropZone, Modal, SearchInput, type Column, type BulkAction } from "../../components/ui";
+import { ActionMenu, Card, PageHeader, Button, Select, Badge, Pagination, Combobox, DataTable, DropZone, Modal, SearchInput, type Column, type BulkAction } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import { confirmAction } from "../../lib/confirm";
@@ -44,6 +44,7 @@ const STATUS_TONE: Record<AthleteStatus, "success" | "danger" | "warning" | "inf
 
 /** Module B — Data Atlet list. See specs/004-atlet/spec.md. */
 export function AtletListPage() {
+  const navigate = useNavigate();
   const role = useAuthStore((state) => state.user?.role);
   const canCreate = role && DATA_ADMIN_ROLES.includes(role);
   const canDelete = role && UNSCOPED_ADMIN_ROLES.includes(role);
@@ -139,6 +140,22 @@ export function AtletListPage() {
       cancelled = true;
     };
   }, [debouncedSearch, cabor, status, kecamatan, showArchive, page, reloadKey]);
+
+  async function handleDeleteOne(a: AtletRow) {
+    const confirmed = await confirmAction({
+      text: `Hapus atlet ${a.namaLengkap}? Data dipindahkan ke arsip.`,
+      danger: true,
+      confirmText: "Hapus",
+    });
+    if (!confirmed) return;
+    try {
+      await api.delete(`/atlet/${a.id}`);
+      toast.success("Atlet berhasil dihapus.");
+      setReloadKey((k) => k + 1);
+    } catch {
+      toast.error("Gagal menghapus atlet.");
+    }
+  }
 
   async function handleBulkDelete(ids: string[]) {
     const confirmed = await confirmAction({
@@ -357,6 +374,27 @@ export function AtletListPage() {
       getValue: (a) => a.statusAtlet,
       render: (a) => <Badge tone={STATUS_TONE[a.statusAtlet]}>{ATHLETE_STATUS_LABELS[a.statusAtlet]}</Badge>,
     },
+    // Revisi 2026-07-18: row actions in a three-dots dropdown (edit + delete).
+    ...(!showArchive && (canCreate || canDelete)
+      ? [
+          {
+            key: "aksi",
+            label: "Aksi",
+            render: (a) => (
+              <ActionMenu
+                items={[
+                  ...(canCreate
+                    ? [{ label: "Edit", icon: Pencil, onClick: () => navigate(`/atlet/${a.id}/edit`) }]
+                    : []),
+                  ...(canDelete
+                    ? [{ label: "Hapus", icon: Trash2, danger: true, onClick: () => handleDeleteOne(a) }]
+                    : []),
+                ]}
+              />
+            ),
+          } satisfies Column<AtletRow>,
+        ]
+      : []),
   ];
 
   const bulkActions: BulkAction[] = showArchive
