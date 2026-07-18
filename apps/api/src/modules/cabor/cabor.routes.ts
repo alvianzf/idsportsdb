@@ -10,7 +10,7 @@ import {
   isUniqueConstraintError,
 } from "../../lib/prismaErrors.js";
 import { uploadRoot } from "../../lib/storage.js";
-import { createCaborSchema, updateCaborSchema, listCaborQuerySchema } from "./cabor.schema.js";
+import { createCaborSchema, updateCaborSchema, listCaborQuerySchema, setCaborActiveSchema } from "./cabor.schema.js";
 import { writeAudit } from "../../lib/audit.js";
 
 const logoUpload = multer({
@@ -127,6 +127,46 @@ caborRouter.patch(
       }
       if (isUniqueConstraintError(err)) {
         res.status(409).json({ error: "Nama cabang olahraga sudah digunakan" });
+        return;
+      }
+      throw err;
+    }
+  }),
+);
+
+// Revisi 2026-07-18: SUPER_ADMIN can deactivate/reactivate a cabor. Deactivating
+// also deactivates that cabor's ADMIN_CABOR logins; reactivating the cabor does
+// NOT auto-reactivate them (reactivate accounts individually via Pengguna).
+caborRouter.patch(
+  "/:id/active",
+  requireRole(["SUPER_ADMIN_KONI"]),
+  asyncHandler(async (req, res) => {
+    const parsed = setCaborActiveSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+    const { isActive } = parsed.data;
+
+    try {
+      const cabor = await prisma.$transaction(async (tx) => {
+        const updated = await tx.cabangOlahraga.update({
+          where: { id: req.params.id },
+          data: { isActive },
+        });
+        if (!isActive) {
+          await tx.user.updateMany({
+            where: { role: "ADMIN_CABOR", cabangOlahragaId: req.params.id },
+            data: { isActive: false },
+          });
+        }
+        return updated;
+      });
+      writeAudit(req.user!.id, isActive ? "ACTIVATE" : "DEACTIVATE", "Cabor", cabor.id);
+      res.json(cabor);
+    } catch (err) {
+      if (isNotFoundError(err)) {
+        res.status(404).json({ error: "Not found" });
         return;
       }
       throw err;

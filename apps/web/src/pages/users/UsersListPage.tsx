@@ -79,6 +79,17 @@ export function UsersListPage() {
     }
   }
 
+  // Revisi 2026-07-18: reactivate a deactivated account.
+  async function handleActivate(user: UserRow) {
+    try {
+      await api.patch(`/users/${user.id}`, { isActive: true });
+      toast.success("Akun berhasil diaktifkan.");
+      load();
+    } catch {
+      toast.error("Gagal mengaktifkan akun.");
+    }
+  }
+
   async function handleDelete(user: UserRow) {
     const confirmed = await confirmAction({
       text: `Hapus permanen akun ${user.fullName}? Tindakan ini tidak dapat dibatalkan.`,
@@ -163,14 +174,22 @@ export function UsersListPage() {
             >
               <RotateCcw size={14} /> Reset Password
             </Button>
-            {/* Deactivate — amber/warning */}
-            {user.isActive && (
+            {/* Deactivate — amber/warning; Activate — green/success */}
+            {user.isActive ? (
               <Button
                 variant="outline"
                 onClick={() => handleDeactivate(user)}
                 className="border-warning/40 text-warning hover:bg-warning/10"
               >
                 Nonaktifkan
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => handleActivate(user)}
+                className="border-success/40 text-success hover:bg-success/10"
+              >
+                Aktifkan
               </Button>
             )}
             {/* Hard delete — red/danger */}

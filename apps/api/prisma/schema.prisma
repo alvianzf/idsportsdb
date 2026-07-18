@@ -155,6 +155,8 @@ model CabangOlahraga {
   // National sports organisation for this discipline (e.g. FORKI for Karate)
   organisasiNasional  String?
   logoOrganisasiUrl   String?
+  // Revisi 2026-07-18: SUPER_ADMIN can deactivate a cabor (shown as Nonaktif).
+  isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
