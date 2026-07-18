@@ -90,7 +90,7 @@ function ViewButton({
       type="button"
       onClick={onClick}
       className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-        active ? "bg-primary text-white" : "text-neutral-600 hover:bg-neutral-100"
+        active ? "bg-primary text-white" : "text-neutral-600 hover:bg-primary-50 hover:text-primary"
       }`}
     >
       <Icon size={14} /> {label}
@@ -102,10 +102,10 @@ function ActionButtons({ p, canManage, onEdit, onDelete }: { p: Pengurus; canMan
   if (!canManage) return null;
   return (
     <div className="flex items-center gap-1">
-      <button onClick={() => onEdit(p)} aria-label="Ubah" className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100">
+      <button onClick={() => onEdit(p)} aria-label="Ubah" className="rounded-md p-1.5 text-neutral-500 hover:bg-primary-50 hover:text-primary">
         <Pencil size={14} />
       </button>
-      <button onClick={() => onDelete(p)} aria-label="Hapus" className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100">
+      <button onClick={() => onDelete(p)} aria-label="Hapus" className="rounded-md p-1.5 text-neutral-500 hover:bg-primary-50 hover:text-primary">
         <Trash2 size={14} />
       </button>
     </div>

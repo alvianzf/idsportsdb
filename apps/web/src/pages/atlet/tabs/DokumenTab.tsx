@@ -187,7 +187,7 @@ export function DokumenTab({ atletId, documents, canManage, onChange }: DokumenT
               </button>
               <button
                 onClick={() => setPendingFile(null)}
-                className="rounded-lg border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                className="rounded-lg border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-primary-50"
               >
                 Batal
               </button>

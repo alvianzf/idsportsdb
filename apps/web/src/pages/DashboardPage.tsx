@@ -54,7 +54,7 @@ function StatCard({ label, value, icon: Icon }: StatCardProps) {
 function QuickAction({ to, label, icon: Icon }: { to: string; label: string; icon: typeof Users }) {
   return (
     <Link to={to}>
-      <Card className="flex items-center gap-3 transition-colors hover:bg-neutral-50">
+      <Card className="flex items-center gap-3 transition-colors hover:border-primary/40 hover:bg-primary-50">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary">
           <Icon size={18} />
         </div>

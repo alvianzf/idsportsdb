@@ -111,7 +111,7 @@ export function EventFilterBar({
             key={key}
             onClick={() => onViewChange(key)}
             className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              view === key ? "bg-primary text-white" : "text-neutral-600 hover:bg-neutral-100"
+              view === key ? "bg-primary text-white" : "text-neutral-600 hover:bg-primary-50 hover:text-primary"
             }`}
           >
             <Icon size={15} /> {label}
@@ -218,13 +218,13 @@ export function EventMonthCalendar({
       <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3">
         <h2 className="text-sm font-bold capitalize text-neutral-900">{monthLabel(month)}</h2>
         <div className="flex items-center gap-1">
-          <button onClick={() => setMonth((m) => shiftMonth(m, -1))} className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100" aria-label="Bulan sebelumnya">
+          <button onClick={() => setMonth((m) => shiftMonth(m, -1))} className="rounded-md p-1.5 text-neutral-500 hover:bg-primary-50 hover:text-primary" aria-label="Bulan sebelumnya">
             <ChevronLeft size={16} />
           </button>
-          <button onClick={() => setMonth(firstOfMonth(today))} className="rounded-md px-2.5 py-1 text-xs font-semibold text-neutral-600 hover:bg-neutral-100">
+          <button onClick={() => setMonth(firstOfMonth(today))} className="rounded-md px-2.5 py-1 text-xs font-semibold text-neutral-600 hover:bg-primary-50 hover:text-primary">
             Hari ini
           </button>
-          <button onClick={() => setMonth((m) => shiftMonth(m, 1))} className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100" aria-label="Bulan berikutnya">
+          <button onClick={() => setMonth((m) => shiftMonth(m, 1))} className="rounded-md p-1.5 text-neutral-500 hover:bg-primary-50 hover:text-primary" aria-label="Bulan berikutnya">
             <ChevronRight size={16} />
           </button>
         </div>

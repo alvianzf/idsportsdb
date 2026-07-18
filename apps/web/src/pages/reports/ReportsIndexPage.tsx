@@ -20,7 +20,7 @@ export function ReportsIndexPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {REPORTS.map((r) => (
           <Link key={r.to} to={r.to}>
-            <Card className="h-full transition-colors hover:border-primary">
+            <Card className="h-full transition-colors hover:border-primary hover:bg-primary-50/60">
               <FileBarChart className="mb-2 text-primary" size={24} />
               <h2 className="font-medium text-neutral-900">{r.title}</h2>
               <p className="mt-1 text-sm text-neutral-500">{r.description}</p>

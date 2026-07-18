@@ -69,7 +69,7 @@ export function ActionMenu({ items, label = "Aksi" }: { items: ActionMenuItem[];
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={toggle}
-        className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100"
+        className="rounded-md p-1.5 text-neutral-500 transition-colors hover:bg-primary-50 hover:text-primary"
       >
         <MoreVertical size={16} />
       </button>
@@ -92,7 +92,7 @@ export function ActionMenu({ items, label = "Aksi" }: { items: ActionMenuItem[];
                   setOpen(false);
                   item.onClick();
                 }}
-                className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-neutral-50 ${
+                className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-primary-50 ${
                   item.danger ? "text-danger" : "text-neutral-700"
                 } ${item.className ?? ""}`}
               >

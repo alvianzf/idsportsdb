@@ -297,21 +297,21 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
                       aria-label="Unggah sertifikat"
                       title="Unggah sertifikat"
                       disabled={uploadingId === p.id}
-                      className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100"
+                      className="rounded-md p-1.5 text-neutral-500 hover:bg-primary-50 hover:text-primary"
                     >
                       <Upload size={16} className={uploadingId === p.id ? "animate-pulse" : ""} />
                     </button>
                     <button
                       onClick={() => openEdit(p)}
                       aria-label="Ubah"
-                      className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100"
+                      className="rounded-md p-1.5 text-neutral-500 hover:bg-primary-50 hover:text-primary"
                     >
                       <Pencil size={16} />
                     </button>
                     <button
                       onClick={() => handleDelete(p)}
                       aria-label="Hapus"
-                      className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100"
+                      className="rounded-md p-1.5 text-neutral-500 hover:bg-primary-50 hover:text-primary"
                     >
                       <Trash2 size={16} />
                     </button>

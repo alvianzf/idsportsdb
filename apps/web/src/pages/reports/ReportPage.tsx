@@ -110,7 +110,7 @@ export function ReportPage<T>({ title, description, endpoint, params, filters, c
             </thead>
             <tbody className="divide-y divide-neutral-100">
               {rows.map((row, i) => (
-                <tr key={i} className="hover:bg-neutral-50">
+                <tr key={i} className="hover:bg-primary-50">
                   {columns.map((col) => (
                     <td key={col.header} className="px-4 py-3 text-neutral-600">
                       {col.render(row)}
