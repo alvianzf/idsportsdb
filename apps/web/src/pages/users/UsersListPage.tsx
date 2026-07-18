@@ -23,6 +23,7 @@ const ROLE_BADGE_TONE: Record<Role, "danger" | "info" | "warning" | "neutral"> =
   SUPER_ADMIN_KONI: "danger",
   ADMIN_KONI: "info",
   ADMIN_CABOR: "warning",
+  ADMIN_DISPORA: "info",
   ATLET: "neutral",
 };
 

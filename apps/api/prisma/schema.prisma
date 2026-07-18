@@ -18,6 +18,7 @@ enum Role {
   SUPER_ADMIN_KONI
   ADMIN_KONI
   ADMIN_CABOR
+  ADMIN_DISPORA // read-only oversight across all cabor (revisi 2026-07-18)
   ATLET
 }
 
