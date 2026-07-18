@@ -86,8 +86,12 @@ export const COMPETITION_LEVEL_CHOICES = [
   "BK_PON",
   "PORWIL",
   "PORPROV",
+  "PORDA",
+  "POPDA",
+  "PORKOT",
   "KEJURNAS",
   "KEJURDA",
+  "EVENT_KHUSUS",
 ] as const;
 
 // All valid values: the championship list plus legacy levels kept for existing rows.
@@ -107,8 +111,12 @@ export const COMPETITION_LEVEL_LABELS: Record<CompetitionLevel, string> = {
   BK_PON: "BK PON (Pra PON)",
   PORWIL: "Pekan Olahraga Wilayah (Porwil)",
   PORPROV: "Pekan Olahraga Provinsi (Porprov)",
+  PORDA: "Pekan Olahraga Daerah (Porda)",
+  POPDA: "Pekan Olahraga Pelajar Daerah (Popda)",
+  PORKOT: "Pekan Olahraga Kota (Porkot)",
   KEJURNAS: "Kejuaraan Nasional (Kejurnas)",
   KEJURDA: "Kejuaraan Daerah (Kejurda)",
+  EVENT_KHUSUS: "Event Khusus",
   KOTA: "Kota",
   PROVINSI: "Provinsi",
   NASIONAL: "Nasional",
