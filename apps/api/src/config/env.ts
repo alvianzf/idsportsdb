@@ -32,6 +32,6 @@ export const env = {
     secure: (process.env.SMTP_SECURE ?? "true") === "true",
     user: process.env.SMTP_USER ?? "",
     pass: process.env.SMTP_PASS ?? "",
-    from: process.env.SMTP_FROM ?? "no-reply@batam.koni.go.id",
+    from: process.env.SMTP_FROM ?? "no-reply@simo-konibatam.com",
   },
 };

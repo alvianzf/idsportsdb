@@ -22,10 +22,10 @@
 - **Cabang Olahraga / Sport disciplines** — 48 cabor beserta organisasi nasional induknya (mis. PASI untuk Atletik, PBSI untuk Bulu Tangkis, FORKI untuk Karate).
 
 ## Public pages / Halaman publik
-- [Beranda / Home](https://konibatam.alvianzf.id/): overview, key statistics, latest news and upcoming events. / Ringkasan, statistik utama, berita terbaru, dan event mendatang.
-- [Data & Statistik / Data & Statistics](https://konibatam.alvianzf.id/data): public counts of active athletes, coaches, and sport disciplines, plus medal tallies. / Jumlah atlet aktif, pelatih, cabang olahraga, dan perolehan medali.
-- [Berita / News](https://konibatam.alvianzf.id/berita): official announcements and news; each article at `/artikel/{slug}`. / Pengumuman dan berita resmi; tiap artikel di `/artikel/{slug}`.
-- [Event / Events](https://konibatam.alvianzf.id/event): public sport-event calendar (championships, schedules). / Kalender event olahraga publik (kejuaraan, jadwal).
+- [Beranda / Home](https://simo-konibatam.com/): overview, key statistics, latest news and upcoming events. / Ringkasan, statistik utama, berita terbaru, dan event mendatang.
+- [Data & Statistik / Data & Statistics](https://simo-konibatam.com/data): public counts of active athletes, coaches, and sport disciplines, plus medal tallies. / Jumlah atlet aktif, pelatih, cabang olahraga, dan perolehan medali.
+- [Berita / News](https://simo-konibatam.com/berita): official announcements and news; each article at `/artikel/{slug}`. / Pengumuman dan berita resmi; tiap artikel di `/artikel/{slug}`.
+- [Event / Events](https://simo-konibatam.com/event): public sport-event calendar (championships, schedules). / Kalender event olahraga publik (kejuaraan, jadwal).
 
 ## Key terms / Istilah kunci (Indonesian → English)
 - SIMO — Sistem Informasi Manajemen Olahraga / Sports Management Information System
@@ -45,4 +45,4 @@
 - **ID:** Data administratif individual (data pribadi atlet, dokumen) terkontrol akses dan TIDAK publik; hanya statistik agregat, pengumuman terbit, dan daftar event publik yang ditampilkan.
 
 ## Sitemap
-https://konibatam.alvianzf.id/sitemap.xml
+https://simo-konibatam.com/sitemap.xml

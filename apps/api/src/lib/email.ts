@@ -22,7 +22,7 @@ export async function sendWelcomeEmail(opts: {
     "Selamat datang di Sistem KONI Batam — Akun Anda telah dibuat",
     `
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-      <img src="https://batam.koni.go.id/logo-koni-batam.png" alt="KONI Batam" style="height:56px;margin-bottom:16px" />
+      <img src="https://simo-konibatam.com/logo-koni-batam.png" alt="KONI Batam" style="height:56px;margin-bottom:16px" />
       <h2 style="color:#c8102e;margin:0 0 8px">Halo, ${opts.fullName}!</h2>
       <p style="color:#374151">Akun Anda di Sistem Informasi Manajemen Atlet KONI Batam telah dibuat. Berikut adalah kredensial masuk Anda:</p>
       <table style="background:#f9fafb;border-radius:8px;padding:16px;width:100%;border-collapse:collapse;margin:16px 0">
@@ -46,7 +46,7 @@ export async function sendPasswordResetByAdminEmail(opts: {
     "Kata sandi Anda telah direset — KONI Batam",
     `
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-      <img src="https://batam.koni.go.id/logo-koni-batam.png" alt="KONI Batam" style="height:56px;margin-bottom:16px" />
+      <img src="https://simo-konibatam.com/logo-koni-batam.png" alt="KONI Batam" style="height:56px;margin-bottom:16px" />
       <h2 style="color:#c8102e;margin:0 0 8px">Reset Kata Sandi</h2>
       <p style="color:#374151">Halo, ${opts.fullName}. Kata sandi akun Anda telah direset oleh administrator. Berikut adalah kredensial masuk baru Anda:</p>
       <table style="background:#f9fafb;border-radius:8px;padding:16px;width:100%;border-collapse:collapse;margin:16px 0">
@@ -71,7 +71,7 @@ export async function sendPasswordResetEmail(opts: {
     "Reset Kata Sandi — KONI Batam",
     `
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-      <img src="https://batam.koni.go.id/logo-koni-batam.png" alt="KONI Batam" style="height:56px;margin-bottom:16px" />
+      <img src="https://simo-konibatam.com/logo-koni-batam.png" alt="KONI Batam" style="height:56px;margin-bottom:16px" />
       <h2 style="color:#c8102e;margin:0 0 8px">Reset Kata Sandi</h2>
       <p style="color:#374151">Halo, ${opts.fullName}. Kami menerima permintaan untuk mereset kata sandi akun Anda.</p>
       <a href="${link}" style="display:inline-block;background:#c8102e;color:#fff;text-decoration:none;padding:12px 24px;border-radius:6px;font-weight:600;margin:16px 0">Reset Kata Sandi</a>

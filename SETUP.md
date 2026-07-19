@@ -19,7 +19,7 @@ Browser ──► NGINX (443/80)
 ## 0. Prerequisites
 
 - Ubuntu 22.04+/Debian VPS, NGINX already installed and running
-- A domain or subdomain pointed at the VPS (e.g. `koni.example.com`)
+- A domain or subdomain pointed at the VPS (e.g. `simo-konibatam.com`)
 - Root or sudo access
 
 Install Node.js 22 (via NodeSource) and PM2:
@@ -61,7 +61,7 @@ cp .env.example .env
 nano .env
 ```
 
-Set production values (replace `koni.example.com` with your domain):
+Set production values (replace `simo-konibatam.com` with your domain):
 
 ```ini
 DATABASE_URL="postgresql://koni:change-me@localhost:5432/koni_batam?schema=public"
@@ -72,15 +72,15 @@ JWT_ACCESS_EXPIRES_IN="15m"
 JWT_REFRESH_EXPIRES_IN="7d"
 
 PORT=4000
-API_BASE_URL="https://koni.example.com/api/v1"
+API_BASE_URL="https://simo-konibatam.com/api/v1"
 
 # Built into the SPA at build time — must point at the public API path
-VITE_API_BASE_URL="https://koni.example.com/api/v1"
+VITE_API_BASE_URL="https://simo-konibatam.com/api/v1"
 
 UPLOAD_DIR="/var/www/inasportdb/uploads"
 
 # Used to build QR codes for the digital athlete card
-CARD_VERIFY_BASE_URL="https://koni.example.com/verify"
+CARD_VERIFY_BASE_URL="https://simo-konibatam.com/verify"
 ```
 
 > `apps/api` also needs its own `.env` (Prisma CLI reads `.env` from its own
@@ -144,7 +144,7 @@ Create `/etc/nginx/sites-available/inasportdb`:
 ```nginx
 server {
     listen 80;
-    server_name koni.example.com;
+    server_name simo-konibatam.com;
 
     root /var/www/inasportdb/apps/web/dist;
     index index.html;
@@ -196,7 +196,7 @@ sudo systemctl reload nginx
 
 ```bash
 sudo apt-get install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d koni.example.com
+sudo certbot --nginx -d simo-konibatam.com
 ```
 
 Certbot edits the NGINX config to add the `listen 443 ssl` block and sets up
@@ -226,7 +226,7 @@ sudo systemctl reload nginx   # only needed if the NGINX config itself changed
 
 The SPA is shared with the mobile webview build (Phase 6). When building the
 mobile app, point `VITE_API_BASE_URL` and `CARD_VERIFY_BASE_URL` at the same
-production domain (`https://koni.example.com/...`) so the packaged app talks
+production domain (`https://simo-konibatam.com/...`) so the packaged app talks
 to this VPS over the internet — there is no separate mobile backend.
 
 ---

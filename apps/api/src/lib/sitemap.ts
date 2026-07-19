@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { prisma } from "./prisma.js";
 
-const BASE = (process.env.PUBLIC_SITE_URL ?? "https://konibatam.alvianzf.id").replace(/\/$/, "");
+const BASE = (process.env.PUBLIC_SITE_URL ?? "https://simo-konibatam.com").replace(/\/$/, "");
 const STATIC_PATHS = ["/", "/data", "/berita", "/event"];
 
 /** Builds the sitemap XML: static public pages + every published article. */
