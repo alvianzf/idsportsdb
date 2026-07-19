@@ -90,8 +90,10 @@ export function LandingPage() {
 
   const totalMedali = stats ? stats.medals.GOLD + stats.medals.SILVER + stats.medals.BRONZE : null;
 
+  // flex column so <main> absorbs any leftover height and the footer stays
+  // pinned to the bottom of the viewport on short pages.
   return (
-    <div className="min-h-svh bg-neutral-50 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+    <div className="flex min-h-svh flex-col bg-neutral-50 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-neutral-200/80 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
@@ -211,7 +213,7 @@ export function LandingPage() {
         </motion.div>
       </section>
 
-      <main className="mx-auto max-w-6xl px-4 pb-16 md:px-6">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 md:px-6">
         {/* Medali */}
         {stats && (
           <motion.section {...fadeUp} className="mt-10 md:mt-14">
