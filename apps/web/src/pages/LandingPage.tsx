@@ -19,6 +19,7 @@ import { getSocket } from "../lib/socket";
 import { useAuthStore } from "../store/authStore";
 import { PUBLIC_NAV } from "./public/publicNav";
 import { PublicBottomNav } from "./public/PublicBottomNav";
+import { SiteFooter } from "./public/SiteFooter";
 import { LandingSlider } from "./public/LandingSlider";
 import {
   EVENT_STATUS_TEXT,
@@ -327,30 +328,7 @@ export function LandingPage() {
         )}
       </main>
 
-      {/* Footer — dark, red accent */}
-      <footer className="bg-neutral-950">
-        <div className="h-1 w-full bg-gradient-to-r from-[#5c0000] via-[#990000] to-[#d92626]" />
-        <div className="mx-auto max-w-6xl px-4 py-8 md:px-6">
-          <div className="flex flex-col gap-4 text-xs text-neutral-400 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <img src="/logo-koni-batam.png" alt="" className="h-8 w-8 object-contain" />
-                <p className="text-sm font-bold text-white">KONI Kota Batam</p>
-              </div>
-              <p className="mt-2 max-w-md leading-relaxed">
-                Kompleks Ruko KBC (King Business Center) Blok A5 No. 1, Kel. Belian, Kec. Batam Kota,
-                Kota Batam, Kepulauan Riau
-              </p>
-            </div>
-            <div className="md:text-right">
-              <a href="mailto:konikotabatam2024@gmail.com" className="font-medium text-neutral-300 hover:text-white">
-                konikotabatam2024@gmail.com
-              </a>
-              <p className="mt-1">© {new Date().getFullYear()} KONI Kota Batam</p>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
 
       <PublicBottomNav />
     </div>

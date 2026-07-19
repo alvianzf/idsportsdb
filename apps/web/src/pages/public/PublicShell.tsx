@@ -4,6 +4,7 @@ import { Button } from "../../components/ui";
 import { useAuthStore } from "../../store/authStore";
 import { PUBLIC_NAV } from "./publicNav";
 import { PublicBottomNav } from "./PublicBottomNav";
+import { SiteFooter } from "./SiteFooter";
 import { pageTitle } from "../../lib/site";
 
 /** Shared header/footer shell for public (no-auth) pages. Revisi 2026-07-12. */
@@ -14,7 +15,7 @@ export function PublicShell({ title, description, children }: { title: string; d
   const user = useAuthStore((state) => state.user);
 
   return (
-    <div className="min-h-svh bg-neutral-50">
+    <div className="flex min-h-svh flex-col bg-neutral-50 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
       <header className="border-b border-neutral-200 bg-white">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4 md:px-6">
           <Link to="/" className="flex items-center gap-2">
@@ -53,12 +54,13 @@ export function PublicShell({ title, description, children }: { title: string; d
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:px-6 md:pb-8">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 md:px-6">
         <h1 className="text-xl font-semibold text-neutral-900 md:text-2xl">{title}</h1>
         {description && <p className="mt-1 text-sm text-neutral-500">{description}</p>}
         <div className="mt-6">{children}</div>
       </main>
 
+      <SiteFooter />
       <PublicBottomNav />
     </div>
   );
