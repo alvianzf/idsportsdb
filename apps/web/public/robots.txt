@@ -1,4 +1,4 @@
-# KONI Batam — https://konibatam.alvianzf.id
+# SIMO — Sistem Informasi Manajemen Olahraga · KONI Batam — https://konibatam.alvianzf.id
 # Public pages are open to search and AI/generative engines (GEO/AIO).
 
 User-agent: *

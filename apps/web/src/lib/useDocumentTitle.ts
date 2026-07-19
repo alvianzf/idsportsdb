@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { pageTitle } from "./site";
 
 /** Route-prefix → page name. Longest matching prefix wins. */
 const TITLES: ReadonlyArray<readonly [string, string]> = [
@@ -32,11 +33,10 @@ export function pageNameFor(pathname: string): string {
   return match ? match[1] : "";
 }
 
-/** Sets document.title to "KONI Batam — {page name}" for the current route. */
+/** Sets document.title to "{page name} — SIMO | KONI Batam" for the current route. */
 export function useDocumentTitle(): void {
   const { pathname } = useLocation();
   useEffect(() => {
-    const name = pageNameFor(pathname);
-    document.title = name ? `KONI Batam — ${name}` : "KONI Batam";
+    document.title = pageTitle(pageNameFor(pathname));
   }, [pathname]);
 }

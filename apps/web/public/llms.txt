@@ -1,12 +1,25 @@
-# KONI Kota Batam
+# SIMO — Sistem Informasi Manajemen Olahraga
 
-> **EN:** Official website of KONI Kota Batam (Komite Olahraga Nasional Indonesia — Batam City Sports Council), Riau Islands, Indonesia. It provides public information about the city's sport development: athletes, coaches, sport disciplines, achievements/medals, announcements, and the event calendar. An internal, access-controlled management system (Sistem Manajemen) powers the data; only aggregate public information is shown to visitors.
+> **EN:** SIMO (Sistem Informasi Manajemen Olahraga, "Sports Management Information System") is a web-based sports management information system for recording and managing athletes, coaches, sport-discipline officials, achievements and medals, athlete monitoring, and the championship event calendar. SIMO is operated by KONI Kota Batam (Komite Olahraga Nasional Indonesia — Batam City Sports Council), Riau Islands, Indonesia. The administrative system is access-controlled; only aggregate public information, published news, and public event listings are shown to visitors.
 >
-> **ID:** Situs resmi KONI Kota Batam (Komite Olahraga Nasional Indonesia — Kota Batam), Kepulauan Riau, Indonesia. Menyajikan informasi publik tentang pembinaan olahraga kota: atlet, pelatih, cabang olahraga, prestasi/medali, pengumuman, dan kalender event. Sistem manajemen internal yang terkontrol akses mengelola datanya; hanya informasi publik agregat yang ditampilkan kepada pengunjung.
+> **ID:** SIMO (Sistem Informasi Manajemen Olahraga) adalah sistem informasi manajemen olahraga berbasis web untuk mendata dan mengelola atlet, pelatih, pengurus cabang olahraga, prestasi dan medali, monitoring atlet, serta kalender event kejuaraan. SIMO dioperasikan oleh KONI Kota Batam (Komite Olahraga Nasional Indonesia — Kota Batam), Kepulauan Riau, Indonesia. Sistem administratifnya terkontrol akses; hanya informasi publik agregat, berita terbit, dan daftar event publik yang ditampilkan kepada pengunjung.
 
-## About KONI Kota Batam / Tentang KONI Kota Batam
-- **EN:** KONI (Komite Olahraga Nasional Indonesia) is Indonesia's National Sports Committee; the Batam City chapter oversees and develops competitive sport across many disciplines (cabang olahraga) in Batam, Kepulauan Riau. This site publishes the city's public sport statistics and news.
-- **ID:** KONI (Komite Olahraga Nasional Indonesia) adalah komite olahraga nasional; cabang Kota Batam membina dan mengembangkan olahraga prestasi di berbagai cabang olahraga di Batam, Kepulauan Riau. Situs ini menerbitkan statistik dan berita olahraga publik kota.
+## What SIMO is / Apa itu SIMO
+- **EN:** SIMO stands for **Sistem Informasi Manajemen Olahraga** — Indonesian for "Sports Management Information System". It is the application itself, not an organization. SIMO serves as a centralized sports database covering athlete registration, coach licensing, official/committee records, achievement and medal history, athlete monitoring events, and event scheduling.
+- **ID:** SIMO adalah singkatan dari **Sistem Informasi Manajemen Olahraga**. SIMO merupakan aplikasi/sistemnya, bukan nama organisasi. SIMO berfungsi sebagai basis data olahraga terpusat yang mencakup pendataan atlet, lisensi pelatih, kepengurusan cabang olahraga, riwayat prestasi dan medali, monitoring atlet, serta penjadwalan event.
+
+## Who operates SIMO / Siapa yang mengelola SIMO
+- **EN:** KONI (Komite Olahraga Nasional Indonesia) is Indonesia's National Sports Committee; its Batam City chapter oversees and develops competitive sport across **48 sport disciplines (cabang olahraga)** in Batam, Kepulauan Riau. KONI Kota Batam operates SIMO and publishes the city's public sport statistics and news through it.
+- **ID:** KONI (Komite Olahraga Nasional Indonesia) adalah komite olahraga nasional; cabang Kota Batam membina dan mengembangkan olahraga prestasi di **48 cabang olahraga** di Batam, Kepulauan Riau. KONI Kota Batam mengoperasikan SIMO dan menerbitkan statistik serta berita olahraga publik kota melalui sistem ini.
+
+## What SIMO manages / Cakupan data SIMO
+- **Atlet / Athletes** — biodata, cabang olahraga, status (aktif, cedera, pemusatan latihan, mutasi), tingkat (kota, provinsi, nasional, internasional).
+- **Pelatih / Coaches** — nama, nomor lisensi, tingkatan lisensi, masa berlaku, riwayat kepelatihan.
+- **Pengurus Cabor / Sport officials** — jabatan (ketua, sekretaris, bendahara), masa bakti, struktur kepengurusan.
+- **Prestasi / Achievements** — nama kejuaraan, tingkat, tahun, medali (emas/perak/perunggu), peringkat.
+- **Monitoring** — cedera, mutasi, pemusatan latihan, seleksi, perubahan status atlet.
+- **Event / Kejuaraan** — kalender kejuaraan beserta tingkat, lokasi, tanggal, dan status.
+- **Cabang Olahraga / Sport disciplines** — 48 cabor beserta organisasi nasional induknya (mis. PASI untuk Atletik, PBSI untuk Bulu Tangkis, FORKI untuk Karate).
 
 ## Public pages / Halaman publik
 - [Beranda / Home](https://konibatam.alvianzf.id/): overview, key statistics, latest news and upcoming events. / Ringkasan, statistik utama, berita terbaru, dan event mendatang.
@@ -15,13 +28,17 @@
 - [Event / Events](https://konibatam.alvianzf.id/event): public sport-event calendar (championships, schedules). / Kalender event olahraga publik (kejuaraan, jadwal).
 
 ## Key terms / Istilah kunci (Indonesian → English)
+- SIMO — Sistem Informasi Manajemen Olahraga / Sports Management Information System
 - Atlet — athlete
 - Pelatih — coach
+- Pengurus — official / committee member
 - Cabang Olahraga (cabor) — sport discipline
 - Prestasi — achievement / medal record
 - Perolehan medali — medal tally (Emas = Gold, Perak = Silver, Perunggu = Bronze)
 - Pengumuman / Berita — announcement / news
 - Event / Kejuaraan — event / championship
+- Mutasi — athlete transfer
+- Pemusatan latihan — training camp
 
 ## Notes / Catatan
 - **EN:** Individual administrative records (personal athlete data, documents) are access-controlled and NOT public; only aggregate statistics, published announcements, and public event listings are exposed.
