@@ -2,7 +2,7 @@
   "name": "inasportdb",
   "private": true,
   "version": "0.1.0",
-  "description": "KONI Batam sports management web app",
+  "description": "SIMO (Sistem Informasi Manajemen Olahraga) — sports management information system for KONI Batam",
   "workspaces": [
     "apps/*",
     "packages/*"

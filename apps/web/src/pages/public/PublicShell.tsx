@@ -4,11 +4,12 @@ import { Button } from "../../components/ui";
 import { useAuthStore } from "../../store/authStore";
 import { PUBLIC_NAV } from "./publicNav";
 import { PublicBottomNav } from "./PublicBottomNav";
+import { pageTitle } from "../../lib/site";
 
 /** Shared header/footer shell for public (no-auth) pages. Revisi 2026-07-12. */
 export function PublicShell({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   useEffect(() => {
-    document.title = `KONI Batam — ${title}`;
+    document.title = pageTitle(title);
   }, [title]);
   const user = useAuthStore((state) => state.user);
 
