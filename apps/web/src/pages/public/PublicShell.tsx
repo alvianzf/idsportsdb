@@ -20,7 +20,7 @@ export function PublicShell({ title, description, children }: { title: string; d
         <div className="mt-6">{children}</div>
       </main>
 
-      <SiteFooter />
+      <SiteFooter containerClass="max-w-5xl" />
       <PublicBottomNav />
     </div>
   );
