@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -16,10 +16,9 @@ import { Button } from "../components/ui";
 import { api, resolveFileUrl } from "../lib/api";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 import { getSocket } from "../lib/socket";
-import { useAuthStore } from "../store/authStore";
-import { PUBLIC_NAV } from "./public/publicNav";
 import { PublicBottomNav } from "./public/PublicBottomNav";
 import { SiteFooter } from "./public/SiteFooter";
+import { SiteHeader } from "./public/SiteHeader";
 import { LandingSlider } from "./public/LandingSlider";
 import {
   EVENT_STATUS_TEXT,
@@ -53,7 +52,6 @@ const fadeUp = {
 /** Public landing page — redesigned per client revision 2026-07-12 (bold
  * gradients, sharp colors, framer-motion) with Data/Berita/Event menus. */
 export function LandingPage() {
-  const user = useAuthStore((state) => state.user);
   useDocumentTitle();
   const [stats, setStats] = useState<PublicStats | null>(null);
   const [articles, setArticles] = useState<PublicArtikel[]>([]);
@@ -95,44 +93,7 @@ export function LandingPage() {
   // pinned to the bottom of the viewport on short pages.
   return (
     <div className="flex min-h-svh flex-col bg-neutral-50 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
-      {/* Header */}
-      <header className="sticky top-0 z-30 border-b border-neutral-200/80 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
-          <Link to="/" className="flex items-center gap-2.5">
-            <img src="/logo-koni-batam.png" alt="KONI Batam" className="h-10 w-10 object-contain" />
-            <div>
-              <p className="text-sm font-bold leading-tight text-neutral-900">KONI Batam</p>
-            </div>
-          </Link>
-          <div className="flex items-center gap-1">
-            <nav className="hidden items-center gap-1 text-sm md:flex">
-              {PUBLIC_NAV.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.to === "/"}
-                  className={({ isActive }) =>
-                    `rounded-md px-3 py-1.5 font-semibold transition-colors ${
-                      isActive ? "bg-primary-50 text-primary" : "text-neutral-700 hover:bg-primary-50 hover:text-primary"
-                    }`
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              ))}
-            </nav>
-            {user ? (
-              <Link to={user.role === "ATLET" ? "/me" : "/dashboard"} className="md:ml-2">
-                <Button>Dashboard</Button>
-              </Link>
-            ) : (
-              <Link to="/login" className="md:ml-2">
-                <Button>Masuk</Button>
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       {/* Full-width slider (superadmin-managed, spec 019) */}
       <LandingSlider />
@@ -161,8 +122,7 @@ export function LandingPage() {
               </span>
             </h1>
             <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/80 md:text-base">
-              Data atlet, tenaga olahraga, cabang olahraga, prestasi, dan kalender event KONI Batam —
-              transparan dan dapat diakses publik.
+              Data atlet, tenaga olahraga, cabang olahraga, prestasi, dan kalender event KONI Batam.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link to="/data">
