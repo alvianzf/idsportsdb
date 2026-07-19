@@ -159,13 +159,14 @@ npm run dev:api                  # API on http://localhost:4000
 npm run dev:web                  # SPA on http://localhost:5173
 ```
 
-Seeded accounts (password `password123`):
+Seeded accounts (password `password123`, override with `SEED_PASSWORD`):
 
 | Email | Role |
 |---|---|
-| `superadmin@koni-batam.go.id` | `SUPER_ADMIN_KONI` |
-| `admin@koni-batam.go.id` | `ADMIN_KONI` |
-| `admincabor.atletik@koni-batam.go.id` | `ADMIN_CABOR` (Atletik) |
+| `superadmin@simo-konibatam.com` | `SUPER_ADMIN_KONI` |
+
+The seed creates only this account plus the 48 cabang olahraga. Demo atlet,
+pelatih, pengurus, prestasi and article data were removed at handover.
 
 ## Scripts
 

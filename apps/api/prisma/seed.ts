@@ -16,10 +16,10 @@ async function main() {
   console.log("Seeding users...");
 
   await prisma.user.upsert({
-    where: { email: "superadmin@koni-batam.go.id" },
+    where: { email: "superadmin@simo-konibatam.com" },
     update: {},
     create: {
-      email: "superadmin@koni-batam.go.id",
+      email: "superadmin@simo-konibatam.com",
       passwordHash,
       role: "SUPER_ADMIN_KONI",
       fullName: "Super Admin KONI Batam",
