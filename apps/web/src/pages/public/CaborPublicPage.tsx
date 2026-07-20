@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, FileText, Users, UserCog } from "lucide-react";
 import { Card, SearchInput } from "../../components/ui";
-import { api, resolveFileUrl } from "../../lib/api";
+import { api, resolveEmbedUrl, resolveFileUrl } from "../../lib/api";
 import { PublicShell } from "./PublicShell";
 import { PengurusViews, type Pengurus } from "../cabor/PengurusOrgViews";
 
@@ -186,15 +186,15 @@ function DokumenSection({ dokumen }: { dokumen: PublicDokumen[] }) {
         ))}
       </ul>
 
-      {/* Inline PDF preview — non-PDF uploads fall back to the "Buka" link above. */}
-      {selected.fileUrl.toLowerCase().endsWith(".pdf") && (
-        <iframe
+      {/* Inline preview. Uploaded files carry their extension, so the browser
+          picks the right renderer; no extension check here because older rows
+          were stored without one. */}
+      <iframe
           key={selected.id}
-          src={resolveFileUrl(selected.fileUrl)}
+          src={resolveEmbedUrl(selected.fileUrl)}
           title={selected.jenis}
           className="mt-3 h-[60vh] w-full rounded-md border border-neutral-200"
         />
-      )}
     </Card>
   );
 }
