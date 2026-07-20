@@ -203,3 +203,57 @@ export const BATAM_KECAMATAN = [
   "Batu Aji",
 ] as const;
 export type BatamKecamatan = (typeof BATAM_KECAMATAN)[number];
+
+/**
+ * Jabatan pengurus cabor (client direction 2026-07-20). Declaration order IS
+ * the display order used by the public Cabor page and the dashboard cabor
+ * detail — see `apps/api/src/lib/jabatanOrder.ts`.
+ */
+export const JABATAN_PENGURUS = [
+  "KETUA_UMUM",
+  "SEKRETARIS_UMUM",
+  "BENDAHARA_UMUM",
+  "WAKIL_KETUA_UMUM",
+  "KETUA_HARIAN",
+  "WAKIL_KETUA",
+  "KETUA_BIDANG",
+  "WAKIL_KETUA_BIDANG",
+  "KETUA_SEKSI",
+  "WAKIL_KETUA_SEKSI",
+  "ANGGOTA",
+  "LAINNYA",
+] as const;
+export type JabatanPengurus = (typeof JABATAN_PENGURUS)[number];
+export const JABATAN_PENGURUS_LABELS: Record<JabatanPengurus, string> = {
+  KETUA_UMUM: "Ketua Umum",
+  SEKRETARIS_UMUM: "Sekretaris Umum",
+  BENDAHARA_UMUM: "Bendahara Umum",
+  WAKIL_KETUA_UMUM: "Wakil Ketua Umum",
+  KETUA_HARIAN: "Ketua Harian",
+  WAKIL_KETUA: "Wakil Ketua",
+  KETUA_BIDANG: "Ketua Bidang",
+  WAKIL_KETUA_BIDANG: "Wakil Ketua Bidang",
+  KETUA_SEKSI: "Ketua Seksi",
+  WAKIL_KETUA_SEKSI: "Wakil Ketua Seksi",
+  ANGGOTA: "Anggota",
+  LAINNYA: "Lainnya",
+};
+
+/**
+ * Jabatan that name a unit (bidang/seksi) — these append `PengurusCabor.bidang`
+ * when displayed, e.g. KETUA_BIDANG + "Bina Prestasi" → "Ketua Bidang Bina Prestasi".
+ */
+export const JABATAN_WITH_UNIT: readonly JabatanPengurus[] = [
+  "KETUA_BIDANG",
+  "WAKIL_KETUA_BIDANG",
+  "KETUA_SEKSI",
+  "WAKIL_KETUA_SEKSI",
+  "ANGGOTA",
+];
+
+/** Full display string for a pengurus position. LAINNYA shows `bidang` verbatim. */
+export function jabatanLabel(jabatan: JabatanPengurus, bidang?: string | null): string {
+  if (jabatan === "LAINNYA") return bidang?.trim() || JABATAN_PENGURUS_LABELS.LAINNYA;
+  const base = JABATAN_PENGURUS_LABELS[jabatan];
+  return bidang?.trim() ? `${base} ${bidang.trim()}` : base;
+}

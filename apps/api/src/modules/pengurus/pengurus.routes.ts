@@ -4,6 +4,7 @@ import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole } from "../../middleware/auth.js";
 import { isForeignKeyConstraintError, isNotFoundError } from "../../lib/prismaErrors.js";
 import { createPengurusSchema, updatePengurusSchema, swapPengurusSchema } from "./pengurus.schema.js";
+import { sortByJabatan } from "../../lib/jabatanOrder.js";
 
 /** Mounted at /api/v1/cabor — `/:caborId/pengurus` (specs/006-pengurus-cabor/spec.md §3). */
 export const caborPengurusRouter = Router();
@@ -129,7 +130,7 @@ caborPengurusRouter.post(
       where: { cabangOlahragaId: req.params.caborId },
       orderBy: { masaBaktiAkhir: "desc" },
     });
-    res.json(pengurus);
+    res.json(sortByJabatan(pengurus));
   }),
 );
 

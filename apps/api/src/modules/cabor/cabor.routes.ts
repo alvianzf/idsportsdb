@@ -4,6 +4,7 @@ import multer from "multer";
 import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { authenticate, requireRole } from "../../middleware/auth.js";
+import { sortByJabatan } from "../../lib/jabatanOrder.js";
 import {
   isForeignKeyConstraintError,
   isNotFoundError,
@@ -76,7 +77,12 @@ caborRouter.get(
     }
 
     const { _count, ...rest } = cabor;
-    res.json({ ...rest, jumlahAtlet: _count.atlets, jumlahPelatih: _count.pelatihs });
+    res.json({
+      ...rest,
+      pengurus: sortByJabatan(rest.pengurus),
+      jumlahAtlet: _count.atlets,
+      jumlahPelatih: _count.pelatihs,
+    });
   }),
 );
 
