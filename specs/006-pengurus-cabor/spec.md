@@ -58,6 +58,9 @@
 - Also surfaced as a read-only/managed section within **`/cabor/:id`** (per
   `003-cabang-olahraga` §4), via `apps/web/src/pages/cabor/PengurusOrgViews.tsx`.
 - **Mobile**: list → stacked cards (nama, jabatan, cabor, masa bakti badge).
+- A **public, read-only** version (nama + jabatan, table and org-chart views,
+  no kontak) is served under the landing-page Cabor menu — see
+  `specs/018-public-pages/spec.md` §5.
 
 ### Struktur Organisasi (org structure views)
 
