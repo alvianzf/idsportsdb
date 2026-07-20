@@ -1,8 +1,11 @@
 import { z } from "zod";
+import { JABATAN_PENGURUS } from "@inasportdb/shared-types";
 
 const pengurusFields = z.object({
   namaPengurus: z.string().min(1),
-  jabatan: z.string().min(1),
+  jabatan: z.enum(JABATAN_PENGURUS),
+  // Unit name for KETUA_BIDANG/KETUA_SEKSI/ANGGOTA; free-text label for LAINNYA.
+  bidang: z.string().trim().min(1).nullable().optional(),
   masaBaktiMulai: z.coerce.date(),
   masaBaktiAkhir: z.coerce.date(),
   kontak: z.string().optional(),

@@ -20,7 +20,14 @@
   - `id: String (uuid)`
   - `cabangOlahragaId: String` (FK → `CabangOlahraga`)
   - `namaPengurus: String`
-  - `jabatan: String` — free text (e.g. "Ketua", "Sekretaris", "Bendahara")
+  - `jabatan: Jabatan` — enum (revisi 2026-07-20), declaration order IS the
+    display order: `KETUA_UMUM`, `SEKRETARIS_UMUM`, `BENDAHARA_UMUM`,
+    `WAKIL_KETUA_UMUM`, `KETUA_HARIAN`, `WAKIL_KETUA`, `KETUA_BIDANG`,
+    `WAKIL_KETUA_BIDANG`, `KETUA_SEKSI`, `WAKIL_KETUA_SEKSI`, `ANGGOTA`,
+    `LAINNYA`. Reference `@inasportdb/shared-types` (`JABATAN_PENGURUS`).
+  - `bidang: String?` — unit name for bidang/seksi roles ("Bina Prestasi"),
+    the chosen unit for `ANGGOTA` ("Bidang Bina Prestasi"), or the free-text
+    label when `jabatan` is `LAINNYA`. Rendered via `jabatanLabel()`.
   - `masaBaktiMulai: DateTime`
   - `masaBaktiAkhir: DateTime`
   - `kontak: String?`

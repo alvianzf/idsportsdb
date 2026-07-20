@@ -272,12 +272,15 @@ publicRouter.get(
     }
 
     const [pengurus, dokumen] = await Promise.all([
+      // Past terms are shown too (badged "Selesai" in the UI) — a cabor whose
+      // latest SK has lapsed would otherwise render an empty org chart.
       prisma.pengurusCabor.findMany({
-        where: { cabangOlahragaId: cabor.id, masaBaktiAkhir: { gte: new Date() } },
+        where: { cabangOlahragaId: cabor.id },
         select: {
           id: true,
           namaPengurus: true,
           jabatan: true,
+          bidang: true,
           masaBaktiMulai: true,
           masaBaktiAkhir: true,
           reportsToId: true,

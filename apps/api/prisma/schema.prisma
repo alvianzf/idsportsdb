@@ -332,12 +332,31 @@ model Pelatih {
   @@index([deletedAt])
 }
 
+enum Jabatan {
+  KETUA_UMUM
+  SEKRETARIS_UMUM
+  BENDAHARA_UMUM
+  WAKIL_KETUA_UMUM
+  KETUA_HARIAN
+  WAKIL_KETUA
+  KETUA_BIDANG
+  WAKIL_KETUA_BIDANG
+  KETUA_SEKSI
+  WAKIL_KETUA_SEKSI
+  ANGGOTA
+  LAINNYA
+}
+
 model PengurusCabor {
   id               String   @id @default(uuid())
   cabangOlahragaId String
   cabangOlahraga   CabangOlahraga @relation(fields: [cabangOlahragaId], references: [id])
   namaPengurus     String
-  jabatan          String
+  // Jabatan is a fixed ladder (client direction 2026-07-20); `bidang` carries
+  // the unit name for KETUA_BIDANG/KETUA_SEKSI/ANGGOTA, and the free-text
+  // label for LAINNYA.
+  jabatan          Jabatan
+  bidang           String?
   masaBaktiMulai   DateTime
   masaBaktiAkhir   DateTime
   kontak           String?

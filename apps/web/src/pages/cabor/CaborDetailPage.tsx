@@ -2,7 +2,12 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, FileText, Pencil, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
-import { UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
+import {
+  JABATAN_PENGURUS,
+  JABATAN_PENGURUS_LABELS,
+  UNSCOPED_ADMIN_ROLES,
+  type JabatanPengurus,
+} from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Field, Input, Select, Modal, Combobox, DropZone } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
@@ -21,52 +26,31 @@ interface CaborDetail {
   pengurus: Pengurus[];
 }
 
-// Revisi 2026-07-18: jabatan picked from a default list. Kepala/Wakil Bidang &
-// Seksi append the unit name; Anggota picks an existing bidang/seksi; "Lainnya"
-// opens manual input. Stored as one string (e.g. "Kepala Bidang Pembinaan").
-const JABATAN_SIMPLE = ["Ketua Umum", "Ketua Harian", "Wakil", "Sekretaris", "Bendahara"] as const;
-const JABATAN_PREFIXED = ["Kepala Bidang", "Wakil Kepala Bidang", "Kepala Seksi", "Wakil Kepala Seksi"] as const;
-const JABATAN_ANGGOTA = "Anggota";
-const JABATAN_LAINNYA = "Lainnya";
+// Revisi 2026-07-20: jabatan is a fixed enum (shared-types `JABATAN_PENGURUS`);
+// bidang/seksi roles carry the unit name in a separate `bidang` field, Anggota
+// picks an existing unit, and LAINNYA keeps its free-text label there.
+const JABATAN_UNIT_LABEL: Partial<Record<JabatanPengurus, "Bidang" | "Seksi">> = {
+  KETUA_BIDANG: "Bidang",
+  WAKIL_KETUA_BIDANG: "Bidang",
+  KETUA_SEKSI: "Seksi",
+  WAKIL_KETUA_SEKSI: "Seksi",
+};
 
-/** Split a stored jabatan string back into (pilihan, detail) for the form. */
-function parseJabatan(jabatan: string): { pilihan: string; detail: string } {
-  // Longest prefix first so "Wakil Kepala Bidang X" doesn't match "Kepala Bidang".
-  const prefixes = [...JABATAN_PREFIXED].sort((a, b) => b.length - a.length);
-  for (const p of prefixes) {
-    if (jabatan === p) return { pilihan: p, detail: "" };
-    if (jabatan.startsWith(`${p} `)) return { pilihan: p, detail: jabatan.slice(p.length + 1) };
-  }
-  if (jabatan === JABATAN_ANGGOTA) return { pilihan: JABATAN_ANGGOTA, detail: "" };
-  if (jabatan.startsWith(`${JABATAN_ANGGOTA} `)) {
-    return { pilihan: JABATAN_ANGGOTA, detail: jabatan.slice(JABATAN_ANGGOTA.length + 1) };
-  }
-  if ((JABATAN_SIMPLE as readonly string[]).includes(jabatan)) return { pilihan: jabatan, detail: "" };
-  return { pilihan: JABATAN_LAINNYA, detail: jabatan };
-}
-
-/** Unique "Bidang X" / "Seksi Y" units derived from existing Kepala Bidang/Seksi entries. */
-function unitOptions(pengurus: { jabatan: string }[]): string[] {
+/** Unique "Bidang X" / "Seksi Y" units derived from existing bidang/seksi heads. */
+function unitOptions(pengurus: { jabatan: JabatanPengurus; bidang?: string | null }[]): string[] {
   const units = new Set<string>();
   for (const p of pengurus) {
-    for (const [prefix, unit] of [
-      ["Kepala Bidang ", "Bidang "],
-      ["Wakil Kepala Bidang ", "Bidang "],
-      ["Kepala Seksi ", "Seksi "],
-      ["Wakil Kepala Seksi ", "Seksi "],
-    ] as const) {
-      if (p.jabatan.startsWith(prefix)) units.add(unit + p.jabatan.slice(prefix.length));
-    }
+    const kind = JABATAN_UNIT_LABEL[p.jabatan];
+    if (kind && p.bidang) units.add(`${kind} ${p.bidang}`);
   }
   return [...units].sort();
 }
 
 interface PengurusForm {
   namaPengurus: string;
-  /** One of JABATAN_SIMPLE, JABATAN_PREFIXED, Anggota, or Lainnya. */
-  jabatanPilihan: string;
-  /** Bidang/seksi name (prefixed roles), unit (Anggota), or full manual text (Lainnya). */
-  jabatanDetail: string;
+  jabatan: JabatanPengurus | "";
+  /** Unit name (bidang/seksi roles), unit (Anggota), or manual label (Lainnya). */
+  bidang: string;
   masaBaktiMulai: string;
   masaBaktiAkhir: string;
   kontak: string;
@@ -75,25 +59,13 @@ interface PengurusForm {
 
 const emptyPengurus: PengurusForm = {
   namaPengurus: "",
-  jabatanPilihan: "",
-  jabatanDetail: "",
+  jabatan: "",
+  bidang: "",
   masaBaktiMulai: "",
   masaBaktiAkhir: "",
   kontak: "",
   reportsToId: "",
 };
-
-/** Compose the stored jabatan string from the form's (pilihan, detail). */
-function composeJabatan(form: PengurusForm): string {
-  if (form.jabatanPilihan === JABATAN_LAINNYA) return form.jabatanDetail;
-  if (
-    (JABATAN_PREFIXED as readonly string[]).includes(form.jabatanPilihan) ||
-    form.jabatanPilihan === JABATAN_ANGGOTA
-  ) {
-    return form.jabatanDetail ? `${form.jabatanPilihan} ${form.jabatanDetail}` : form.jabatanPilihan;
-  }
-  return form.jabatanPilihan;
-}
 
 /** Module E — Cabang Olahraga detail + pengurus management. See specs/003-cabang-olahraga/spec.md, specs/006-pengurus-cabor/spec.md. */
 export function CaborDetailPage() {
@@ -131,11 +103,10 @@ export function CaborDetailPage() {
 
   function openEdit(p: Pengurus) {
     setEditingPengurus(p);
-    const { pilihan, detail } = parseJabatan(p.jabatan);
     setForm({
       namaPengurus: p.namaPengurus,
-      jabatanPilihan: pilihan,
-      jabatanDetail: detail,
+      jabatan: p.jabatan,
+      bidang: p.bidang ?? "",
       masaBaktiMulai: p.masaBaktiMulai.slice(0, 10),
       masaBaktiAkhir: p.masaBaktiAkhir.slice(0, 10),
       kontak: p.kontak ?? "",
@@ -152,7 +123,8 @@ export function CaborDetailPage() {
     try {
       const payload = {
         namaPengurus: form.namaPengurus,
-        jabatan: composeJabatan(form),
+        jabatan: form.jabatan,
+        bidang: form.bidang || null,
         masaBaktiMulai: form.masaBaktiMulai,
         masaBaktiAkhir: form.masaBaktiAkhir,
         kontak: form.kontak || undefined,
@@ -334,62 +306,63 @@ export function CaborDetailPage() {
                 onChange={(e) => setForm((f) => ({ ...f, namaPengurus: e.target.value }))}
               />
             </Field>
-            <Field label="Jabatan" required htmlFor="jabatanPilihan">
+            <Field label="Jabatan" required htmlFor="jabatan">
               <Select
-                id="jabatanPilihan"
+                id="jabatan"
                 required
-                value={form.jabatanPilihan}
-                onChange={(v) => setForm((f) => ({ ...f, jabatanPilihan: v, jabatanDetail: "" }))}
+                value={form.jabatan}
+                onChange={(v) => setForm((f) => ({ ...f, jabatan: v as JabatanPengurus, bidang: "" }))}
                 options={[
                   { value: "", label: "Pilih jabatan" },
-                  ...JABATAN_SIMPLE.map((j) => ({ value: j, label: j })),
-                  ...JABATAN_PREFIXED.map((j) => ({ value: j, label: j })),
-                  { value: JABATAN_ANGGOTA, label: JABATAN_ANGGOTA },
-                  { value: JABATAN_LAINNYA, label: JABATAN_LAINNYA },
+                  ...JABATAN_PENGURUS.map((j) => ({ value: j, label: JABATAN_PENGURUS_LABELS[j] })),
                 ]}
               />
             </Field>
-            {(JABATAN_PREFIXED as readonly string[]).includes(form.jabatanPilihan) && (
+            {form.jabatan && JABATAN_UNIT_LABEL[form.jabatan] && (
               <Field
-                label={form.jabatanPilihan.includes("Bidang") ? "Nama Bidang" : "Nama Seksi"}
+                label={`Nama ${JABATAN_UNIT_LABEL[form.jabatan]}`}
                 required
-                htmlFor="jabatanDetail"
+                htmlFor="bidang"
               >
                 <Input
-                  id="jabatanDetail"
+                  id="bidang"
                   required
-                  placeholder={form.jabatanPilihan.includes("Bidang") ? "contoh: Pembinaan Prestasi" : "contoh: Perlengkapan"}
-                  value={form.jabatanDetail}
-                  onChange={(e) => setForm((f) => ({ ...f, jabatanDetail: e.target.value }))}
+                  placeholder={
+                    JABATAN_UNIT_LABEL[form.jabatan] === "Bidang"
+                      ? "contoh: Pembinaan Prestasi"
+                      : "contoh: Perlengkapan"
+                  }
+                  value={form.bidang}
+                  onChange={(e) => setForm((f) => ({ ...f, bidang: e.target.value }))}
                 />
               </Field>
             )}
-            {form.jabatanPilihan === JABATAN_ANGGOTA && (
-              <Field label="Bidang/Seksi" required htmlFor="jabatanDetail">
+            {form.jabatan === "ANGGOTA" && (
+              <Field label="Bidang/Seksi" required htmlFor="bidang">
                 <Select
-                  id="jabatanDetail"
+                  id="bidang"
                   required
-                  value={form.jabatanDetail}
-                  onChange={(v) => setForm((f) => ({ ...f, jabatanDetail: v }))}
+                  value={form.bidang}
+                  onChange={(v) => setForm((f) => ({ ...f, bidang: v }))}
                   options={[
                     { value: "", label: "Pilih bidang/seksi" },
                     ...unitOptions(cabor?.pengurus ?? []).map((u) => ({ value: u, label: u })),
-                    // Preserve a unit already on the record even if its kepala was removed.
-                    ...(form.jabatanDetail && !unitOptions(cabor?.pengurus ?? []).includes(form.jabatanDetail)
-                      ? [{ value: form.jabatanDetail, label: form.jabatanDetail }]
+                    // Preserve a unit already on the record even if its ketua was removed.
+                    ...(form.bidang && !unitOptions(cabor?.pengurus ?? []).includes(form.bidang)
+                      ? [{ value: form.bidang, label: form.bidang }]
                       : []),
                   ]}
                 />
               </Field>
             )}
-            {form.jabatanPilihan === JABATAN_LAINNYA && (
-              <Field label="Jabatan Lainnya" required htmlFor="jabatanDetail">
+            {form.jabatan === "LAINNYA" && (
+              <Field label="Jabatan Lainnya" required htmlFor="bidang">
                 <Input
-                  id="jabatanDetail"
+                  id="bidang"
                   required
                   placeholder="Tulis nama jabatan"
-                  value={form.jabatanDetail}
-                  onChange={(e) => setForm((f) => ({ ...f, jabatanDetail: e.target.value }))}
+                  value={form.bidang}
+                  onChange={(e) => setForm((f) => ({ ...f, bidang: e.target.value }))}
                 />
               </Field>
             )}

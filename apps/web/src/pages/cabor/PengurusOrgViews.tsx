@@ -1,12 +1,15 @@
 import { useState, type DragEvent, type RefObject, useRef } from "react";
 import { LayoutGrid, GitBranch, Table as TableIcon, Pencil, Trash2 } from "lucide-react";
+import { jabatanLabel, type JabatanPengurus } from "@inasportdb/shared-types";
 import { Badge } from "../../components/ui";
 import { DataTable, type Column } from "../../components/ui/DataTable";
 
 export interface Pengurus {
   id: string;
   namaPengurus: string;
-  jabatan: string;
+  jabatan: JabatanPengurus;
+  /** Unit name for bidang/seksi roles; free-text label when jabatan is LAINNYA. */
+  bidang?: string | null;
   masaBaktiMulai: string;
   masaBaktiAkhir: string;
   /** Absent on the public payload (spec 018 §5) — never sent to anonymous visitors. */
@@ -153,8 +156,8 @@ function TableView({
       label: "Jabatan",
       mobile: true,
       sortable: true,
-      getValue: (p) => p.jabatan,
-      render: (p) => <span className="text-neutral-600">{p.jabatan}</span>,
+      getValue: (p) => jabatanLabel(p.jabatan, p.bidang),
+      render: (p) => <span className="text-neutral-600">{jabatanLabel(p.jabatan, p.bidang)}</span>,
     },
     {
       key: "status",
@@ -240,7 +243,7 @@ function CardView({
           >
             <div>
               <p className="font-medium text-neutral-900">{node.namaPengurus}</p>
-              <p className="text-sm text-neutral-500">{node.jabatan}</p>
+              <p className="text-sm text-neutral-500">{jabatanLabel(node.jabatan, node.bidang)}</p>
               <p className="mt-1 text-xs text-neutral-400">
                 {formatDate(node.masaBaktiMulai)} - {formatDate(node.masaBaktiAkhir)}
                 {node.kontak ? ` · ${node.kontak}` : ""}
@@ -357,7 +360,7 @@ function ChartNode({
         )}
 
         <p className="font-medium text-neutral-900">{node.namaPengurus}</p>
-        <p className="text-xs text-neutral-500">{node.jabatan}</p>
+        <p className="text-xs text-neutral-500">{jabatanLabel(node.jabatan, node.bidang)}</p>
         {canManage && (
           <div className="mt-1 flex justify-center gap-1">
             <ActionButtons p={node} canManage={canManage} onEdit={onEdit} onDelete={onDelete} />
