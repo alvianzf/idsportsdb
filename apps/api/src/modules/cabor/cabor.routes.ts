@@ -10,7 +10,7 @@ import {
   isNotFoundError,
   isUniqueConstraintError,
 } from "../../lib/prismaErrors.js";
-import { uploadRoot } from "../../lib/storage.js";
+import { documentFileFilter, uploadRoot, uploader } from "../../lib/storage.js";
 import { createCaborSchema, updateCaborSchema, listCaborQuerySchema, setCaborActiveSchema } from "./cabor.schema.js";
 import { writeAudit } from "../../lib/audit.js";
 
@@ -20,11 +20,10 @@ const logoUpload = multer({
   fileFilter: (_req, file, cb) => { cb(null, /^image\//.test(file.mimetype)); },
 });
 
-const docUpload = multer({
-  dest: path.join(uploadRoot, "cabor-documents"),
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
-  fileFilter: (_req, file, cb) => { cb(null, /^image\//.test(file.mimetype) || file.mimetype === "application/pdf"); },
-});
+// `uploader` (not bare multer `dest`) so the file keeps its extension — without
+// it express.static serves documents as application/octet-stream, which the
+// browser downloads instead of rendering in the public SK viewer.
+const docUpload = uploader("cabor-documents", 20 * 1024 * 1024, documentFileFilter);
 
 export const caborRouter = Router();
 

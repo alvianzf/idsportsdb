@@ -16,6 +16,19 @@ export function resolveFileUrl(path: string): string {
   return path.startsWith("http") ? path : `${apiOrigin}${path}`;
 }
 
+/**
+ * URL for a file that gets embedded in an `<iframe>` (the public SK viewer).
+ *
+ * The API sends `X-Frame-Options: SAMEORIGIN`, so framing `api.<domain>` from
+ * the web origin is refused. In production nginx proxies `/uploads/` on the web
+ * origin too, so a server-relative path keeps the frame same-origin. Dev has no
+ * such proxy, so fall back to the API origin there.
+ */
+export function resolveEmbedUrl(path: string): string {
+  if (path.startsWith("http")) return path;
+  return import.meta.env.PROD ? path : `${apiOrigin}${path}`;
+}
+
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
   if (token) {
