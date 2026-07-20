@@ -93,7 +93,7 @@ function CaborList() {
 }
 
 interface CaborDetail {
-  cabor: { nama: string; organisasiNasional: string | null };
+  cabor: { nama: string; organisasiNasional: string | null; logoOrganisasiUrl: string | null };
   pengurus: Pengurus[];
   dokumen: PublicDokumen[];
 }
@@ -128,6 +128,22 @@ function CaborPengurusDetail({ caborId }: { caborId: string }) {
         <Link to="/cabang-olahraga" className="inline-flex items-center gap-1 text-sm font-medium text-primary">
           <ArrowLeft size={16} /> Kembali ke daftar cabor
         </Link>
+
+        {data?.cabor.logoOrganisasiUrl && (
+          <Card className="flex items-center gap-4">
+            <img
+              src={resolveFileUrl(data.cabor.logoOrganisasiUrl)}
+              alt={`Logo ${data.cabor.organisasiNasional ?? data.cabor.nama}`}
+              className="h-20 w-20 shrink-0 object-contain"
+            />
+            <div className="min-w-0">
+              <p className="font-semibold text-neutral-900">{data.cabor.nama}</p>
+              {data.cabor.organisasiNasional && (
+                <p className="text-sm text-neutral-500">{data.cabor.organisasiNasional}</p>
+              )}
+            </div>
+          </Card>
+        )}
 
         {error && <Card className="text-sm text-danger">{error}</Card>}
         {!error && data === null && <Card className="text-sm text-neutral-500">Memuat data...</Card>}
