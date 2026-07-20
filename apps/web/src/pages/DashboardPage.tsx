@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Users, UserCog, Building2, Trophy, Medal, ArrowLeftRight, UserPlus, Upload, CalendarPlus, Dumbbell } from "lucide-react";
 import { DATA_ADMIN_ROLES } from "@inasportdb/shared-types";
 import { Card, PageHeader, Badge, SearchInput } from "../components/ui";
 import { api, resolveFileUrl } from "../lib/api";
 import { getSocket } from "../lib/socket";
 import { useAuthStore } from "../store/authStore";
+import { AtletImportModal } from "./atlet/AtletImportModal";
+import { EventFormModal } from "./event/EventFormModal";
 
 interface DashboardSummary {
   activeAtletCount: number;
@@ -50,18 +52,29 @@ function StatCard({ label, value, icon: Icon }: StatCardProps) {
   );
 }
 
-// #73 — dashboard quick action tile linking to a common create/import flow.
-function QuickAction({ to, label, icon: Icon }: { to: string; label: string; icon: typeof Users }) {
-  return (
-    <Link to={to}>
-      <Card className="flex items-center gap-3 transition-colors hover:border-primary/40 hover:bg-primary-50">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary">
-          <Icon size={18} />
-        </div>
-        <span className="text-sm font-medium text-neutral-800">{label}</span>
-      </Card>
-    </Link>
+// #73 — dashboard quick action tile for a common create/import flow. Actions
+// that open a modal pass `onClick` instead of `to`, so the flow starts here
+// rather than routing away first (see the import/event modals below).
+function QuickAction({
+  to,
+  onClick,
+  label,
+  icon: Icon,
+}: {
+  to?: string;
+  onClick?: () => void;
+  label: string;
+  icon: typeof Users;
+}) {
+  const tile = (
+    <Card className="flex cursor-pointer items-center gap-3 transition-colors hover:border-primary/40 hover:bg-primary-50">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary">
+        <Icon size={18} />
+      </div>
+      <span className="text-sm font-medium text-neutral-800">{label}</span>
+    </Card>
   );
+  return to ? <Link to={to}>{tile}</Link> : <div onClick={onClick}>{tile}</div>;
 }
 
 // Per-cabor card — mirrors the landing page's stat-tile look (white rounded-xl
@@ -243,6 +256,18 @@ export function DashboardPage() {
   const [prestasiStats, setPrestasiStats] = useState<PrestasiStat[] | null>(null);
   const [pendingMutasi, setPendingMutasi] = useState(0);
   const [error, setError] = useState(false);
+  // Quick actions open their form here and only route away once the work
+  // succeeds — a failed import/save leaves the user on the dashboard.
+  const navigate = useNavigate();
+  const [showImport, setShowImport] = useState(false);
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [cabors, setCabors] = useState<{ id: string; nama: string }[]>([]);
+
+  useEffect(() => {
+    if (showEventForm && cabors.length === 0) {
+      api.get<{ id: string; nama: string }[]>("/cabor").then((res) => setCabors(res.data)).catch(() => undefined);
+    }
+  }, [showEventForm, cabors.length]);
 
   const loadRef = useRef<() => void>(() => undefined);
 
@@ -342,8 +367,8 @@ export function DashboardPage() {
           <p className="mb-2 text-sm text-neutral-500">Aksi Cepat</p>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
             {canManageAtlet && <QuickAction to="/atlet/new" label="Tambah Atlet" icon={UserPlus} />}
-            {canManageAtlet && <QuickAction to="/atlet?import=1" label="Impor Atlet" icon={Upload} />}
-            {isUnscopedAdmin && <QuickAction to="/events" label="Buat Event" icon={CalendarPlus} />}
+            {canManageAtlet && <QuickAction onClick={() => setShowImport(true)} label="Impor Atlet" icon={Upload} />}
+            {isUnscopedAdmin && <QuickAction onClick={() => setShowEventForm(true)} label="Buat Event" icon={CalendarPlus} />}
           </div>
         </div>
       )}
@@ -393,6 +418,27 @@ export function DashboardPage() {
             <CaborCarousel cabors={perCabor} />
           )}
         </section>
+      )}
+
+      {showImport && (
+        <AtletImportModal
+          onClose={(imported) => {
+            setShowImport(false);
+            if (imported > 0) navigate("/atlet");
+          }}
+        />
+      )}
+
+      {showEventForm && (
+        <EventFormModal
+          event="new"
+          cabors={cabors}
+          onSaved={() => {
+            setShowEventForm(false);
+            navigate("/events");
+          }}
+          onClose={() => setShowEventForm(false)}
+        />
       )}
     </div>
   );
