@@ -230,7 +230,9 @@ model CaborDocument {
 
 model Atlet {
   id                String        @id @default(uuid())
-  nomorIndukAtlet   String        @unique
+  // Revisi 2026-07-20: nomor induk atlet optional — not every athlete has one
+  // yet. Still @unique when present (Postgres allows multiple NULLs).
+  nomorIndukAtlet   String?       @unique
   nomorRegistrasi   String        @unique
   namaLengkap       String
   nik               String        @unique

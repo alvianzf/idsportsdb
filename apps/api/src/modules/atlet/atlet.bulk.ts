@@ -116,7 +116,7 @@ atletBulkRouter.get(
     });
 
     const rows = atlets.map((a) => ({
-      nomorIndukAtlet: a.nomorIndukAtlet,
+      nomorIndukAtlet: a.nomorIndukAtlet ?? "",
       nomorRegistrasi: a.nomorRegistrasi,
       namaLengkap: a.namaLengkap,
       nik: a.nik,
@@ -231,7 +231,9 @@ atletBulkRouter.get(
 
 const importUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  // Revisi 2026-07-20: raised to 50 MB for large athlete spreadsheets. The nginx
+  // client_max_body_size in front of koni-api must be at least this.
+  limits: { fileSize: 50 * 1024 * 1024 },
 });
 
 /** Maps a normalized header cell to an import field key. */
@@ -480,21 +482,23 @@ atletBulkRouter.post(
 
       // Reject rows that duplicate an earlier row in the same file (lenient:
       // whitespace- and case-insensitive on the identifier columns).
+      // Nomor induk is optional; a blank one is never a duplicate of anything.
       const nikKey = normalizeId(parsed.data.nik);
-      const indukKey = normalizeId(parsed.data.nomorIndukAtlet);
+      const indukKey = parsed.data.nomorIndukAtlet ? normalizeId(parsed.data.nomorIndukAtlet) : null;
       const regKey = normalizeId(parsed.data.nomorRegistrasi);
-      const firstDupRow = seenNik.get(nikKey) ?? seenInduk.get(indukKey) ?? seenReg.get(regKey);
+      const firstDupRow =
+        seenNik.get(nikKey) ?? (indukKey ? seenInduk.get(indukKey) : undefined) ?? seenReg.get(regKey);
       if (firstDupRow !== undefined) {
         const label = seenNik.has(nikKey)
           ? "NIK"
-          : seenInduk.has(indukKey)
+          : indukKey && seenInduk.has(indukKey)
             ? "Nomor induk"
             : "Nomor registrasi";
         reject("Duplikat dalam berkas", `${label} duplikat dengan baris ${firstDupRow} dalam berkas`);
         continue;
       }
       seenNik.set(nikKey, rowNumber);
-      seenInduk.set(indukKey, rowNumber);
+      if (indukKey) seenInduk.set(indukKey, rowNumber);
       seenReg.set(regKey, rowNumber);
 
       candidates.push({
@@ -520,12 +524,14 @@ atletBulkRouter.post(
         select: { nik: true, nomorIndukAtlet: true, nomorRegistrasi: true },
       });
       const existNik = new Set(existing.map((e) => normalizeId(e.nik)));
-      const existInduk = new Set(existing.map((e) => normalizeId(e.nomorIndukAtlet)));
+      const existInduk = new Set(
+        existing.flatMap((e) => (e.nomorIndukAtlet ? [normalizeId(e.nomorIndukAtlet)] : [])),
+      );
       const existReg = new Set(existing.map((e) => normalizeId(e.nomorRegistrasi)));
       for (const c of candidates) {
         const label = existNik.has(normalizeId(c.data.nik))
           ? "NIK"
-          : existInduk.has(normalizeId(c.data.nomorIndukAtlet))
+          : c.data.nomorIndukAtlet && existInduk.has(normalizeId(c.data.nomorIndukAtlet))
             ? "Nomor induk"
             : existReg.has(normalizeId(c.data.nomorRegistrasi))
               ? "Nomor registrasi"

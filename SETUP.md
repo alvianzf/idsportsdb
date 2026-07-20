@@ -149,7 +149,8 @@ server {
     root /var/www/inasportdb/apps/web/dist;
     index index.html;
 
-    client_max_body_size 10m;
+    # Must be >= the largest multer limit in the API (athlete Excel import: 50 MB).
+    client_max_body_size 50m;
 
     # API
     location /api/v1/ {

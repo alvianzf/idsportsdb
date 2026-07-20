@@ -30,7 +30,7 @@ async function main(): Promise<void> {
   const byInduk = new Map<string, string[]>();
   const byReg = new Map<string, string[]>();
   for (const a of atlets) {
-    push(byInduk, canonicalIdentifier(a.nomorIndukAtlet), a.id);
+    if (a.nomorIndukAtlet) push(byInduk, canonicalIdentifier(a.nomorIndukAtlet), a.id);
     push(byReg, canonicalIdentifier(a.nomorRegistrasi), a.id);
   }
   const collisions = [
@@ -46,7 +46,7 @@ async function main(): Promise<void> {
 
   let updated = 0;
   for (const a of atlets) {
-    const nomorIndukAtlet = canonicalIdentifier(a.nomorIndukAtlet);
+    const nomorIndukAtlet = a.nomorIndukAtlet ? canonicalIdentifier(a.nomorIndukAtlet) : null;
     const nomorRegistrasi = canonicalIdentifier(a.nomorRegistrasi);
     if (nomorIndukAtlet !== a.nomorIndukAtlet || nomorRegistrasi !== a.nomorRegistrasi) {
       await prisma.atlet.update({ where: { id: a.id }, data: { nomorIndukAtlet, nomorRegistrasi } });

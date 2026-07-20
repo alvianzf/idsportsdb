@@ -14,7 +14,7 @@ export interface AtletDocument {
 
 export interface AtletDetail {
   id: string;
-  nomorIndukAtlet: string;
+  nomorIndukAtlet: string | null;
   nomorRegistrasi: string;
   namaLengkap: string;
   nik: string;

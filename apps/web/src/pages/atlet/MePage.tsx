@@ -97,7 +97,7 @@ export function MePage() {
     <div>
       <PageHeader
         title="Profil Saya"
-        description={`${atlet.nomorIndukAtlet} · ${atlet.cabangOlahraga.nama}`}
+        description={[atlet.nomorIndukAtlet, atlet.cabangOlahraga.nama].filter(Boolean).join(" · ")}
         actions={
           <Button variant="outline" onClick={openEdit}>
             <Pencil size={16} /> Ubah Data
