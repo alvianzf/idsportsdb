@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Users, UserCog, Building2, Trophy, Medal, ArrowLeftRight, UserPlus, Upload, CalendarPlus, Dumbbell } from "lucide-react";
 import { DATA_ADMIN_ROLES } from "@inasportdb/shared-types";
@@ -187,6 +187,24 @@ function CaborCarousel({ cabors }: { cabors: PerCaborStat[] }) {
     return out;
   }, [filtered, pageCount]);
 
+  // The slides sit side by side in one flex track, so the viewport would
+  // otherwise stand as tall as the fullest page — leaving a last page of three
+  // cards padded out to four rows of empty space. Track the active slide's
+  // height instead. Measured rather than computed, since the grid is 1/2/4
+  // columns across breakpoints and the cards are not a fixed height.
+  const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [viewportHeight, setViewportHeight] = useState<number>();
+
+  useLayoutEffect(() => {
+    const el = slideRefs.current[current];
+    if (!el) return;
+    const measure = () => setViewportHeight(el.offsetHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [current, pages]);
+
   return (
     <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
       <div className="mb-3 max-w-xs">
@@ -202,14 +220,20 @@ function CaborCarousel({ cabors }: { cabors: PerCaborStat[] }) {
         <p className="text-sm text-neutral-500">Tidak ada cabor yang cocok.</p>
       ) : (
         <>
-          <div className="overflow-hidden">
+          <div
+            className="overflow-hidden transition-[height] duration-500 ease-in-out"
+            style={{ height: viewportHeight }}
+          >
             <div
-              className="flex transition-transform duration-500 ease-in-out"
+              className="flex items-start transition-transform duration-500 ease-in-out"
               style={{ transform: `translateX(-${current * 100}%)` }}
             >
               {pages.map((chunk, i) => (
                 <div
                   key={i}
+                  ref={(el) => {
+                    slideRefs.current[i] = el;
+                  }}
                   className="grid w-full shrink-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 md:gap-4"
                 >
                   {chunk.map((c) => (
