@@ -191,7 +191,7 @@ export function AtletFormPage() {
     setSaving(true);
     try {
       const payload = {
-        nomorIndukAtlet: form.nomorIndukAtlet,
+        nomorIndukAtlet: form.nomorIndukAtlet || undefined,
         nomorRegistrasi: form.nomorRegistrasi,
         namaLengkap: form.namaLengkap,
         nik: form.nik,
@@ -281,10 +281,9 @@ export function AtletFormPage() {
                   onChange={(e) => setForm((f) => ({ ...f, nik: e.target.value }))}
                 />
               </Field>
-              <Field label="Nomor Induk Atlet" required htmlFor="nomorIndukAtlet">
+              <Field label="Nomor Induk Atlet" htmlFor="nomorIndukAtlet">
                 <Input
                   id="nomorIndukAtlet"
-                  required
                   value={form.nomorIndukAtlet}
                   onChange={(e) => setForm((f) => ({ ...f, nomorIndukAtlet: e.target.value }))}
                 />

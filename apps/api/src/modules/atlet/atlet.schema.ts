@@ -5,7 +5,12 @@ import { canonicalIdentifier } from "../../lib/identifiers.js";
 export const createAtletSchema = z.object({
   // Identifiers are canonicalized on write (trim + strip whitespace + uppercase)
   // so the DB @unique constraint bars formatting-variant duplicates everywhere.
-  nomorIndukAtlet: z.string().trim().min(1).transform(canonicalIdentifier),
+  // Revisi 2026-07-20: optional; blank ("" from forms/spreadsheets) means "none".
+  nomorIndukAtlet: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v ? canonicalIdentifier(v) : undefined)),
   nomorRegistrasi: z.string().trim().min(1).transform(canonicalIdentifier),
   namaLengkap: z.string().min(1),
   nik: z.string().regex(/^\d{16}$/, "NIK harus 16 digit angka"),

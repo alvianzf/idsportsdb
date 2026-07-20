@@ -77,7 +77,7 @@ export function BiodataTab({ atlet }: { atlet: AtletDetail }) {
       <dl className="grid gap-3 text-sm md:grid-cols-2">
         <div>
           <dt className="text-neutral-500">Nomor Induk Atlet</dt>
-          <dd className="font-medium text-neutral-900">{atlet.nomorIndukAtlet}</dd>
+          <dd className="font-medium text-neutral-900">{atlet.nomorIndukAtlet ?? "-"}</dd>
         </div>
         <div>
           <dt className="text-neutral-500">Nomor Registrasi</dt>

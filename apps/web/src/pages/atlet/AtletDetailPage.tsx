@@ -66,7 +66,7 @@ export function AtletDetailPage() {
       </button>
       <PageHeader
         title={atlet.namaLengkap}
-        description={`${atlet.nomorIndukAtlet} · ${atlet.cabangOlahraga.nama}`}
+        description={[atlet.nomorIndukAtlet, atlet.cabangOlahraga.nama].filter(Boolean).join(" · ")}
         actions={
           <div className="flex gap-2">
             <Link to={`/atlet/${atlet.id}/rekam`}>

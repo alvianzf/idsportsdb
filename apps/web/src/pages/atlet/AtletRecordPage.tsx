@@ -155,7 +155,7 @@ export function AtletRecordPage() {
 
       {/* Key stats */}
       <div className="mt-3 grid grid-cols-2 gap-px bg-neutral-200 sm:grid-cols-3">
-        <StatCell label="Nomor Induk" value={atlet.nomorIndukAtlet} />
+        <StatCell label="Nomor Induk" value={atlet.nomorIndukAtlet ?? "-"} />
         <StatCell label="Nomor Registrasi" value={atlet.nomorRegistrasi} />
         <StatCell label="Tanggal Lahir" value={atlet.tanggalLahir ? formatDate(atlet.tanggalLahir) : "-"} />
         <StatCell label="Tempat Lahir" value={atlet.tempatLahir ?? "-"} />

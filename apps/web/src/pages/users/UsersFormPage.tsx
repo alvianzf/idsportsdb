@@ -8,7 +8,12 @@ import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 
 interface CaborOption { id: string; nama: string; }
-interface AtletOption { id: string; namaLengkap: string; nomorIndukAtlet: string; }
+interface AtletOption { id: string; namaLengkap: string; nomorIndukAtlet: string | null; }
+
+/** Nomor induk is optional, so fall back to the name alone. */
+function atletLabel(a: AtletOption): string {
+  return a.nomorIndukAtlet ? `${a.namaLengkap} (${a.nomorIndukAtlet})` : a.namaLengkap;
+}
 
 interface UserForm {
   email: string;
@@ -100,7 +105,7 @@ export function UsersFormPage({ embedded = false, onDone }: { embedded?: boolean
       .get(`/atlet/${athleteIdParam}`)
       .then((res) => {
         const a = res.data;
-        setLockedAtletLabel(`${a.namaLengkap} (${a.nomorIndukAtlet})`);
+        setLockedAtletLabel(atletLabel(a));
         setForm((f) => ({
           ...f,
           fullName: f.fullName || a.namaLengkap || "",
@@ -338,7 +343,7 @@ export function UsersFormPage({ embedded = false, onDone }: { embedded?: boolean
                   required
                   value={form.athleteId}
                   onChange={(v) => setForm((f) => ({ ...f, athleteId: v }))}
-                  options={[{ value: "", label: "Pilih atlet" }, ...atlets.map((a) => ({ value: a.id, label: `${a.namaLengkap} (${a.nomorIndukAtlet})` }))]}
+                  options={[{ value: "", label: "Pilih atlet" }, ...atlets.map((a) => ({ value: a.id, label: atletLabel(a) }))]}
                 />
               </Field>
             )
