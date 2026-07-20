@@ -264,7 +264,7 @@ publicRouter.get(
   asyncHandler(async (req, res) => {
     const cabor = await prisma.cabangOlahraga.findFirst({
       where: { id: req.params.id, isActive: true },
-      select: { id: true, nama: true, organisasiNasional: true },
+      select: { id: true, nama: true, organisasiNasional: true, logoOrganisasiUrl: true },
     });
     if (!cabor) {
       res.status(404).json({ error: "Cabang olahraga tidak ditemukan" });
