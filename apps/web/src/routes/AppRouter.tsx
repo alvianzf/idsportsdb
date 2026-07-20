@@ -66,6 +66,7 @@ const EventListPage = page(() => import("../pages/event/EventListPage"), "EventL
 const EventPublicPage = page(() => import("../pages/public/EventPublicPage"), "EventPublicPage");
 const DataPublicPage = page(() => import("../pages/public/DataPublicPage"), "DataPublicPage");
 const BeritaPage = page(() => import("../pages/public/BeritaPage"), "BeritaPage");
+const CaborPublicPage = page(() => import("../pages/public/CaborPublicPage"), "CaborPublicPage");
 
 const ReportsIndexPage = page(() => import("../pages/reports/ReportsIndexPage"), "ReportsIndexPage");
 const AtletPerCaborReportPage = page(() => import("../pages/reports/AtletPerCaborReportPage"), "AtletPerCaborReportPage");
@@ -117,6 +118,22 @@ const router = createBrowserRouter([
     element: (
       <Suspense fallback={<PageLoader />}>
         <BeritaPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/cabang-olahraga",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <CaborPublicPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/cabang-olahraga/:id",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <CaborPublicPage />
       </Suspense>
     ),
   },

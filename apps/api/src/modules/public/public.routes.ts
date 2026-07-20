@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { publicArtikelQuerySchema } from "../artikel/artikel.schema.js";
+import { sortByJabatan } from "../../lib/jabatanOrder.js";
 
 export const publicRouter = Router();
 
@@ -221,6 +222,80 @@ publicRouter.get(
       })),
       total,
     });
+  }),
+);
+
+/** Active cabang olahraga for the public Cabor menu (spec 018 §5). No auth required. */
+publicRouter.get(
+  "/cabor",
+  asyncHandler(async (_req, res) => {
+    const items = await prisma.cabangOlahraga.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        nama: true,
+        organisasiNasional: true,
+        logoOrganisasiUrl: true,
+        _count: { select: { atlets: true, pengurus: true } },
+      },
+      orderBy: { nama: "asc" },
+    });
+
+    res.json({
+      items: items.map((c) => ({
+        id: c.id,
+        nama: c.nama,
+        organisasiNasional: c.organisasiNasional,
+        logoOrganisasiUrl: c.logoOrganisasiUrl,
+        jumlahAtlet: c._count.atlets,
+        jumlahPengurus: c._count.pengurus,
+      })),
+      total: items.length,
+    });
+  }),
+);
+
+/**
+ * Officials of one cabor for the public org chart (spec 018 §5). No auth required.
+ * Active terms only, and `kontak` is deliberately withheld from the public payload.
+ */
+publicRouter.get(
+  "/cabor/:id/pengurus",
+  asyncHandler(async (req, res) => {
+    const cabor = await prisma.cabangOlahraga.findFirst({
+      where: { id: req.params.id, isActive: true },
+      select: { id: true, nama: true, organisasiNasional: true },
+    });
+    if (!cabor) {
+      res.status(404).json({ error: "Cabang olahraga tidak ditemukan" });
+      return;
+    }
+
+    const [pengurus, dokumen] = await Promise.all([
+      prisma.pengurusCabor.findMany({
+        where: { cabangOlahragaId: cabor.id, masaBaktiAkhir: { gte: new Date() } },
+        select: {
+          id: true,
+          namaPengurus: true,
+          jabatan: true,
+          masaBaktiMulai: true,
+          masaBaktiAkhir: true,
+          reportsToId: true,
+        },
+        orderBy: { namaPengurus: "asc" },
+      }),
+      // SK / official decrees, shown alongside the org chart on the public page.
+
+      prisma.caborDocument.findMany({
+        where: { caborId: cabor.id },
+        select: { id: true, jenis: true, nomorDokumen: true, tanggalDokumen: true, fileUrl: true },
+        orderBy: { tanggalDokumen: "desc" },
+      }),
+    ]);
+
+    // Already name-sorted by the query, so a stable rank sort yields
+    // jabatan order first, then alphabetical within the same jabatan.
+    res.json({ cabor, pengurus: sortByJabatan(pengurus), dokumen });
   }),
 );
 

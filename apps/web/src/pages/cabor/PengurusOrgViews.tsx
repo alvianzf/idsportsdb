@@ -9,7 +9,8 @@ export interface Pengurus {
   jabatan: string;
   masaBaktiMulai: string;
   masaBaktiAkhir: string;
-  kontak: string | null;
+  /** Absent on the public payload (spec 018 §5) — never sent to anonymous visitors. */
+  kontak?: string | null;
   reportsToId: string | null;
 }
 
@@ -46,9 +47,11 @@ interface ViewProps {
   onDelete: (p: Pengurus) => void;
   onReassign: (id: string, reportsToId: string | null) => void;
   onSwap: (idA: string, idB: string) => void;
+  /** Public variant (spec 018 §5): Tabel + Struktur only, and no kontak column. */
+  publicMode?: boolean;
 }
 
-export function PengurusViews({ pengurus, canManage, onEdit, onDelete, onReassign, onSwap }: ViewProps) {
+export function PengurusViews({ pengurus, canManage, onEdit, onDelete, onReassign, onSwap, publicMode = false }: ViewProps) {
   const [view, setView] = useState<"table" | "card" | "chart">("table");
   const nameById = new Map(pengurus.map((p) => [p.id, p.namaPengurus]));
   const tree = buildTree(pengurus);
@@ -57,12 +60,21 @@ export function PengurusViews({ pengurus, canManage, onEdit, onDelete, onReassig
     <div className="space-y-3">
       <div className="flex gap-1 rounded-md border border-neutral-200 p-1">
         <ViewButton active={view === "table"} onClick={() => setView("table")} icon={TableIcon} label="Tabel" />
-        <ViewButton active={view === "card"} onClick={() => setView("card")} icon={LayoutGrid} label="Kartu" />
+        {!publicMode && (
+          <ViewButton active={view === "card"} onClick={() => setView("card")} icon={LayoutGrid} label="Kartu" />
+        )}
         <ViewButton active={view === "chart"} onClick={() => setView("chart")} icon={GitBranch} label="Struktur" />
       </div>
 
       {view === "table" && (
-        <TableView pengurus={pengurus} nameById={nameById} canManage={canManage} onEdit={onEdit} onDelete={onDelete} />
+        <TableView
+          pengurus={pengurus}
+          nameById={nameById}
+          canManage={canManage}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          publicMode={publicMode}
+        />
       )}
       {view === "card" && (
         <CardView tree={tree} canManage={canManage} onEdit={onEdit} onDelete={onDelete} />
@@ -118,12 +130,14 @@ function TableView({
   canManage,
   onEdit,
   onDelete,
+  publicMode,
 }: {
   pengurus: Pengurus[];
   nameById: Map<string, string>;
   canManage: boolean;
   onEdit: (p: Pengurus) => void;
   onDelete: (p: Pengurus) => void;
+  publicMode: boolean;
 }) {
   const columns: Column<Pengurus>[] = [
     {
@@ -172,11 +186,15 @@ function TableView({
         </span>
       ),
     },
-    {
-      key: "kontak",
-      label: "Kontak",
-      render: (p) => <span className="text-neutral-600">{p.kontak ?? "-"}</span>,
-    },
+    ...(publicMode
+      ? []
+      : [
+          {
+            key: "kontak",
+            label: "Kontak",
+            render: (p: Pengurus) => <span className="text-neutral-600">{p.kontak ?? "-"}</span>,
+          },
+        ]),
     ...(canManage
       ? [
           {
