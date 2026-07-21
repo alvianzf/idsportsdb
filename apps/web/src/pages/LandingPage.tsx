@@ -226,7 +226,7 @@ export function LandingPage() {
                 Lihat semua <ArrowRight size={14} />
               </Link>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {cabor.map((c) => (
                 <Link
                   key={c.id}
