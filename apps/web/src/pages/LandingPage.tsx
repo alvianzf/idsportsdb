@@ -217,15 +217,7 @@ export function LandingPage() {
         {/* Cabang Olahraga */}
         {cabor.length > 0 && (
           <motion.section {...fadeUp} className="mt-10 md:mt-14">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-extrabold tracking-tight text-neutral-900">Cabang Olahraga</h2>
-              <Link
-                to="/cabang-olahraga"
-                className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
-              >
-                Lihat semua <ArrowRight size={14} />
-              </Link>
-            </div>
+            <h2 className="mb-4 text-lg font-extrabold tracking-tight text-neutral-900">Cabang Olahraga</h2>
             <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {cabor.map((c) => (
                 <Link
