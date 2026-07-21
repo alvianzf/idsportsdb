@@ -42,6 +42,13 @@ interface PublicArtikel {
   publishedAt: string | null;
 }
 
+interface PublicCabor {
+  id: string;
+  nama: string;
+  organisasiNasional: string | null;
+  logoOrganisasiUrl: string | null;
+}
+
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
   whileInView: { opacity: 1, y: 0 },
@@ -56,6 +63,7 @@ export function LandingPage() {
   const [stats, setStats] = useState<PublicStats | null>(null);
   const [articles, setArticles] = useState<PublicArtikel[]>([]);
   const [events, setEvents] = useState<PublicEvent[]>([]);
+  const [cabor, setCabor] = useState<PublicCabor[]>([]);
 
   const loadData = useCallback(() => {
     api.get<PublicStats>("/public/stats").then((res) => setStats(res.data)).catch(() => undefined);
@@ -66,6 +74,11 @@ export function LandingPage() {
     api
       .get<PublicEvent[]>("/public/events", { params: { limit: 4 } })
       .then((res) => setEvents(res.data))
+      .catch(() => undefined);
+    // /public/cabor has no limit param — trim to a 3x3 preview grid client-side.
+    api
+      .get<{ items: PublicCabor[] }>("/public/cabor")
+      .then((res) => setCabor(res.data.items.slice(0, 9)))
       .catch(() => undefined);
   }, []);
 
@@ -198,6 +211,48 @@ export function LandingPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          </motion.section>
+        )}
+
+        {/* Cabang Olahraga */}
+        {cabor.length > 0 && (
+          <motion.section {...fadeUp} className="mt-10 md:mt-14">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-extrabold tracking-tight text-neutral-900">Cabang Olahraga</h2>
+              <Link
+                to="/cabang-olahraga"
+                className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+              >
+                Lihat semua <ArrowRight size={14} />
+              </Link>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {cabor.map((c) => (
+                <Link
+                  key={c.id}
+                  to={`/cabang-olahraga/${c.id}`}
+                  className="group flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                >
+                  {c.logoOrganisasiUrl ? (
+                    <img
+                      src={resolveFileUrl(c.logoOrganisasiUrl)}
+                      alt=""
+                      className="h-10 w-10 shrink-0 object-contain"
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary-50 text-sm font-bold text-primary">
+                      {c.nama.slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-neutral-900 group-hover:text-primary">{c.nama}</p>
+                    {c.organisasiNasional && (
+                      <p className="truncate text-xs text-neutral-500">{c.organisasiNasional}</p>
+                    )}
+                  </div>
+                </Link>
+              ))}
             </div>
           </motion.section>
         )}
