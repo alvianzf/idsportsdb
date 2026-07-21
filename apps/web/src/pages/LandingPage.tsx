@@ -75,10 +75,9 @@ export function LandingPage() {
       .get<PublicEvent[]>("/public/events", { params: { limit: 4 } })
       .then((res) => setEvents(res.data))
       .catch(() => undefined);
-    // /public/cabor has no limit param — trim to a 3x3 preview grid client-side.
     api
       .get<{ items: PublicCabor[] }>("/public/cabor")
-      .then((res) => setCabor(res.data.items.slice(0, 9)))
+      .then((res) => setCabor(res.data.items))
       .catch(() => undefined);
   }, []);
 
