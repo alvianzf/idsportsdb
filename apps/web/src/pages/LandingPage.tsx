@@ -14,6 +14,7 @@ import {
 import { EVENT_LEVEL_LABELS, EVENT_STATUS_LABELS } from "@inasportdb/shared-types";
 import { Button } from "../components/ui";
 import { api, resolveFileUrl } from "../lib/api";
+import { BERITA_ENABLED } from "../lib/featureFlags";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 import { getSocket } from "../lib/socket";
 import { PublicBottomNav } from "./public/PublicBottomNav";
@@ -292,8 +293,8 @@ export function LandingPage() {
           </motion.section>
         )}
 
-        {/* Berita */}
-        {articles.length > 0 && (
+        {/* Berita — disembunyikan sementara (revisi 2026-07-27) */}
+        {BERITA_ENABLED && articles.length > 0 && (
           <motion.section {...fadeUp} className="mt-10 md:mt-14">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-extrabold tracking-tight text-neutral-900">Berita</h2>

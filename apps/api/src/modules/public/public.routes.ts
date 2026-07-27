@@ -236,7 +236,8 @@ publicRouter.get(
         nama: true,
         organisasiNasional: true,
         logoOrganisasiUrl: true,
-        _count: { select: { atlets: true, pengurus: true } },
+        // Revisi 2026-07-27: skip soft-deleted athletes in the public count.
+        _count: { select: { atlets: { where: { deletedAt: null } }, pengurus: true } },
       },
       orderBy: { nama: "asc" },
     });
@@ -264,7 +265,17 @@ publicRouter.get(
   asyncHandler(async (req, res) => {
     const cabor = await prisma.cabangOlahraga.findFirst({
       where: { id: req.params.id, isActive: true },
-      select: { id: true, nama: true, organisasiNasional: true, logoOrganisasiUrl: true },
+      select: {
+        id: true,
+        nama: true,
+        organisasiNasional: true,
+        logoOrganisasiUrl: true,
+        // Revisi 2026-07-27: data sekretariat ikut ditampilkan di halaman publik.
+        sekretariat: true,
+        teleponSekretariat: true,
+        emailSekretariat: true,
+        narahubungSekretariat: true,
+      },
     });
     if (!cabor) {
       res.status(404).json({ error: "Cabang olahraga tidak ditemukan" });

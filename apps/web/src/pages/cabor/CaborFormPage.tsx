@@ -1,16 +1,28 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Card, PageHeader, Button, Field, Input, DropZone } from "../../components/ui";
+import { Card, PageHeader, Button, Field, Input, Textarea, DropZone } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
 
 interface CaborForm {
   nama: string;
   ketuaCabor: string;
-  sekretariat: string;
   organisasiNasional: string;
+  // Revisi 2026-07-27: data sekretariat terstruktur.
+  sekretariat: string;
+  teleponSekretariat: string;
+  emailSekretariat: string;
+  narahubungSekretariat: string;
 }
 
-const empty: CaborForm = { nama: "", ketuaCabor: "", sekretariat: "", organisasiNasional: "" };
+const empty: CaborForm = {
+  nama: "",
+  ketuaCabor: "",
+  organisasiNasional: "",
+  sekretariat: "",
+  teleponSekretariat: "",
+  emailSekretariat: "",
+  narahubungSekretariat: "",
+};
 
 /** Module E — create/edit Cabang Olahraga. See specs/003-cabang-olahraga/spec.md. */
 export function CaborFormPage() {
@@ -35,8 +47,11 @@ export function CaborFormPage() {
         setForm({
           nama: res.data.nama ?? "",
           ketuaCabor: res.data.ketuaCabor ?? "",
-          sekretariat: res.data.sekretariat ?? "",
           organisasiNasional: res.data.organisasiNasional ?? "",
+          sekretariat: res.data.sekretariat ?? "",
+          teleponSekretariat: res.data.teleponSekretariat ?? "",
+          emailSekretariat: res.data.emailSekretariat ?? "",
+          narahubungSekretariat: res.data.narahubungSekretariat ?? "",
         });
         setLogoUrl(res.data.logoOrganisasiUrl ?? null);
       })
@@ -53,11 +68,15 @@ export function CaborFormPage() {
     setError(null);
     setSaving(true);
     try {
+      // null (not undefined) so emptying a field actually clears the stored value.
       const payload = {
         nama: form.nama,
-        ketuaCabor: form.ketuaCabor || undefined,
-        sekretariat: form.sekretariat || undefined,
-        organisasiNasional: form.organisasiNasional || undefined,
+        ketuaCabor: form.ketuaCabor || null,
+        organisasiNasional: form.organisasiNasional || null,
+        sekretariat: form.sekretariat || null,
+        teleponSekretariat: form.teleponSekretariat || null,
+        emailSekretariat: form.emailSekretariat || null,
+        narahubungSekretariat: form.narahubungSekretariat || null,
       };
 
       let caborId = id;
@@ -116,13 +135,6 @@ export function CaborFormPage() {
               onChange={(e) => setForm((f) => ({ ...f, ketuaCabor: e.target.value }))}
             />
           </Field>
-          <Field label="Sekretariat" htmlFor="sekretariat">
-            <Input
-              id="sekretariat"
-              value={form.sekretariat}
-              onChange={(e) => setForm((f) => ({ ...f, sekretariat: e.target.value }))}
-            />
-          </Field>
           <Field label="Organisasi Nasional" htmlFor="organisasiNasional" hint="Mis: FORKI, PBSI, PRSI">
             <Input
               id="organisasiNasional"
@@ -131,6 +143,46 @@ export function CaborFormPage() {
               onChange={(e) => setForm((f) => ({ ...f, organisasiNasional: e.target.value }))}
             />
           </Field>
+
+          {/* Revisi 2026-07-27: data sekretariat sebagai satu blok tersendiri. */}
+          <section className="space-y-4 rounded-lg border border-neutral-200 p-4">
+            <h2 className="text-sm font-semibold text-neutral-900">Data Sekretariat</h2>
+            <Field label="Alamat Sekretariat" htmlFor="sekretariat">
+              <Textarea
+                id="sekretariat"
+                rows={2}
+                placeholder="Jalan, nomor, kelurahan, kecamatan, kota"
+                value={form.sekretariat}
+                onChange={(e) => setForm((f) => ({ ...f, sekretariat: e.target.value }))}
+              />
+            </Field>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Telepon Sekretariat" htmlFor="teleponSekretariat">
+                <Input
+                  id="teleponSekretariat"
+                  placeholder="Mis: 0778-123456"
+                  value={form.teleponSekretariat}
+                  onChange={(e) => setForm((f) => ({ ...f, teleponSekretariat: e.target.value }))}
+                />
+              </Field>
+              <Field label="Email Sekretariat" htmlFor="emailSekretariat">
+                <Input
+                  id="emailSekretariat"
+                  type="email"
+                  placeholder="sekretariat@contoh.or.id"
+                  value={form.emailSekretariat}
+                  onChange={(e) => setForm((f) => ({ ...f, emailSekretariat: e.target.value }))}
+                />
+              </Field>
+              <Field label="Narahubung" htmlFor="narahubungSekretariat" hint="Nama staf sekretariat yang bisa dihubungi">
+                <Input
+                  id="narahubungSekretariat"
+                  value={form.narahubungSekretariat}
+                  onChange={(e) => setForm((f) => ({ ...f, narahubungSekretariat: e.target.value }))}
+                />
+              </Field>
+            </div>
+          </section>
 
           {/* Logo upload — only available when editing an existing cabor */}
           {isEdit && (

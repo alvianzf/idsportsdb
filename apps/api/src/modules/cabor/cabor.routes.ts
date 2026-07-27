@@ -14,6 +14,15 @@ import { documentFileFilter, uploadRoot, uploader } from "../../lib/storage.js";
 import { createCaborSchema, updateCaborSchema, listCaborQuerySchema, setCaborActiveSchema } from "./cabor.schema.js";
 import { writeAudit } from "../../lib/audit.js";
 
+// Revisi 2026-07-27: atlet/pelatih are soft-deleted, so an unfiltered _count
+// kept reporting removed records (a cabor with nothing in it showed "1 atlet").
+const activeCounts = {
+  select: {
+    atlets: { where: { deletedAt: null } },
+    pelatihs: { where: { deletedAt: null } },
+  },
+} as const;
+
 const logoUpload = multer({
   dest: path.join(uploadRoot, "cabor-logos"),
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -46,7 +55,7 @@ caborRouter.get(
           : {}),
         ...(parsed.data.active !== undefined ? { isActive: parsed.data.active } : {}),
       },
-      include: { _count: { select: { atlets: true, pelatihs: true } } },
+      include: { _count: activeCounts },
       orderBy: { nama: "asc" },
     });
 
@@ -66,7 +75,7 @@ caborRouter.get(
     const cabor = await prisma.cabangOlahraga.findUnique({
       where: { id: req.params.id },
       include: {
-        _count: { select: { atlets: true, pelatihs: true } },
+        _count: activeCounts,
         pengurus: { orderBy: { masaBaktiAkhir: "desc" } },
       },
     });
@@ -123,7 +132,7 @@ caborRouter.patch(
       const cabor = await prisma.cabangOlahraga.update({
         where: { id: req.params.id },
         data: parsed.data,
-        include: { _count: { select: { atlets: true, pelatihs: true } } },
+        include: { _count: activeCounts },
       });
       writeAudit(req.user!.id, "UPDATE", "Cabor", cabor.id);
       const { _count, ...rest } = cabor;
@@ -270,7 +279,7 @@ caborRouter.post(
     // orphaned file (and P2025 below stays a defensive guard against races).
     const existing = await prisma.cabangOlahraga.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, logoOrganisasiUrl: true },
     });
     if (!existing) {
       await fs.unlink(req.file.path).catch(() => undefined);
@@ -278,10 +287,13 @@ caborRouter.post(
       return;
     }
 
-    const filename = `${id}${ext}`;
+    // Revisi 2026-07-27: the filename used to be just `${id}${ext}`, so a
+    // replacement logo reused the same URL and browsers kept serving the cached
+    // old image (visible in the edit form). A version suffix makes every upload
+    // a distinct URL; the previous file is unlinked below.
+    const filename = `${id}-${Date.now()}${ext}`;
     const destPath = path.join(uploadRoot, "cabor-logos", filename);
 
-    // Rename from multer temp file to stable name keyed by cabor id
     await fs.rename(req.file.path, destPath);
 
     const logoOrganisasiUrl = `/uploads/cabor-logos/${filename}`;
@@ -290,6 +302,12 @@ caborRouter.post(
         where: { id },
         data: { logoOrganisasiUrl },
       });
+      // Drop the superseded file once the new URL is committed.
+      if (existing.logoOrganisasiUrl && existing.logoOrganisasiUrl !== logoOrganisasiUrl) {
+        fs.unlink(
+          path.join(uploadRoot, existing.logoOrganisasiUrl.replace("/uploads/", "")),
+        ).catch(() => undefined);
+      }
       res.json({ logoOrganisasiUrl: cabor.logoOrganisasiUrl });
     } catch (err) {
       if (isNotFoundError(err)) {

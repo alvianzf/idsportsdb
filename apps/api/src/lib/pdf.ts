@@ -8,9 +8,17 @@ import PDFDocument from "pdfkit";
 const LOGO_PATH = path.resolve("src/assets/logo-koni-batam.png");
 const HAS_LOGO = fs.existsSync(LOGO_PATH);
 
+/** KONI Batam brand red (--color-primary-500 in the web app). */
+export const KONI_RED = "#c8102e";
+
 export interface PdfMeta {
   /** Shown in the footer: who downloaded the report. */
   downloadedBy?: string;
+  /**
+   * Revisi 2026-07-27: draws the footer as a solid brand-red band with white
+   * text instead of the default thin grey rule (used by the biodata export).
+   */
+  redFooter?: boolean;
 }
 
 /** Download date for report titles, e.g. "12 Juli 2026". */
@@ -53,10 +61,18 @@ function decoratePage(doc: PDFKit.PDFDocument, meta: PdfMeta) {
   const bottomMargin = doc.page.margins.bottom;
   doc.page.margins.bottom = 0;
   const footerLineY = height - 52;
-  doc.moveTo(left, footerLineY).lineTo(right, footerLineY).lineWidth(0.5).strokeColor("#bbbbbb").stroke();
-  doc.font("Helvetica").fontSize(7.5).fillColor("#666666");
-  doc.text(`Diunduh oleh: ${meta.downloadedBy ?? "-"}`, left, footerLineY + 6, { lineBreak: false });
-  doc.text(timestampWib(), left, footerLineY + 6, { width: right - left, align: "right", lineBreak: false });
+  if (meta.redFooter) {
+    const bandY = height - 34;
+    doc.rect(0, bandY, width, 34).fill(KONI_RED);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#ffffff");
+    doc.text(`Diunduh oleh: ${meta.downloadedBy ?? "-"}`, left, bandY + 12, { lineBreak: false });
+    doc.text(timestampWib(), left, bandY + 12, { width: right - left, align: "right", lineBreak: false });
+  } else {
+    doc.moveTo(left, footerLineY).lineTo(right, footerLineY).lineWidth(0.5).strokeColor("#bbbbbb").stroke();
+    doc.font("Helvetica").fontSize(7.5).fillColor("#666666");
+    doc.text(`Diunduh oleh: ${meta.downloadedBy ?? "-"}`, left, footerLineY + 6, { lineBreak: false });
+    doc.text(timestampWib(), left, footerLineY + 6, { width: right - left, align: "right", lineBreak: false });
+  }
   doc.page.margins.bottom = bottomMargin;
 
   // Reset for content

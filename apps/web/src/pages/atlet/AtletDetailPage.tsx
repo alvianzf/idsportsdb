@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Pencil, ScanLine, Trash2, UserPlus } from "lucide-react";
+import { ArrowLeft, Download, FileDown, Pencil, ScanLine, Trash2, UserPlus } from "lucide-react";
 import toast from "react-hot-toast";
 import { DATA_ADMIN_ROLES, UNSCOPED_ADMIN_ROLES } from "@inasportdb/shared-types";
-import { PageHeader, Button } from "../../components/ui";
+import { PageHeader, Button, Modal } from "../../components/ui";
 import { api } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 import { useAuthStore } from "../../store/authStore";
@@ -15,7 +15,7 @@ import { MonitoringTab } from "./tabs/MonitoringTab";
 
 const TABS = [
   { key: "biodata", label: "Biodata" },
-  { key: "dokumen", label: "Dokumen" },
+  { key: "dokumen", label: "Dokumen Pendukung" },
   { key: "prestasi", label: "Prestasi" },
   { key: "monitoring", label: "Monitoring" },
 ] as const;
@@ -33,6 +33,9 @@ export function AtletDetailPage() {
   const [atlet, setAtlet] = useState<AtletDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>("biodata");
+  // Revisi 2026-07-27: biodata PDF is previewed in a modal before downloading.
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   function load() {
     if (!id) return;
@@ -43,6 +46,24 @@ export function AtletDetailPage() {
   }
 
   useEffect(load, [id]);
+
+  async function openBiodataPdf() {
+    if (!atlet) return;
+    setPdfLoading(true);
+    try {
+      const res = await api.get(`/atlet/${atlet.id}/biodata.pdf`, { responseType: "blob" });
+      setPdfUrl(URL.createObjectURL(res.data as Blob));
+    } catch {
+      toast.error("Gagal membuat biodata PDF.");
+    } finally {
+      setPdfLoading(false);
+    }
+  }
+
+  function closeBiodataPdf() {
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    setPdfUrl(null);
+  }
 
   async function handleDelete() {
     if (!atlet) return;
@@ -68,7 +89,10 @@ export function AtletDetailPage() {
         title={atlet.namaLengkap}
         description={[atlet.nomorIndukAtlet, atlet.cabangOlahraga.nama].filter(Boolean).join(" · ")}
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={openBiodataPdf} disabled={pdfLoading}>
+              <FileDown size={16} /> {pdfLoading ? "Menyiapkan..." : "Biodata PDF"}
+            </Button>
             <Link to={`/atlet/${atlet.id}/rekam`}>
               <Button variant="outline">
                 <ScanLine size={16} /> Rekam Atlet
@@ -120,6 +144,30 @@ export function AtletDetailPage() {
       {tab === "prestasi" && <PrestasiTab atletId={atlet.id} canManage={!!canEdit} />}
       {tab === "monitoring" && (
         <MonitoringTab atletId={atlet.id} canManage={!!canEdit} currentCabangOlahragaId={atlet.cabangOlahragaId} />
+      )}
+
+      {pdfUrl && (
+        <Modal title={`Biodata — ${atlet.namaLengkap}`} onClose={closeBiodataPdf}>
+          <div className="space-y-3">
+            <iframe
+              src={pdfUrl}
+              title={`Biodata ${atlet.namaLengkap}`}
+              className="h-[60vh] w-full rounded-lg border border-neutral-200 bg-neutral-50"
+            />
+            <div className="flex flex-wrap gap-2">
+              <a
+                href={pdfUrl}
+                download={`Biodata-${atlet.namaLengkap.replace(/[^a-zA-Z0-9]+/g, "-")}.pdf`}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+              >
+                <Download size={15} /> Unduh PDF
+              </a>
+              <Button variant="outline" onClick={closeBiodataPdf}>
+                Tutup
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

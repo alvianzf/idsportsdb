@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, FileText, Users, UserCog } from "lucide-react";
+import { ArrowLeft, FileText, Mail, MapPin, Phone, User, Users, UserCog } from "lucide-react";
 import { Card, SearchInput } from "../../components/ui";
 import { api, resolveEmbedUrl, resolveFileUrl } from "../../lib/api";
 import { PublicShell } from "./PublicShell";
@@ -93,7 +93,15 @@ function CaborList() {
 }
 
 interface CaborDetail {
-  cabor: { nama: string; organisasiNasional: string | null; logoOrganisasiUrl: string | null };
+  cabor: {
+    nama: string;
+    organisasiNasional: string | null;
+    logoOrganisasiUrl: string | null;
+    sekretariat: string | null;
+    teleponSekretariat: string | null;
+    emailSekretariat: string | null;
+    narahubungSekretariat: string | null;
+  };
   pengurus: Pengurus[];
   dokumen: PublicDokumen[];
 }
@@ -142,6 +150,43 @@ function CaborPengurusDetail({ caborId }: { caborId: string }) {
                 <p className="text-sm text-neutral-500">{data.cabor.organisasiNasional}</p>
               )}
             </div>
+          </Card>
+        )}
+
+        {/* Revisi 2026-07-27: data sekretariat cabor. */}
+        {data && (data.cabor.sekretariat || data.cabor.teleponSekretariat || data.cabor.emailSekretariat || data.cabor.narahubungSekretariat) && (
+          <Card>
+            <h2 className="text-sm font-semibold text-neutral-900">Sekretariat</h2>
+            <ul className="mt-2 space-y-2 text-sm">
+              {data.cabor.sekretariat && (
+                <li className="flex items-start gap-2.5">
+                  <MapPin size={15} className="mt-0.5 shrink-0 text-neutral-400" />
+                  <span className="whitespace-pre-line text-neutral-700">{data.cabor.sekretariat}</span>
+                </li>
+              )}
+              {data.cabor.teleponSekretariat && (
+                <li className="flex items-start gap-2.5">
+                  <Phone size={15} className="mt-0.5 shrink-0 text-neutral-400" />
+                  <a href={`tel:${data.cabor.teleponSekretariat}`} className="text-primary hover:underline">
+                    {data.cabor.teleponSekretariat}
+                  </a>
+                </li>
+              )}
+              {data.cabor.emailSekretariat && (
+                <li className="flex items-start gap-2.5">
+                  <Mail size={15} className="mt-0.5 shrink-0 text-neutral-400" />
+                  <a href={`mailto:${data.cabor.emailSekretariat}`} className="text-primary hover:underline">
+                    {data.cabor.emailSekretariat}
+                  </a>
+                </li>
+              )}
+              {data.cabor.narahubungSekretariat && (
+                <li className="flex items-start gap-2.5">
+                  <User size={15} className="mt-0.5 shrink-0 text-neutral-400" />
+                  <span className="text-neutral-700">{data.cabor.narahubungSekretariat}</span>
+                </li>
+              )}
+            </ul>
           </Card>
         )}
 

@@ -108,10 +108,13 @@ export function DropZone({
 
   if (hasFile || existingUrl) {
     // ── File selected / existing ─────────────────────────────────────
+    // Revisi 2026-07-27: wraps instead of overflowing — in a narrow grid column
+    // (iPad landscape hits the `sm:` breakpoints) the fixed-width thumbnail used
+    // to push the file info on top of the next column.
     return (
-      <div className={`flex items-start gap-3 ${className}`}>
+      <div className={`flex flex-wrap items-start gap-3 ${className}`}>
         {/* Thumbnail or file icon */}
-        <div className="relative h-24 w-32 shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
+        <div className="relative h-24 w-32 max-w-full shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
           {showPreview ? (
             <img src={displayUrl!} alt="" className="h-full w-full object-cover" />
           ) : (

@@ -156,7 +156,12 @@ model CabangOlahraga {
   id                  String   @id @default(uuid())
   nama                String   @unique
   ketuaCabor          String?
+  // Revisi 2026-07-27: data sekretariat dipecah — `sekretariat` tetap menyimpan
+  // alamatnya (data lama), sisanya kolom baru.
   sekretariat         String?
+  teleponSekretariat  String?
+  emailSekretariat    String?
+  narahubungSekretariat String?
   // National sports organisation for this discipline (e.g. FORKI for Karate)
   organisasiNasional  String?
   logoOrganisasiUrl   String?
@@ -336,6 +341,9 @@ enum Jabatan {
   KETUA_UMUM
   SEKRETARIS_UMUM
   BENDAHARA_UMUM
+  // Revisi 2026-07-27: wakil untuk sekretaris/bendahara umum.
+  WAKIL_SEKRETARIS_UMUM
+  WAKIL_BENDAHARA_UMUM
   WAKIL_KETUA_UMUM
   KETUA_HARIAN
   WAKIL_KETUA

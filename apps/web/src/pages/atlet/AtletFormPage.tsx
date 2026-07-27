@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle2, XCircle } from "lucide-react";
-import toast from "react-hot-toast";
 import {
   ATHLETE_LEVELS,
   ATHLETE_LEVEL_LABELS,
@@ -13,19 +11,9 @@ import {
   UNSCOPED_ADMIN_ROLES,
   type AthleteStatus,
 } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, DropZone, Field, Input, Select, Textarea, Combobox } from "../../components/ui";
+import { Card, PageHeader, Button, Field, Input, Select, Textarea, Combobox } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
-
-type RegistrationDocType = "KTP" | "KK" | "AKTA_KELAHIRAN";
-
-const REGISTRATION_DOCS: { type: RegistrationDocType; label: string; required: boolean }[] = [
-  { type: "KTP", label: "KTP", required: false },
-  { type: "KK", label: "Kartu Keluarga (KK)", required: false },
-  { type: "AKTA_KELAHIRAN", label: "Akta Kelahiran", required: false },
-];
-
-const MAX_DOC_SIZE_MB = 10;
 
 // Revisi 2026-07-12: the form offers the plain administrative statuses; TC and
 // mutasi are set via the Monitoring module. Revisi 2026-07-18: Cedera and
@@ -35,12 +23,6 @@ const FORM_STATUSES: AthleteStatus[] = ["ACTIVE", "INACTIVE", "INJURED", "RETIRE
 interface CaborOption {
   id: string;
   nama: string;
-}
-
-interface CaborLainItem {
-  cabangOlahragaId: string;
-  nomorIndukAtlet: string;
-  nomorRegistrasi: string;
 }
 
 interface AtletForm {
@@ -54,7 +36,6 @@ interface AtletForm {
   nomorHp: string;
   email: string;
   cabangOlahragaId: string;
-  cabangOlahragaLain: CaborLainItem[];
   statusAtlet: string;
   tanggalCedera: string;
   keteranganCedera: string;
@@ -74,7 +55,6 @@ const empty: AtletForm = {
   nomorHp: "",
   email: "",
   cabangOlahragaId: "",
-  cabangOlahragaLain: [],
   statusAtlet: "ACTIVE",
   tanggalCedera: "",
   keteranganCedera: "",
@@ -103,12 +83,10 @@ export function AtletFormPage() {
   const isUnscopedAdmin = role && UNSCOPED_ADMIN_ROLES.includes(role);
 
   const [form, setForm] = useState<AtletForm>(empty);
-  const [showCaborTambahan, setShowCaborTambahan] = useState(false);
   const [cabors, setCabors] = useState<CaborOption[]>([]);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pendingDocs, setPendingDocs] = useState<Partial<Record<RegistrationDocType, File>>>({});
   // Tracks an athlete created in a prior submit attempt so a retry after a
   // failed document upload continues rather than creating a duplicate.
   const createdAtletIdRef = useRef<string | undefined>(undefined);
@@ -123,13 +101,6 @@ export function AtletFormPage() {
       .get(`/atlet/${id}`)
       .then((res) => {
         const a = res.data;
-        const caborTambahan: CaborLainItem[] = (a.caborTambahan ?? []).map(
-          (c: { cabangOlahragaId: string; nomorIndukAtlet?: string; nomorRegistrasi?: string }) => ({
-            cabangOlahragaId: c.cabangOlahragaId,
-            nomorIndukAtlet: c.nomorIndukAtlet ?? "",
-            nomorRegistrasi: c.nomorRegistrasi ?? "",
-          }),
-        );
         setForm({
           nomorIndukAtlet: a.nomorIndukAtlet ?? "",
           nomorRegistrasi: a.nomorRegistrasi ?? "",
@@ -141,7 +112,6 @@ export function AtletFormPage() {
           nomorHp: a.nomorHp ?? "",
           email: a.email ?? "",
           cabangOlahragaId: a.cabangOlahragaId ?? "",
-          cabangOlahragaLain: caborTambahan,
           statusAtlet: a.statusAtlet ?? "ACTIVE",
           tanggalCedera: a.tanggalCedera ? a.tanggalCedera.slice(0, 10) : "",
           keteranganCedera: a.keteranganCedera ?? "",
@@ -149,41 +119,10 @@ export function AtletFormPage() {
           pendidikan: a.pendidikan ?? "",
           pekerjaan: a.pekerjaan ?? "",
         });
-        if (caborTambahan.length > 0) setShowCaborTambahan(true);
       })
       .catch(() => setError("Gagal memuat data atlet."))
       .finally(() => setLoading(false));
   }, [id]);
-
-  function toggleCaborLain(caborId: string, checked: boolean) {
-    setForm((f) => ({
-      ...f,
-      cabangOlahragaLain: checked
-        ? [...f.cabangOlahragaLain, { cabangOlahragaId: caborId, nomorIndukAtlet: "", nomorRegistrasi: "" }]
-        : f.cabangOlahragaLain.filter((c) => c.cabangOlahragaId !== caborId),
-    }));
-  }
-
-  function stageDoc(type: RegistrationDocType, file: File) {
-    if (file.size > MAX_DOC_SIZE_MB * 1024 * 1024) {
-      toast.error(`Ukuran file terlalu besar (maks. ${MAX_DOC_SIZE_MB} MB).`);
-      return;
-    }
-    setPendingDocs((d) => ({ ...d, [type]: file }));
-  }
-
-  function removeDoc(type: RegistrationDocType) {
-    setPendingDocs((d) => { const n = { ...d }; delete n[type]; return n; });
-  }
-
-  function updateCaborLainField(caborId: string, field: "nomorIndukAtlet" | "nomorRegistrasi", value: string) {
-    setForm((f) => ({
-      ...f,
-      cabangOlahragaLain: f.cabangOlahragaLain.map((c) =>
-        c.cabangOlahragaId === caborId ? { ...c, [field]: value } : c,
-      ),
-    }));
-  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -201,7 +140,6 @@ export function AtletFormPage() {
         nomorHp: form.nomorHp || undefined,
         email: form.email || undefined,
         cabangOlahragaId: form.cabangOlahragaId || undefined,
-        cabangOlahragaLain: form.cabangOlahragaLain,
         statusAtlet: form.statusAtlet,
         // null (not undefined) so emptying a field actually clears the stored value.
         tanggalCedera: form.statusAtlet === "INJURED" ? form.tanggalCedera || null : null,
@@ -224,22 +162,6 @@ export function AtletFormPage() {
           atletId = res.data.id as string;
           createdAtletIdRef.current = atletId;
         }
-        // Upload staged documents; drop each from pendingDocs as it succeeds so
-        // a retry only uploads the remainder.
-        const pendingEntries = Object.entries(pendingDocs) as [RegistrationDocType, File][];
-        for (const [type, file] of pendingEntries) {
-          const fd = new FormData();
-          fd.append("file", file);
-          fd.append("type", type);
-          await api.post(`/atlet/${atletId}/documents`, fd, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
-          setPendingDocs((d) => {
-            const n = { ...d };
-            delete n[type];
-            return n;
-          });
-        }
         navigate(`/atlet/${atletId}`);
       }
     } catch (err) {
@@ -252,8 +174,6 @@ export function AtletFormPage() {
   if (loading) {
     return <Card className="text-sm text-neutral-500">Memuat data...</Card>;
   }
-
-  const lainOptions = cabors.filter((c) => c.id !== form.cabangOlahragaId);
 
   return (
     <div>
@@ -418,61 +338,6 @@ export function AtletFormPage() {
                 />
               </Field>
             </div>
-
-            {lainOptions.length > 0 && (
-              <Field label="Cabang Olahraga Tambahan">
-                <label className="mb-2 flex items-center gap-2 text-sm text-neutral-700">
-                  <input
-                    type="checkbox"
-                    checked={showCaborTambahan}
-                    onChange={(e) => {
-                      setShowCaborTambahan(e.target.checked);
-                      if (!e.target.checked) setForm((f) => ({ ...f, cabangOlahragaLain: [] }));
-                    }}
-                  />
-                  Atlet ini juga berkompetisi di cabang olahraga lain
-                </label>
-                {showCaborTambahan && (
-                  <div className="ml-1 space-y-3">
-                    {lainOptions.map((c) => {
-                      const selected = form.cabangOlahragaLain.find((x) => x.cabangOlahragaId === c.id);
-                      return (
-                        <div key={c.id} className="rounded-md border border-neutral-200 p-3">
-                          <label className="flex items-center gap-2 text-sm font-medium text-neutral-700">
-                            <input
-                              type="checkbox"
-                              checked={Boolean(selected)}
-                              onChange={(e) => toggleCaborLain(c.id, e.target.checked)}
-                            />
-                            {c.nama}
-                          </label>
-                          {selected && (
-                            <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                              <Field label="Nomor Induk Atlet" htmlFor={`nia-${c.id}`}>
-                                <Input
-                                  id={`nia-${c.id}`}
-                                  value={selected.nomorIndukAtlet}
-                                  onChange={(e) => updateCaborLainField(c.id, "nomorIndukAtlet", e.target.value)}
-                                  placeholder="Opsional"
-                                />
-                              </Field>
-                              <Field label="Nomor Registrasi" htmlFor={`nr-${c.id}`}>
-                                <Input
-                                  id={`nr-${c.id}`}
-                                  value={selected.nomorRegistrasi}
-                                  onChange={(e) => updateCaborLainField(c.id, "nomorRegistrasi", e.target.value)}
-                                  placeholder="Opsional"
-                                />
-                              </Field>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </Field>
-            )}
           </section>
 
           <section className="space-y-4">
@@ -502,46 +367,6 @@ export function AtletFormPage() {
               </Field>
             </div>
           </section>
-
-          {!isEdit && (
-            <section className="space-y-3">
-              <h2 className="text-sm font-semibold text-neutral-900">
-                Dokumen Registrasi
-                <span className="ml-1.5 text-xs font-normal text-neutral-500">(semua opsional, maks. {MAX_DOC_SIZE_MB} MB)</span>
-              </h2>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {REGISTRATION_DOCS.map(({ type, label }) => {
-                  const file = pendingDocs[type];
-                  return (
-                    <div
-                      key={type}
-                      className={`relative flex flex-col gap-2 rounded-lg border p-3 text-sm ${
-                        file
-                          ? "border-success bg-success/5"
-                          : "border-neutral-200 bg-neutral-50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {file ? (
-                          <CheckCircle2 size={16} className="shrink-0 text-success" />
-                        ) : (
-                          <XCircle size={16} className="shrink-0 text-neutral-300" />
-                        )}
-                        <span className="font-medium text-neutral-800">{label}</span>
-                      </div>
-                      {/* Revisi 2026-07-18: drag & drop with preview for every upload. */}
-                      <DropZone
-                        accept=".pdf,image/*"
-                        value={file ?? null}
-                        onChange={(f) => (f ? stageDoc(type, f) : removeDoc(type))}
-                        sublabel={`PDF atau gambar, maks. ${MAX_DOC_SIZE_MB} MB`}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
 
           {error && <p className="text-sm text-danger">{error}</p>}
 

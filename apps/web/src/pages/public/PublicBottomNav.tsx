@@ -1,12 +1,13 @@
 import { NavLink } from "react-router-dom";
 import { motion } from "framer-motion";
 import { BarChart3, CalendarDays, Home, Medal, Newspaper } from "lucide-react";
+import { BERITA_ENABLED } from "../../lib/featureFlags";
 
 const ITEMS = [
   { to: "/", label: "Beranda", icon: Home, end: true },
   { to: "/data", label: "Data", icon: BarChart3, end: false },
   { to: "/cabang-olahraga", label: "Cabor", icon: Medal, end: false },
-  { to: "/berita", label: "Berita", icon: Newspaper, end: false },
+  ...(BERITA_ENABLED ? [{ to: "/berita", label: "Berita", icon: Newspaper, end: false }] : []),
   { to: "/event", label: "Kalender", icon: CalendarDays, end: false },
 ];
 

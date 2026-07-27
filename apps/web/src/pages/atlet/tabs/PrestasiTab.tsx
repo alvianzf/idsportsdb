@@ -1,5 +1,15 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { FileText, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Download,
+  FileText,
+  ImageIcon,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import {
   COMPETITION_LEVEL_CHOICES,
@@ -11,7 +21,7 @@ import {
   type Medal,
 } from "@inasportdb/shared-types";
 import { Card, Button, Badge, DropZone, Field, Input, SearchInput, Select, Modal } from "../../../components/ui";
-import { api, resolveFileUrl } from "../../../lib/api";
+import { api, resolveEmbedUrl, resolveFileUrl } from "../../../lib/api";
 import { confirmAction } from "../../../lib/confirm";
 
 interface PrestasiSertifikat {
@@ -58,6 +68,33 @@ const MEDAL_TONE: Record<Medal, "gold" | "silver" | "bronze" | "neutral"> = {
   NONE: "neutral",
 };
 
+function isImageUrl(url: string) {
+  return /\.(png|jpe?g|gif|webp|svg)$/i.test(url);
+}
+
+/**
+ * Certificates of one prestasi as uniform rows — the legacy single
+ * `sertifikatUrl` first, then the multi-upload `sertifikats`. `key` is unique
+ * across prestasi so one expanded row doesn't open its twin elsewhere; `id` is
+ * what the delete endpoint expects ("legacy" for the pre-2026-07-18 column).
+ */
+function sertifikatList(p: Prestasi) {
+  const rows: { key: string; id: string; label: string; fileUrl: string; uploadedAt: string | null }[] = [];
+  if (p.sertifikatUrl) {
+    rows.push({ key: `${p.id}-legacy`, id: "legacy", label: "Sertifikat", fileUrl: p.sertifikatUrl, uploadedAt: null });
+  }
+  p.sertifikats.forEach((s, i) => {
+    rows.push({
+      key: `${p.id}-${s.id}`,
+      id: s.id,
+      label: `Sertifikat ${p.sertifikatUrl ? i + 2 : i + 1}`,
+      fileUrl: s.fileUrl,
+      uploadedAt: s.uploadedAt,
+    });
+  });
+  return rows;
+}
+
 function extractError(err: unknown): string {
   const data = (err as { response?: { data?: { error?: unknown } } }).response?.data?.error;
   if (typeof data === "string") return data;
@@ -90,6 +127,8 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
   const [certFile, setCertFile] = useState<File | null>(null);
   // Autocomplete suggestions for the custom "Lainnya" tingkat (distinct DB values).
   const [tingkatSuggestions, setTingkatSuggestions] = useState<string[]>([]);
+  // Which dokumen pendukung row is expanded for inline preview (revisi 2026-07-27).
+  const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!modalOpen) return;
@@ -233,93 +272,120 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
         <p className="text-sm text-neutral-500">Belum ada data prestasi.</p>
       ) : (
         <ul className="divide-y divide-neutral-100">
-          {items.map((p) => (
-            <li key={p.id} className="flex items-center justify-between gap-3 py-3 text-sm">
-              <div>
-                <p className="font-medium text-neutral-900">{p.namaKejuaraan}</p>
-                <p className="text-neutral-500">
-                  {competitionLevelLabel(p.tingkatKejuaraan, p.tingkatLainnya)} &middot; {p.tahun}
-                  {p.peringkat ? ` · Peringkat ${p.peringkat}` : ""}
-                </p>
-                {(p.sertifikatUrl || p.sertifikats.length > 0) && (
-                  <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                    {p.sertifikatUrl && (
-                      <span className="inline-flex items-center gap-1 text-xs">
-                        <a
-                          href={resolveFileUrl(p.sertifikatUrl)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-primary hover:underline"
+          {items.map((p) => {
+            const docs = sertifikatList(p);
+            return (
+              <li key={p.id} className="py-3 text-sm">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-neutral-900">{p.namaKejuaraan}</p>
+                    <p className="text-neutral-500">
+                      {competitionLevelLabel(p.tingkatKejuaraan, p.tingkatLainnya)} &middot; {p.tahun}
+                      {p.peringkat ? ` \u00b7 Peringkat ${p.peringkat}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Badge tone={MEDAL_TONE[p.medali]}>{MEDAL_LABELS[p.medali]}</Badge>
+                    {canManage && (
+                      <>
+                        <button
+                          onClick={() => setUploadTarget(p)}
+                          aria-label="Unggah sertifikat"
+                          title="Unggah sertifikat"
+                          disabled={uploadingId === p.id}
+                          className="rounded-md p-1.5 text-neutral-500 hover:bg-primary-50 hover:text-primary"
                         >
-                          <FileText size={14} /> Sertifikat
-                        </a>
-                        {canManage && (
-                          <button
-                            onClick={() => handleDeleteCert(p, { id: "legacy", fileUrl: p.sertifikatUrl!, uploadedAt: "" })}
-                            aria-label="Hapus sertifikat"
-                            className="text-neutral-400 hover:text-danger"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        )}
-                      </span>
+                          <Upload size={16} className={uploadingId === p.id ? "animate-pulse" : ""} />
+                        </button>
+                        <button
+                          onClick={() => openEdit(p)}
+                          aria-label="Ubah"
+                          className="rounded-md p-1.5 text-neutral-500 hover:bg-primary-50 hover:text-primary"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(p)}
+                          aria-label="Hapus"
+                          className="rounded-md p-1.5 text-neutral-500 hover:bg-primary-50 hover:text-primary"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </>
                     )}
-                    {p.sertifikats.map((s, i) => (
-                      <span key={s.id} className="inline-flex items-center gap-1 text-xs">
-                        <a
-                          href={resolveFileUrl(s.fileUrl)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-primary hover:underline"
-                        >
-                          <FileText size={14} /> Sertifikat {p.sertifikatUrl ? i + 2 : i + 1}
-                        </a>
-                        {canManage && (
-                          <button
-                            onClick={() => handleDeleteCert(p, s)}
-                            aria-label="Hapus sertifikat"
-                            className="text-neutral-400 hover:text-danger"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        )}
-                      </span>
-                    ))}
-                  </span>
+                  </div>
+                </div>
+
+                {/* Revisi 2026-07-27: dokumen pendukung tampil sebagai row tambahan
+                    di bawah prestasinya, bisa dibuka untuk pratinjau langsung. */}
+                {docs.length > 0 && (
+                  <ul className="mt-2 border-l-2 border-neutral-100 pl-3">
+                    {docs.map((d) => {
+                      const expanded = expandedDocId === d.key;
+                      const image = isImageUrl(d.fileUrl);
+                      return (
+                        <li key={d.key}>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 py-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedDocId(expanded ? null : d.key)}
+                              aria-expanded={expanded}
+                              className="flex min-w-0 flex-1 items-center gap-2 text-left text-neutral-700 hover:text-primary"
+                            >
+                              {expanded ? (
+                                <ChevronDown size={14} className="shrink-0 text-neutral-400" />
+                              ) : (
+                                <ChevronRight size={14} className="shrink-0 text-neutral-400" />
+                              )}
+                              {image ? (
+                                <ImageIcon size={14} className="shrink-0 text-neutral-400" />
+                              ) : (
+                                <FileText size={14} className="shrink-0 text-neutral-400" />
+                              )}
+                              <span className="truncate text-xs font-medium">{d.label}</span>
+                            </button>
+                            {d.uploadedAt && (
+                              <span className="shrink-0 text-xs text-neutral-400">
+                                {new Date(d.uploadedAt).toLocaleDateString("id-ID")}
+                              </span>
+                            )}
+                            <a
+                              href={resolveFileUrl(d.fileUrl)}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-label="Unduh"
+                              title="Unduh"
+                              className="shrink-0 rounded p-1 text-neutral-400 hover:text-primary"
+                            >
+                              <Download size={13} />
+                            </a>
+                            {canManage && (
+                              <button
+                                onClick={() => handleDeleteCert(p, { id: d.id, fileUrl: d.fileUrl, uploadedAt: d.uploadedAt ?? "" })}
+                                aria-label="Hapus sertifikat"
+                                className="shrink-0 rounded p-1 text-neutral-400 hover:text-danger"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
+                          {expanded && (
+                            <div className="mb-2 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
+                              {image ? (
+                                <img src={resolveFileUrl(d.fileUrl)} alt={d.label} className="max-h-96 w-full object-contain" />
+                              ) : (
+                                <iframe src={resolveEmbedUrl(d.fileUrl)} title={d.label} className="h-96 w-full" />
+                              )}
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
                 )}
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge tone={MEDAL_TONE[p.medali]}>{MEDAL_LABELS[p.medali]}</Badge>
-                {canManage && (
-                  <>
-                    <button
-                      onClick={() => setUploadTarget(p)}
-                      aria-label="Unggah sertifikat"
-                      title="Unggah sertifikat"
-                      disabled={uploadingId === p.id}
-                      className="rounded-md p-1.5 text-neutral-500 hover:bg-primary-50 hover:text-primary"
-                    >
-                      <Upload size={16} className={uploadingId === p.id ? "animate-pulse" : ""} />
-                    </button>
-                    <button
-                      onClick={() => openEdit(p)}
-                      aria-label="Ubah"
-                      className="rounded-md p-1.5 text-neutral-500 hover:bg-primary-50 hover:text-primary"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(p)}
-                      aria-label="Hapus"
-                      className="rounded-md p-1.5 text-neutral-500 hover:bg-primary-50 hover:text-primary"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </>
-                )}
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
 
