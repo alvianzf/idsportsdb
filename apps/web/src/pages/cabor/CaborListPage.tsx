@@ -140,7 +140,12 @@ export function CaborListPage() {
       key: "sekretariat",
       label: "Sekretariat",
       getValue: (c) => c.sekretariat ?? "",
-      render: (c) => <span className="text-neutral-600">{c.sekretariat ?? "-"}</span>,
+      // Revisi 2026-07-27: alamat sekretariat kini multi-baris — dipangkas di tabel.
+      render: (c) => (
+        <span className="line-clamp-2 max-w-xs text-neutral-600" title={c.sekretariat ?? undefined}>
+          {c.sekretariat ?? "-"}
+        </span>
+      ),
     },
     {
       key: "jumlahAtlet",

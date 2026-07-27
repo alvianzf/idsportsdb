@@ -16,6 +16,8 @@ import {
   uploadDocumentSchema,
 } from "./atlet.schema.js";
 import { atletInCaborFilter, atletNotDeleted, caborTambahanInclude, canAccessAtlet } from "./atlet.service.js";
+import { biodataFilename, drawBiodataPdf } from "./atlet.biodata.js";
+import { streamPdf } from "../../lib/pdf.js";
 import { emit } from "../../lib/socket.js";
 import { writeAudit } from "../../lib/audit.js";
 
@@ -174,6 +176,49 @@ atletRouter.get(
       return;
     }
     res.json(atlet);
+  }),
+);
+
+/**
+ * GET /atlet/:id/biodata.pdf — biodata sheet for KONI (revisi 2026-07-27).
+ * Same read access as the detail endpoint; an ATLET may only fetch their own.
+ */
+atletRouter.get(
+  "/:id/biodata.pdf",
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA", "ATLET"]),
+  asyncHandler(async (req, res) => {
+    const atlet = await prisma.atlet.findFirst({
+      where: { id: req.params.id, ...atletNotDeleted },
+      include: {
+        cabangOlahraga: caborSummary,
+        ...caborTambahanInclude,
+        documents: { orderBy: { uploadedAt: "desc" } },
+        prestasis: { orderBy: [{ tahun: "desc" }, { namaKejuaraan: "asc" }] },
+      },
+    });
+    if (!atlet) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (!canAccessAtlet(req, atlet)) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: { fullName: true, email: true },
+    });
+
+    streamPdf(
+      res,
+      biodataFilename(atlet.namaLengkap),
+      (doc) => drawBiodataPdf(doc, atlet),
+      {
+        downloadedBy: user ? `${user.fullName} (${user.email})` : "-",
+        redFooter: true,
+      },
+    );
   }),
 );
 

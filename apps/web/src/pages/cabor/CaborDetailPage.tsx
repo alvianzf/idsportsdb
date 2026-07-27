@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, FileText, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, FileText, Mail, MapPin, Pencil, Phone, Plus, Trash2, User, type LucideIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   JABATAN_PENGURUS,
@@ -19,8 +19,12 @@ interface CaborDetail {
   nama: string;
   ketuaCabor: string | null;
   sekretariat: string | null;
+  teleponSekretariat: string | null;
+  emailSekretariat: string | null;
+  narahubungSekretariat: string | null;
   organisasiNasional: string | null;
   logoOrganisasiUrl: string | null;
+  isActive: boolean;
   jumlahAtlet: number;
   jumlahPelatih: number;
   pengurus: Pengurus[];
@@ -66,6 +70,34 @@ const emptyPengurus: PengurusForm = {
   kontak: "",
   reportsToId: "",
 };
+
+function InfoItem({ label, value }: { label: string; value: string | null }) {
+  return (
+    <div>
+      <dt className="text-xs uppercase tracking-wide text-neutral-400">{label}</dt>
+      <dd className="mt-0.5 font-medium text-neutral-900">{value || "-"}</dd>
+    </div>
+  );
+}
+
+/** Labelled contact line; renders a muted dash when the value is empty. */
+function ContactRow({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: LucideIcon;
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <li className="flex items-start gap-3">
+      <Icon size={15} className="mt-0.5 shrink-0 text-neutral-400" />
+      <span className="w-24 shrink-0 text-neutral-500">{label}</span>
+      <span className="min-w-0 flex-1 text-neutral-900">{children ?? <span className="text-neutral-400">-</span>}</span>
+    </li>
+  );
+}
 
 /** Module E — Cabang Olahraga detail + pengurus management. See specs/003-cabang-olahraga/spec.md, specs/006-pengurus-cabor/spec.md. */
 export function CaborDetailPage() {
@@ -231,6 +263,8 @@ export function CaborDetailPage() {
         }
       />
 
+      {/* Revisi 2026-07-27: seluruh data cabor ditampilkan; identitas dan data
+          sekretariat dipisah jadi dua blok agar lebih mudah dibaca. */}
       <Card className="mb-4">
         <div className="flex items-start gap-4">
           {/* Org logo */}
@@ -241,31 +275,53 @@ export function CaborDetailPage() {
               className="h-20 w-20 shrink-0 rounded-lg border border-neutral-200 object-contain p-1"
             />
           )}
-          <dl className="grid flex-1 gap-3 text-sm md:grid-cols-2">
-            {cabor.organisasiNasional && (
-              <div className="md:col-span-2">
-                <dt className="text-neutral-500">Organisasi Nasional</dt>
-                <dd className="font-semibold text-neutral-900">{cabor.organisasiNasional}</dd>
-              </div>
-            )}
-            <div>
-              <dt className="text-neutral-500">Ketua Cabor</dt>
-              <dd className="font-medium text-neutral-900">{cabor.ketuaCabor ?? "-"}</dd>
-            </div>
-            <div>
-              <dt className="text-neutral-500">Sekretariat</dt>
-              <dd className="font-medium text-neutral-900">{cabor.sekretariat ?? "-"}</dd>
-            </div>
-            <div>
-              <dt className="text-neutral-500">Jumlah Atlet</dt>
-              <dd className="font-medium text-neutral-900">{cabor.jumlahAtlet}</dd>
-            </div>
-            <div>
-              <dt className="text-neutral-500">Jumlah Pelatih</dt>
-              <dd className="font-medium text-neutral-900">{cabor.jumlahPelatih}</dd>
-            </div>
+          <dl className="grid flex-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            <InfoItem label="Organisasi Nasional" value={cabor.organisasiNasional} />
+            <InfoItem label="Ketua Cabor" value={cabor.ketuaCabor} />
+            <InfoItem
+              label="Status"
+              value={cabor.isActive ? "Aktif" : "Nonaktif"}
+            />
+            <InfoItem label="Jumlah Atlet" value={`${cabor.jumlahAtlet} atlet`} />
+            <InfoItem label="Jumlah Pelatih" value={`${cabor.jumlahPelatih} pelatih`} />
+            <InfoItem label="Jumlah Pengurus" value={`${cabor.pengurus.length} pengurus`} />
           </dl>
         </div>
+      </Card>
+
+      <Card className="mb-4">
+        <h2 className="mb-3 text-sm font-semibold text-neutral-900">Data Sekretariat</h2>
+        {!cabor.sekretariat &&
+        !cabor.teleponSekretariat &&
+        !cabor.emailSekretariat &&
+        !cabor.narahubungSekretariat ? (
+          <p className="text-sm text-neutral-500">Belum ada data sekretariat.</p>
+        ) : (
+          <ul className="space-y-2.5 text-sm">
+            <ContactRow icon={MapPin} label="Alamat">
+              {cabor.sekretariat ? (
+                <span className="whitespace-pre-line">{cabor.sekretariat}</span>
+              ) : null}
+            </ContactRow>
+            <ContactRow icon={Phone} label="Telepon">
+              {cabor.teleponSekretariat ? (
+                <a href={`tel:${cabor.teleponSekretariat}`} className="text-primary hover:underline">
+                  {cabor.teleponSekretariat}
+                </a>
+              ) : null}
+            </ContactRow>
+            <ContactRow icon={Mail} label="Email">
+              {cabor.emailSekretariat ? (
+                <a href={`mailto:${cabor.emailSekretariat}`} className="text-primary hover:underline">
+                  {cabor.emailSekretariat}
+                </a>
+              ) : null}
+            </ContactRow>
+            <ContactRow icon={User} label="Narahubung">
+              {cabor.narahubungSekretariat ?? null}
+            </ContactRow>
+          </ul>
+        )}
       </Card>
 
       <Card>

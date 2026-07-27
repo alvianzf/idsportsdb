@@ -1,10 +1,18 @@
 import { z } from "zod";
 
+// Optional text field that can also be cleared — the form sends null for an
+// empty input, which Prisma writes back as NULL.
+const clearableText = z.string().trim().nullable().optional();
+
 export const createCaborSchema = z.object({
   nama: z.string().min(1),
-  ketuaCabor: z.string().optional(),
-  sekretariat: z.string().optional(),
-  organisasiNasional: z.string().optional(),
+  ketuaCabor: clearableText,
+  // Revisi 2026-07-27: data sekretariat — `sekretariat` menyimpan alamatnya.
+  sekretariat: clearableText,
+  teleponSekretariat: clearableText,
+  emailSekretariat: clearableText,
+  narahubungSekretariat: clearableText,
+  organisasiNasional: clearableText,
 });
 
 export const updateCaborSchema = createCaborSchema.partial();

@@ -150,6 +150,14 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   SERTIFIKAT_PRESTASI: "Sertifikat Prestasi",
 };
 
+/**
+ * Revisi 2026-07-27: atlet no longer submit personal identity papers — only a
+ * pas foto and prestasi certificates ("dokumen pendukung"). KTP/KK/Akta stay in
+ * `DOCUMENT_TYPES` so documents uploaded before this change still render.
+ */
+export const SUPPORTING_DOCUMENT_TYPES = ["PAS_FOTO", "SERTIFIKAT_PRESTASI"] as const;
+export type SupportingDocumentType = (typeof SUPPORTING_DOCUMENT_TYPES)[number];
+
 /** Display label for a prestasi tingkat, preferring the custom "Lainnya" text. */
 export function competitionLevelLabel(
   tingkat: CompetitionLevel,
@@ -212,7 +220,10 @@ export type BatamKecamatan = (typeof BATAM_KECAMATAN)[number];
 export const JABATAN_PENGURUS = [
   "KETUA_UMUM",
   "SEKRETARIS_UMUM",
+  // Revisi 2026-07-27: wakil sekretaris/bendahara umum, tepat di bawah atasannya.
+  "WAKIL_SEKRETARIS_UMUM",
   "BENDAHARA_UMUM",
+  "WAKIL_BENDAHARA_UMUM",
   "WAKIL_KETUA_UMUM",
   "KETUA_HARIAN",
   "WAKIL_KETUA",
@@ -227,7 +238,9 @@ export type JabatanPengurus = (typeof JABATAN_PENGURUS)[number];
 export const JABATAN_PENGURUS_LABELS: Record<JabatanPengurus, string> = {
   KETUA_UMUM: "Ketua Umum",
   SEKRETARIS_UMUM: "Sekretaris Umum",
+  WAKIL_SEKRETARIS_UMUM: "Wakil Sekretaris Umum",
   BENDAHARA_UMUM: "Bendahara Umum",
+  WAKIL_BENDAHARA_UMUM: "Wakil Bendahara Umum",
   WAKIL_KETUA_UMUM: "Wakil Ketua Umum",
   KETUA_HARIAN: "Ketua Harian",
   WAKIL_KETUA: "Wakil Ketua",
