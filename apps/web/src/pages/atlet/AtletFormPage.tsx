@@ -252,7 +252,7 @@ export function AtletFormPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <section className="space-y-4">
             <h2 className="text-sm font-semibold text-neutral-900">Identitas</h2>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2">
               <Field label="Nama Lengkap" required htmlFor="namaLengkap">
                 <Input
                   id="namaLengkap"
@@ -300,7 +300,7 @@ export function AtletFormPage() {
 
           <section className="space-y-4">
             <h2 className="text-sm font-semibold text-neutral-900">Alamat & Kontak</h2>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2">
               <Field label="Alamat" required htmlFor="alamat">
                 <Input
                   id="alamat"
@@ -339,7 +339,7 @@ export function AtletFormPage() {
 
           <section className="space-y-4">
             <h2 className="text-sm font-semibold text-neutral-900">Cabang Olahraga & Status</h2>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2">
               {isUnscopedAdmin ? (
                 <Field label="Cabang Olahraga (Utama)" required htmlFor="cabangOlahragaId">
                   <Combobox
@@ -412,7 +412,7 @@ export function AtletFormPage() {
 
           <section className="space-y-4">
             <h2 className="text-sm font-semibold text-neutral-900">Lainnya</h2>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2">
               <Field label="Pendidikan Terakhir" htmlFor="pendidikan">
                 <Select
                   id="pendidikan"
@@ -475,7 +475,7 @@ export function AtletFormPage() {
                           Hapus
                         </Button>
                       </div>
-                      <div className="grid gap-4 md:grid-cols-2">
+                      <div className="grid gap-4 lg:grid-cols-2">
                         <Field label="Nama Kejuaraan" required htmlFor={`namaKejuaraan-${index}`}>
                           <Input
                             id={`namaKejuaraan-${index}`}
@@ -534,7 +534,7 @@ export function AtletFormPage() {
                             onChange={(e) => updatePrestasi(index, { peringkat: e.target.value })}
                           />
                         </Field>
-                        <div className="md:col-span-2">
+                        <div className="lg:col-span-2">
                           <Field label="Sertifikat" htmlFor={`sertifikat-${index}`}>
                             <DropZone
                               accept=".pdf,image/*"

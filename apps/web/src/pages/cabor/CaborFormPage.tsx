@@ -156,7 +156,7 @@ export function CaborFormPage() {
                 onChange={(e) => setForm((f) => ({ ...f, sekretariat: e.target.value }))}
               />
             </Field>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2">
               <Field label="Telepon Sekretariat" htmlFor="teleponSekretariat">
                 <Input
                   id="teleponSekretariat"
