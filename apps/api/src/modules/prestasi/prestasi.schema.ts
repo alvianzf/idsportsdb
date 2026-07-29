@@ -35,6 +35,8 @@ export const updatePrestasiSchema = prestasiFields.partial();
 
 export const listPrestasiQuerySchema = z.object({
   cabor: z.string().optional(),
+  // Matches nama atlet or nama kejuaraan — both are visible columns in the list.
+  search: z.string().trim().min(1).optional(),
   tahun: z.coerce.number().int().optional(),
   medali: z.enum(MEDALS).optional(),
   tingkat: z.enum(COMPETITION_LEVELS).optional(),

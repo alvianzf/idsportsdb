@@ -56,7 +56,9 @@ export function PrestasiListPage() {
   const [total, setTotal] = useState(0);
   const [cabor, setCabor] = useState("");
   const [tahun, setTahun] = useState("");
-  const [debouncedTahun, setDebouncedTahun] = useState("");
+  const [tahunOptions, setTahunOptions] = useState<number[]>([]);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [tingkat, setTingkat] = useState("");
   const [medali, setMedali] = useState("");
   const [page, setPage] = useState(1);
@@ -71,11 +73,15 @@ export function PrestasiListPage() {
     api.get<CaborOption[]>("/cabor").then((res) => setCabors(res.data));
   }, [isUnscopedAdmin]);
 
-  // Debounce the year input so typing fires one request, not one per keystroke.
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedTahun(tahun), 250);
+    api.get<number[]>("/prestasi/tahun").then((res) => setTahunOptions(res.data));
+  }, []);
+
+  // Debounce the search box so typing fires one request, not one per keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 250);
     return () => clearTimeout(timer);
-  }, [tahun]);
+  }, [search]);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,7 +91,8 @@ export function PrestasiListPage() {
       .get("/prestasi", {
         params: {
           cabor: cabor || undefined,
-          tahun: debouncedTahun || undefined,
+          search: debouncedSearch || undefined,
+          tahun: tahun || undefined,
           tingkat: tingkat || undefined,
           medali: medali || undefined,
           page,
@@ -107,7 +114,7 @@ export function PrestasiListPage() {
     return () => {
       cancelled = true;
     };
-  }, [cabor, debouncedTahun, tingkat, medali, page, reloadKey]);
+  }, [cabor, debouncedSearch, tahun, tingkat, medali, page, reloadKey]);
 
   async function handleBulkDelete(ids: string[]) {
     const confirmed = await confirmAction({
@@ -193,37 +200,49 @@ export function PrestasiListPage() {
       <PageHeader title="Prestasi Atlet" description="Daftar prestasi atlet KONI Batam" />
 
       <Card className="mb-4 flex flex-col gap-2">
-        {isUnscopedAdmin && (
-          <Combobox
-            value={cabor}
-            onChange={(v) => { setPage(1); setCabor(v); }}
-            options={[{ value: "", label: "Semua Cabor" }, ...cabors.map((c) => ({ value: c.id, label: c.nama }))]}
-            placeholder="Semua Cabor"
-            className="w-full"
-          />
-        )}
-        <Select
-          value={tingkat}
-          onChange={(v) => { setPage(1); setTingkat(v); }}
-          options={[{ value: "", label: "Semua Tingkat" }, ...COMPETITION_LEVELS.map((l) => ({ value: l, label: COMPETITION_LEVEL_LABELS[l] }))]}
-          className="w-full"
-        />
-        <Select
-          value={medali}
-          onChange={(v) => { setPage(1); setMedali(v); }}
-          options={[{ value: "", label: "Semua Medali" }, ...MEDALS.map((m) => ({ value: m, label: MEDAL_LABELS[m] }))]}
-          className="w-full"
-        />
         <Input
-          type="number"
-          placeholder="Tahun"
-          value={tahun}
+          placeholder="Cari nama atlet atau kejuaraan"
+          value={search}
           onChange={(e) => {
             setPage(1);
-            setTahun(e.target.value);
+            setSearch(e.target.value);
           }}
-          className="w-28"
+          className="w-full"
         />
+        {/*
+          Dropdowns share one row from lg (desktop + iPad landscape). At iPad
+          portrait (768px) four across leaves ~180px each, too tight for labels
+          like "Pekan Olahraga Provinsi (Porprov)", so md pairs them 2x2.
+        */}
+        <div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center lg:flex-nowrap">
+          {isUnscopedAdmin && (
+            <Combobox
+              value={cabor}
+              onChange={(v) => { setPage(1); setCabor(v); }}
+              options={[{ value: "", label: "Semua Cabor" }, ...cabors.map((c) => ({ value: c.id, label: c.nama }))]}
+              placeholder="Semua Cabor"
+              className="w-full md:min-w-0 md:flex-1 md:basis-[calc(50%-0.25rem)] lg:basis-auto"
+            />
+          )}
+          <Select
+            value={tingkat}
+            onChange={(v) => { setPage(1); setTingkat(v); }}
+            options={[{ value: "", label: "Semua Tingkat" }, ...COMPETITION_LEVELS.map((l) => ({ value: l, label: COMPETITION_LEVEL_LABELS[l] }))]}
+            className="w-full md:min-w-0 md:flex-1 md:basis-[calc(50%-0.25rem)] lg:basis-auto"
+          />
+          <Select
+            value={medali}
+            onChange={(v) => { setPage(1); setMedali(v); }}
+            options={[{ value: "", label: "Semua Medali" }, ...MEDALS.map((m) => ({ value: m, label: MEDAL_LABELS[m] }))]}
+            className="w-full md:min-w-0 md:flex-1 md:basis-[calc(50%-0.25rem)] lg:basis-auto"
+          />
+          <Select
+            value={tahun}
+            onChange={(v) => { setPage(1); setTahun(v); }}
+            options={[{ value: "", label: "Semua Tahun" }, ...tahunOptions.map((y) => ({ value: String(y), label: String(y) }))]}
+            className="w-full md:min-w-0 md:flex-1 md:basis-[calc(50%-0.25rem)] lg:basis-auto"
+          />
+        </div>
       </Card>
 
       {error && <Card className="text-sm text-danger">Gagal memuat data.</Card>}
