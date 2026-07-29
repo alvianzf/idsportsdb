@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  COMPETITION_LEVELS,
+  COMPETITION_LEVEL_CHOICES,
   COMPETITION_LEVEL_LABELS,
   MEDALS,
   MEDAL_LABELS,
@@ -35,7 +35,7 @@ export function PrestasiReportPage() {
           <Select
             value={tingkat}
             onChange={(v) => setTingkat(v)}
-            options={[{ value: "", label: "Semua Tingkat" }, ...COMPETITION_LEVELS.map((l) => ({ value: l, label: COMPETITION_LEVEL_LABELS[l] }))]}
+            options={[{ value: "", label: "Semua Tingkat" }, ...COMPETITION_LEVEL_CHOICES.map((l) => ({ value: l, label: COMPETITION_LEVEL_LABELS[l] }))]}
             className="w-full"
           />
           <Select

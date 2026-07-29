@@ -77,7 +77,9 @@ export const EVENT_LEVEL_LABELS: Record<EventLevel, string> = {
 export const EDUCATION_LEVELS = ["Pendidikan Tinggi", "SMA/SMK/MA/MAK", "SMP/MTs", "SD/MI"] as const;
 export type EducationLevel = (typeof EDUCATION_LEVELS)[number];
 
-// Revisi 2026-07-18 (client spec F): tingkat kejuaraan offered for new prestasi records.
+// Revisi 2026-07-18 (client spec F): tingkat kejuaraan offered for new prestasi
+// records. Revisi 2026-07-29: trimmed to the client's list — Porda, Popda,
+// Porkot, Event Khusus, and Lainnya are no longer offered.
 export const COMPETITION_LEVEL_CHOICES = [
   "OLIMPIADE",
   "ASIAN_GAMES",
@@ -86,18 +88,19 @@ export const COMPETITION_LEVEL_CHOICES = [
   "BK_PON",
   "PORWIL",
   "PORPROV",
+  "KEJURNAS",
+  "KEJURDA",
+] as const;
+
+// All valid values: the offered list plus levels retired from the form but kept
+// so rows already recorded with them still validate and render their label.
+export const COMPETITION_LEVELS = [
+  ...COMPETITION_LEVEL_CHOICES,
   "PORDA",
   "POPDA",
   "PORKOT",
-  "KEJURNAS",
-  "KEJURDA",
   "EVENT_KHUSUS",
   "LAINNYA",
-] as const;
-
-// All valid values: the championship list plus legacy levels kept for existing rows.
-export const COMPETITION_LEVELS = [
-  ...COMPETITION_LEVEL_CHOICES,
   "KOTA",
   "PROVINSI",
   "NASIONAL",
