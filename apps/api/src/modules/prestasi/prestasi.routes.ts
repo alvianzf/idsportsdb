@@ -75,8 +75,6 @@ atletPrestasiRouter.post(
     const prestasi = await prisma.prestasi.create({
       data: {
         ...parsed.data,
-        // Custom tingkat text only applies to LAINNYA.
-        tingkatLainnya: parsed.data.tingkatKejuaraan === "LAINNYA" ? parsed.data.tingkatLainnya : null,
         atletId: req.params.atletId,
       },
     });
@@ -89,26 +87,6 @@ atletPrestasiRouter.post(
 /** Mounted at /api/v1/prestasi (specs/007-prestasi-atlet/spec.md §3). */
 export const prestasiRouter = Router();
 prestasiRouter.use(authenticate, scopeToCabor);
-
-// Revisi 2026-07-18: autocomplete for the custom "Lainnya" tingkat — distinct
-// values already stored, optionally filtered by ?q= while the user types.
-prestasiRouter.get(
-  "/tingkat-lainnya",
-  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA"]),
-  asyncHandler(async (req, res) => {
-    const q = typeof req.query.q === "string" ? req.query.q : undefined;
-    const rows = await prisma.prestasi.findMany({
-      where: {
-        tingkatLainnya: q ? { contains: q, mode: "insensitive" } : { not: null },
-      },
-      select: { tingkatLainnya: true },
-      distinct: ["tingkatLainnya"],
-      orderBy: { tingkatLainnya: "asc" },
-      take: 10,
-    });
-    res.json(rows.map((r) => r.tingkatLainnya).filter(Boolean));
-  }),
-);
 
 // Championship names already recorded, for autocomplete on the prestasi form.
 // Editions like "Porprov Kepri 2026" live in this free-text field rather than a
@@ -220,15 +198,11 @@ prestasiRouter.patch(
       return;
     }
 
-    // Custom tingkat text only applies to LAINNYA — clear it when the
-    // (effective) tingkat is anything else.
-    const effectiveTingkat = parsed.data.tingkatKejuaraan ?? prestasi.tingkatKejuaraan;
     try {
       const updated = await prisma.prestasi.update({
         where: { id: req.params.id },
         data: {
           ...parsed.data,
-          ...(effectiveTingkat !== "LAINNYA" ? { tingkatLainnya: null } : {}),
         },
       });
       emit("prestasi:change");

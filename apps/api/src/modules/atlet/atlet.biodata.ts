@@ -42,7 +42,6 @@ export interface BiodataAtlet {
   prestasis: {
     namaKejuaraan: string;
     tingkatKejuaraan: CompetitionLevel;
-    tingkatLainnya: string | null;
     tahun: number;
     medali: Medal;
     peringkat: number | null;
@@ -190,7 +189,7 @@ export function drawBiodataPdf(doc: PDFKit.PDFDocument, a: BiodataAtlet) {
     for (const p of a.prestasis) {
       const medal = p.medali === "NONE" ? null : `Medali ${MEDAL_LABELS[p.medali]}`;
       const detail = [
-        competitionLevelLabel(p.tingkatKejuaraan, p.tingkatLainnya),
+        competitionLevelLabel(p.tingkatKejuaraan),
         medal,
         p.peringkat ? `Peringkat ${p.peringkat}` : null,
       ]

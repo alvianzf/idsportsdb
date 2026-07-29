@@ -1,8 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import {
-  ChevronDown,
-  ChevronRight,
   Download,
+  Eye,
   FileText,
   ImageIcon,
   Pencil,
@@ -20,8 +19,8 @@ import {
   type CompetitionLevel,
   type Medal,
 } from "@inasportdb/shared-types";
-import { Card, Button, Badge, DropZone, Field, Input, SearchInput, Select, Modal } from "../../../components/ui";
-import { api, resolveEmbedUrl, resolveFileUrl } from "../../../lib/api";
+import { Card, Button, Badge, DropZone, Field, Input, Lightbox, SearchInput, Select, Modal } from "../../../components/ui";
+import { api, resolveFileUrl } from "../../../lib/api";
 import { confirmAction } from "../../../lib/confirm";
 
 interface PrestasiSertifikat {
@@ -34,7 +33,6 @@ interface Prestasi {
   id: string;
   namaKejuaraan: string;
   tingkatKejuaraan: CompetitionLevel;
-  tingkatLainnya: string | null;
   tahun: number;
   medali: Medal;
   peringkat: number | null;
@@ -46,7 +44,6 @@ interface Prestasi {
 interface PrestasiForm {
   namaKejuaraan: string;
   tingkatKejuaraan: CompetitionLevel;
-  tingkatLainnya: string;
   tahun: string;
   medali: Medal;
   peringkat: string;
@@ -55,7 +52,6 @@ interface PrestasiForm {
 const emptyForm: PrestasiForm = {
   namaKejuaraan: "",
   tingkatKejuaraan: "KEJURDA",
-  tingkatLainnya: "",
   tahun: String(new Date().getFullYear()),
   medali: "GOLD",
   peringkat: "",
@@ -125,18 +121,14 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   // Certificate staged in the create/edit modal, uploaded after the record saves.
   const [certFile, setCertFile] = useState<File | null>(null);
-  // Autocomplete suggestions for the custom "Lainnya" tingkat (distinct DB values).
-  const [tingkatSuggestions, setTingkatSuggestions] = useState<string[]>([]);
   const [kejuaraanSuggestions, setKejuaraanSuggestions] = useState<string[]>([]);
-  // Which dokumen pendukung row is expanded for inline preview (revisi 2026-07-27).
-  const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
+  // Which dokumen pendukung is open in the lightbox (revisi 2026-07-29): the key
+  // from `sertifikatList`, resolved to an index against every certificate on the
+  // page so the arrows can page across prestasi.
+  const [lightboxKey, setLightboxKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (!modalOpen) return;
-    api
-      .get<string[]>("/prestasi/tingkat-lainnya")
-      .then((res) => setTingkatSuggestions(res.data))
-      .catch(() => setTingkatSuggestions([]));
     api
       .get<string[]>("/prestasi/kejuaraan")
       .then((res) => setKejuaraanSuggestions(res.data))
@@ -165,7 +157,6 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
     setForm({
       namaKejuaraan: p.namaKejuaraan,
       tingkatKejuaraan: p.tingkatKejuaraan,
-      tingkatLainnya: p.tingkatLainnya ?? "",
       tahun: String(p.tahun),
       medali: p.medali,
       peringkat: p.peringkat != null ? String(p.peringkat) : "",
@@ -183,7 +174,6 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
       const payload = {
         namaKejuaraan: form.namaKejuaraan,
         tingkatKejuaraan: form.tingkatKejuaraan,
-        tingkatLainnya: form.tingkatKejuaraan === "LAINNYA" ? form.tingkatLainnya : undefined,
         tahun: Number(form.tahun),
         medali: form.medali,
         peringkat: form.peringkat ? Number(form.peringkat) : undefined,
@@ -214,6 +204,11 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
       setSaving(false);
     }
   }
+
+  const allDocs = (items ?? []).flatMap((p) =>
+    sertifikatList(p).map((d) => ({ key: d.key, label: `${p.namaKejuaraan} — ${d.label}`, fileUrl: d.fileUrl })),
+  );
+  const lightboxIndex = allDocs.findIndex((d) => d.key === lightboxKey);
 
   async function handleDelete(p: Prestasi) {
     if (!(await confirmAction({ text: `Hapus prestasi "${p.namaKejuaraan}"?` }))) return;
@@ -285,7 +280,7 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
                   <div className="min-w-0">
                     <p className="font-medium text-neutral-900">{p.namaKejuaraan}</p>
                     <p className="text-neutral-500">
-                      {competitionLevelLabel(p.tingkatKejuaraan, p.tingkatLainnya)} &middot; {p.tahun}
+                      {competitionLevelLabel(p.tingkatKejuaraan)} &middot; {p.tahun}
                       {p.peringkat ? ` \u00b7 Peringkat ${p.peringkat}` : ""}
                     </p>
                   </div>
@@ -326,22 +321,17 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
                 {docs.length > 0 && (
                   <ul className="mt-2 border-l-2 border-neutral-100 pl-3">
                     {docs.map((d) => {
-                      const expanded = expandedDocId === d.key;
                       const image = isImageUrl(d.fileUrl);
                       return (
                         <li key={d.key}>
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 py-1.5">
                             <button
                               type="button"
-                              onClick={() => setExpandedDocId(expanded ? null : d.key)}
-                              aria-expanded={expanded}
+                              onClick={() => setLightboxKey(d.key)}
+                              title="Lihat sertifikat"
                               className="flex min-w-0 flex-1 items-center gap-2 text-left text-neutral-700 hover:text-primary"
                             >
-                              {expanded ? (
-                                <ChevronDown size={14} className="shrink-0 text-neutral-400" />
-                              ) : (
-                                <ChevronRight size={14} className="shrink-0 text-neutral-400" />
-                              )}
+                              <Eye size={14} className="shrink-0 text-neutral-400" />
                               {image ? (
                                 <ImageIcon size={14} className="shrink-0 text-neutral-400" />
                               ) : (
@@ -374,15 +364,6 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
                               </button>
                             )}
                           </div>
-                          {expanded && (
-                            <div className="mb-2 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
-                              {image ? (
-                                <img src={resolveFileUrl(d.fileUrl)} alt={d.label} className="max-h-96 w-full object-contain" />
-                              ) : (
-                                <iframe src={resolveEmbedUrl(d.fileUrl)} title={d.label} className="h-96 w-full" />
-                              )}
-                            </div>
-                          )}
                         </li>
                       );
                     })}
@@ -462,20 +443,6 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
               </Field>
             </div>
 
-            {form.tingkatKejuaraan === "LAINNYA" && (
-              <Field label="Tingkat Lainnya" required htmlFor="tingkatLainnya">
-                <SearchInput
-                  id="tingkatLainnya"
-                  required
-                  showIcon={false}
-                  placeholder="Tulis tingkat kejuaraan"
-                  value={form.tingkatLainnya}
-                  onChange={(v) => setForm((f) => ({ ...f, tingkatLainnya: v }))}
-                  suggestions={tingkatSuggestions}
-                />
-              </Field>
-            )}
-
             {/* Revisi 2026-07-18: attach a certificate right here (full width). */}
             <Field label="Sertifikat" htmlFor="sertifikatFile">
               <DropZone
@@ -532,6 +499,16 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Revisi 2026-07-29: sertifikat dibuka di lightbox, tidak pindah halaman. */}
+      {lightboxIndex >= 0 && (
+        <Lightbox
+          items={allDocs}
+          index={lightboxIndex}
+          onIndexChange={(i) => setLightboxKey(allDocs[i].key)}
+          onClose={() => setLightboxKey(null)}
+        />
       )}
     </Card>
   );

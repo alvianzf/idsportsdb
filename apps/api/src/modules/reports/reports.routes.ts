@@ -381,7 +381,7 @@ reportsRouter.get(
       atlet: p.atlet.namaLengkap,
       cabor: p.atlet.cabangOlahraga.nama,
       kejuaraan: p.namaKejuaraan,
-      tingkat: competitionLevelLabel(p.tingkatKejuaraan, p.tingkatLainnya),
+      tingkat: competitionLevelLabel(p.tingkatKejuaraan),
       tahun: p.tahun,
       medali: MEDAL_LABELS[p.medali],
       peringkat: p.peringkat ?? "-",

@@ -67,11 +67,10 @@ enum EventLevel {
 // Revisi 2026-07-18 (client spec F — Data Prestasi Atlet): tingkat kejuaraan is
 // now a fixed championship list. KOTA/PROVINSI/NASIONAL/INTERNASIONAL are legacy
 // values kept for existing rows; new records pick from the championship list.
+// Revisi 2026-07-29: trimmed to the client's list (Modul F). Removed KOTA,
+// PROVINSI, NASIONAL, INTERNASIONAL, PORDA, POPDA, PORKOT, EVENT_KHUSUS, and
+// LAINNYA — no prestasi row used any of them.
 enum CompetitionLevel {
-  KOTA
-  PROVINSI
-  NASIONAL
-  INTERNASIONAL
   OLIMPIADE
   ASIAN_GAMES
   SEA_GAMES
@@ -79,13 +78,8 @@ enum CompetitionLevel {
   BK_PON
   PORWIL
   PORPROV
-  PORDA
-  POPDA
-  PORKOT
   KEJURNAS
   KEJURDA
-  EVENT_KHUSUS
-  LAINNYA // custom text in Prestasi.tingkatLainnya (revisi 2026-07-18)
 }
 
 enum Medal {
@@ -387,8 +381,6 @@ model Prestasi {
   atlet            Atlet    @relation(fields: [atletId], references: [id], onDelete: Cascade)
   namaKejuaraan    String
   tingkatKejuaraan CompetitionLevel
-  // Custom tingkat text, only meaningful when tingkatKejuaraan = LAINNYA.
-  tingkatLainnya   String?
   tahun            Int
   medali           Medal
   peringkat        Int?

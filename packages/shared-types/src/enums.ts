@@ -92,20 +92,9 @@ export const COMPETITION_LEVEL_CHOICES = [
   "KEJURDA",
 ] as const;
 
-// All valid values: the offered list plus levels retired from the form but kept
-// so rows already recorded with them still validate and render their label.
-export const COMPETITION_LEVELS = [
-  ...COMPETITION_LEVEL_CHOICES,
-  "PORDA",
-  "POPDA",
-  "PORKOT",
-  "EVENT_KHUSUS",
-  "LAINNYA",
-  "KOTA",
-  "PROVINSI",
-  "NASIONAL",
-  "INTERNASIONAL",
-] as const;
+// Revisi 2026-07-29: the offered list is now the complete list — the retired
+// values were dropped from the database enum too, so nothing else is valid.
+export const COMPETITION_LEVELS = COMPETITION_LEVEL_CHOICES;
 export type CompetitionLevel = (typeof COMPETITION_LEVELS)[number];
 export const COMPETITION_LEVEL_LABELS: Record<CompetitionLevel, string> = {
   OLIMPIADE: "Olimpiade",
@@ -115,17 +104,8 @@ export const COMPETITION_LEVEL_LABELS: Record<CompetitionLevel, string> = {
   BK_PON: "BK PON (Pra PON)",
   PORWIL: "Pekan Olahraga Wilayah (Porwil)",
   PORPROV: "Pekan Olahraga Provinsi (Porprov)",
-  PORDA: "Pekan Olahraga Daerah (Porda)",
-  POPDA: "Pekan Olahraga Pelajar Daerah (Popda)",
-  PORKOT: "Pekan Olahraga Kota (Porkot)",
   KEJURNAS: "Kejuaraan Nasional (Kejurnas)",
   KEJURDA: "Kejuaraan Daerah (Kejurda)",
-  EVENT_KHUSUS: "Event Khusus",
-  LAINNYA: "Lainnya",
-  KOTA: "Kota",
-  PROVINSI: "Provinsi",
-  NASIONAL: "Nasional",
-  INTERNASIONAL: "Internasional",
 };
 
 export const MEDALS = ["GOLD", "SILVER", "BRONZE", "NONE"] as const;
@@ -161,12 +141,9 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
 export const SUPPORTING_DOCUMENT_TYPES = ["PAS_FOTO", "SERTIFIKAT_PRESTASI"] as const;
 export type SupportingDocumentType = (typeof SUPPORTING_DOCUMENT_TYPES)[number];
 
-/** Display label for a prestasi tingkat, preferring the custom "Lainnya" text. */
-export function competitionLevelLabel(
-  tingkat: CompetitionLevel,
-  lainnya?: string | null,
-): string {
-  return tingkat === "LAINNYA" && lainnya ? lainnya : COMPETITION_LEVEL_LABELS[tingkat];
+/** Display label for a prestasi tingkat. */
+export function competitionLevelLabel(tingkat: CompetitionLevel): string {
+  return COMPETITION_LEVEL_LABELS[tingkat];
 }
 
 // Revisi 2026-07-18: tingkatan lisensi pelatih is a fixed choice (legacy

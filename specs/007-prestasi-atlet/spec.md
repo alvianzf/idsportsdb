@@ -19,15 +19,19 @@
   - `id: String (uuid)`
   - `atletId: String` (FK → `Atlet`, cascade delete)
   - `namaKejuaraan: String`
-  - `tingkatKejuaraan: CompetitionLevel`
-    - **Offered in the form** (revisi 2026-07-29, `COMPETITION_LEVEL_CHOICES`):
-      `OLIMPIADE | ASIAN_GAMES | SEA_GAMES | PON | BK_PON | PORWIL | PORPROV |
-      KEJURNAS | KEJURDA`
-    - **Retired from the form but still valid** (`COMPETITION_LEVELS`):
-      `PORDA | POPDA | PORKOT | EVENT_KHUSUS | LAINNYA` (dropped 2026-07-29) and
-      `KOTA | PROVINSI | NASIONAL | INTERNASIONAL` (dropped earlier). Kept so
-      rows already recorded with them still validate, still render their label,
-      and still appear in the edit dropdown for their own record.
+  - `tingkatKejuaraan: CompetitionLevel` — revisi 2026-07-29, the client's list
+    (Modul F) and nothing else:
+    `OLIMPIADE | ASIAN_GAMES | SEA_GAMES | PON | BK_PON | PORWIL | PORPROV |
+    KEJURNAS | KEJURDA`
+    - `COMPETITION_LEVEL_CHOICES` and `COMPETITION_LEVELS` are now the same
+      list; the values below were **deleted from the Prisma enum**, not just
+      hidden from the form: `PORDA`, `POPDA`, `PORKOT`, `EVENT_KHUSUS`,
+      `LAINNYA`, `KOTA`, `PROVINSI`, `NASIONAL`, `INTERNASIONAL`. Safe because
+      no prestasi row used any of them at the time of removal.
+  - `tingkatLainnya: String?` — **retired 2026-07-29** with the `LAINNYA` level.
+    The column still exists but is always written as `null`; the form field and
+    the `GET /prestasi/tingkat-lainnya` autocomplete endpoint were removed.
+    Dropping the column itself is left as a separate cleanup.
   - `tahun: Int`
   - `medali: Medal` (`GOLD | SILVER | BRONZE | NONE`)
   - `peringkat: Int?`

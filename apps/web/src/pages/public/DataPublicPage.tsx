@@ -34,7 +34,6 @@ interface PublicAtlet {
   prestasiTertinggi: {
     namaKejuaraan: string;
     tingkatKejuaraan: CompetitionLevel;
-    tingkatLainnya: string | null;
     medali: Medal;
     tahun: number;
   } | null;
@@ -144,7 +143,7 @@ export function DataPublicPage() {
               </span>
             )}
             <span className="text-xs">
-              {a.prestasiTertinggi.namaKejuaraan} · {competitionLevelLabel(a.prestasiTertinggi.tingkatKejuaraan, a.prestasiTertinggi.tingkatLainnya)}{" "}
+              {a.prestasiTertinggi.namaKejuaraan} · {competitionLevelLabel(a.prestasiTertinggi.tingkatKejuaraan)}{" "}
               {a.prestasiTertinggi.tahun}
             </span>
           </span>

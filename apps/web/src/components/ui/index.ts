@@ -5,6 +5,7 @@ export * from "./PageHeader";
 export * from "./Field";
 export * from "./Pagination";
 export * from "./Modal";
+export * from "./Lightbox";
 export * from "./Combobox";
 export * from "./RichTextEditor";
 export * from "./DataTable";
