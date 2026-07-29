@@ -46,20 +46,53 @@ function log(message) {
   process.stdout.write(`${new Date().toISOString()} ${message}\n`);
 }
 
-/** Resolves to a short reason string when unhealthy, or null when healthy. */
+/** Turns the /health/ready payload into a one-line human summary. */
+function summarise(payload) {
+  if (!payload || typeof payload !== "object") return "";
+  const db = payload.checks?.database;
+  const storage = payload.checks?.storage;
+  const parts = [];
+  if (db) parts.push(`db ${db.status}${db.code ? ` (${db.code})` : ""} ${db.latencyMs}ms`);
+  if (storage) {
+    parts.push(
+      storage.writable === false
+        ? "storage NOT WRITABLE"
+        : `disk ${storage.freePercent}% free (${storage.freeMb}MB)`,
+    );
+  }
+  if (payload.uptimeSeconds != null) parts.push(`up ${Math.round(payload.uptimeSeconds / 60)}m`);
+  if (payload.version) parts.push(`v${payload.version}`);
+  return parts.join(", ");
+}
+
+/**
+ * Resolves to `{ failure, detail }` — `failure` is a short reason when
+ * unhealthy or null when healthy, `detail` is the parsed summary either way so
+ * a warning (disk filling up) is visible even while the check still passes.
+ */
 async function probe() {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
     const res = await fetch(HEALTH_URL, { signal: controller.signal });
     const body = await res.text();
-    if (res.status !== 200) return `HTTP ${res.status} — ${body.slice(0, 200)}`;
+    let payload = null;
+    try {
+      payload = JSON.parse(body);
+    } catch {
+      /* not JSON — fall back to the raw body below */
+    }
+    const detail = summarise(payload);
+    if (res.status !== 200) {
+      return { failure: `HTTP ${res.status}${detail ? ` — ${detail}` : ` — ${body.slice(0, 200)}`}`, detail };
+    }
     // 200 with database:"down" should never happen (the route 503s), but treat
     // the body as authoritative rather than trusting the status alone.
-    if (body.includes('"database":"down"')) return `database down — ${body.slice(0, 200)}`;
-    return null;
+    if (payload?.database === "down") return { failure: `database down — ${detail}`, detail };
+    return { failure: null, detail };
   } catch (err) {
-    return `unreachable — ${err.name === "AbortError" ? `timeout after ${TIMEOUT_MS}ms` : err.message}`;
+    const reason = err.name === "AbortError" ? `timeout after ${TIMEOUT_MS}ms` : err.message;
+    return { failure: `unreachable — ${reason}`, detail: "" };
   } finally {
     clearTimeout(timer);
   }
@@ -86,7 +119,7 @@ async function sendAlert(subject, text) {
 }
 
 const state = readState();
-const failure = await probe();
+const { failure, detail } = await probe();
 
 if (failure) {
   state.consecutiveFailures += 1;
@@ -100,11 +133,12 @@ if (failure) {
         `Penyebab: ${failure}\nWaktu: ${state.since}\n\n` +
         `Langkah cek di VPS:\n` +
         `  pm2 status\n  pm2 logs koni-api --err --lines 50\n` +
-        `  nc -z dbts.sidra.id 65433   # database dapat dihubungi?\n`,
+        `  nc -z dbts.sidra.id 65433   # database dapat dihubungi?\n` +
+        `  df -h                       # disk penuh?\n`,
     ).catch((e) => log(`alert failed: ${e.message}`));
   }
 } else {
-  log(`OK ${HEALTH_URL}`);
+  log(`OK ${HEALTH_URL}${detail ? ` — ${detail}` : ""}`);
   if (state.down) {
     await sendAlert(
       "[KONI] API PULIH",

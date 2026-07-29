@@ -1,5 +1,7 @@
 import { createServer } from "node:http";
+import fs from "node:fs";
 import path from "node:path";
+import { createRequire } from "node:module";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -28,6 +30,10 @@ import { publicRouter } from "./modules/public/public.routes.js";
 import { auditRouter } from "./modules/audit/audit.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { prisma } from "./lib/prisma.js";
+
+// Version for /health/ready. `createRequire` because the package.json sits
+// outside rootDir, so a JSON import would drag it into the build output.
+const pkg = createRequire(import.meta.url)("../package.json") as { version: string };
 
 const app = express();
 
@@ -98,17 +104,83 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-// Readiness: can we actually serve requests? Point alerting here — during the
-// 2026-07-19 DB outage /health stayed green for ten days while every route 500'd.
+/** Round to one decimal so the payload stays readable. */
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
+/** Can we reach the database, and how slow is it? */
+async function checkDatabase() {
+  const started = Date.now();
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return { status: "up" as const, latencyMs: Date.now() - started };
+  } catch (err) {
+    // Prisma's code (P1001 unreachable, P1002 timeout, P1017 closed) says which
+    // failure this is. `PrismaClientInitializationError` — the one thrown when
+    // the pool never connected — carries it as `errorCode` and often leaves it
+    // undefined, so fall back to the error name rather than reporting "unknown".
+    // The message is deliberately left out: it embeds the database host, and
+    // this endpoint is public.
+    const e = err as { code?: string; errorCode?: string; name?: string };
+    return {
+      status: "down" as const,
+      latencyMs: Date.now() - started,
+      code: e.code ?? e.errorCode ?? e.name ?? "unknown",
+    };
+  }
+}
+
+/**
+ * Uploads must be writable and the disk must have room — a full disk fails
+ * certificate uploads while every other check still looks perfectly healthy.
+ */
+async function checkStorage() {
+  try {
+    await fs.promises.access(uploadRoot, fs.constants.W_OK);
+    const stat = await fs.promises.statfs(uploadRoot);
+    const totalBytes = stat.blocks * stat.bsize;
+    const freeBytes = stat.bavail * stat.bsize;
+    const freePercent = totalBytes > 0 ? round1((freeBytes / totalBytes) * 100) : 0;
+    return {
+      // Below 10% free is close enough to full that uploads are at risk.
+      status: freePercent < 10 ? ("low" as const) : ("ok" as const),
+      writable: true,
+      freeMb: Math.round(freeBytes / 1024 / 1024),
+      freePercent,
+    };
+  } catch {
+    return { status: "error" as const, writable: false };
+  }
+}
+
+/**
+ * Readiness: can we actually serve requests? Point alerting here — during the
+ * 2026-07-19 outage `/health` stayed green for ten days while every route 500'd.
+ *
+ * 200 when everything works, 503 when a dependency is down. Deliberately public
+ * so an external monitor can poll it without a token, so the payload carries
+ * operational facts only — no hostnames, paths, credentials, or error strings.
+ */
 app.get(
   "/health/ready",
   asyncHandler(async (_req, res) => {
-    try {
-      await prisma.$queryRaw`SELECT 1`;
-      res.json({ status: "ok", database: "up" });
-    } catch {
-      res.status(503).json({ status: "degraded", database: "down" });
-    }
+    const [database, storage] = await Promise.all([checkDatabase(), checkStorage()]);
+    const memory = process.memoryUsage();
+    const healthy = database.status === "up" && storage.status !== "error";
+
+    res.status(healthy ? 200 : 503).json({
+      status: healthy ? (storage.status === "low" ? "warning" : "ok") : "degraded",
+      // `database` kept as a bare string too: the monitor and any existing
+      // check that greps for `"database":"up"` must keep working.
+      database: database.status,
+      timestamp: new Date().toISOString(),
+      uptimeSeconds: Math.round(process.uptime()),
+      version: pkg.version,
+      checks: { database, storage },
+      memory: {
+        rssMb: Math.round(memory.rss / 1024 / 1024),
+        heapUsedMb: Math.round(memory.heapUsed / 1024 / 1024),
+      },
+    });
   }),
 );
 
