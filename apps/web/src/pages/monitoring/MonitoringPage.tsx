@@ -90,7 +90,13 @@ export function MonitoringPage() {
     }
   }
 
-  loadRef.current = (silent) => load(undefined, silent);
+  // Kept current after every render (no dep array) so the socket handler below,
+  // which subscribes once, always calls the latest `load` closure — it captures
+  // activeTab/mutasiStatus/isApprover. Assigning during render instead would
+  // break the rules of hooks: React may discard or misorder that write.
+  useEffect(() => {
+    loadRef.current = (silent) => load(undefined, silent);
+  });
 
   useEffect(() => {
     let cancelled = false;
