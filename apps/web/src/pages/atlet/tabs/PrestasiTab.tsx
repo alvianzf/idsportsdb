@@ -127,6 +127,7 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
   const [certFile, setCertFile] = useState<File | null>(null);
   // Autocomplete suggestions for the custom "Lainnya" tingkat (distinct DB values).
   const [tingkatSuggestions, setTingkatSuggestions] = useState<string[]>([]);
+  const [kejuaraanSuggestions, setKejuaraanSuggestions] = useState<string[]>([]);
   // Which dokumen pendukung row is expanded for inline preview (revisi 2026-07-27).
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
 
@@ -136,6 +137,10 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
       .get<string[]>("/prestasi/tingkat-lainnya")
       .then((res) => setTingkatSuggestions(res.data))
       .catch(() => setTingkatSuggestions([]));
+    api
+      .get<string[]>("/prestasi/kejuaraan")
+      .then((res) => setKejuaraanSuggestions(res.data))
+      .catch(() => setKejuaraanSuggestions([]));
   }, [modalOpen]);
 
   function load() {
@@ -393,11 +398,16 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
         <Modal title={editing ? "Ubah Prestasi" : "Tambah Prestasi"} onClose={() => setModalOpen(false)}>
           <form onSubmit={handleSave} className="space-y-4">
             <Field label="Nama Kejuaraan" required htmlFor="namaKejuaraan">
-              <Input
+              {/* Suggests editions already recorded ("Porprov Kepri 2026") so the
+                  same championship isn't spelled three different ways. */}
+              <SearchInput
                 id="namaKejuaraan"
                 required
+                showIcon={false}
+                placeholder="Contoh: Porprov Kepri 2026"
                 value={form.namaKejuaraan}
-                onChange={(e) => setForm((f) => ({ ...f, namaKejuaraan: e.target.value }))}
+                onChange={(v) => setForm((f) => ({ ...f, namaKejuaraan: v }))}
+                suggestions={kejuaraanSuggestions}
               />
             </Field>
             <div className="grid grid-cols-2 gap-3">

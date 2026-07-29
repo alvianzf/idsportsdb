@@ -110,6 +110,28 @@ prestasiRouter.get(
   }),
 );
 
+// Championship names already recorded, for autocomplete on the prestasi form.
+// Editions like "Porprov Kepri 2026" live in this free-text field rather than a
+// master table, so suggesting existing values is what keeps them consistent.
+prestasiRouter.get(
+  "/kejuaraan",
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA"]),
+  asyncHandler(async (req, res) => {
+    const q = typeof req.query.q === "string" ? req.query.q : undefined;
+    const rows = await prisma.prestasi.findMany({
+      where: {
+        ...(req.scopedCaborId ? { atlet: atletInCaborFilter(req.scopedCaborId) } : {}),
+        ...(q ? { namaKejuaraan: { contains: q, mode: "insensitive" } } : {}),
+      },
+      select: { namaKejuaraan: true },
+      distinct: ["namaKejuaraan"],
+      orderBy: { namaKejuaraan: "asc" },
+      take: 10,
+    });
+    res.json(rows.map((r) => r.namaKejuaraan));
+  }),
+);
+
 // Years that actually have prestasi, newest first — feeds the list page's year
 // filter so it only ever offers years with data behind them.
 prestasiRouter.get(

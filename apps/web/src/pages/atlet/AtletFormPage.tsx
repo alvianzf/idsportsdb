@@ -18,7 +18,7 @@ import {
   type CompetitionLevel,
   type Medal,
 } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, DropZone, Field, Input, Select, Textarea, Combobox } from "../../components/ui";
+import { Card, PageHeader, Button, DropZone, Field, Input, SearchInput, Select, Textarea, Combobox } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 
@@ -123,6 +123,7 @@ export function AtletFormPage() {
   // Prestasi entered inline on create. Editing keeps using the Prestasi tab on
   // the detail page, which already handles the full list.
   const [prestasis, setPrestasis] = useState<PrestasiDraft[]>([]);
+  const [kejuaraanSuggestions, setKejuaraanSuggestions] = useState<string[]>([]);
   // Same retry guard as the athlete: prestasi created in a failed attempt are
   // reused by index instead of being POSTed twice.
   const createdPrestasiIdsRef = useRef<(string | undefined)[]>([]);
@@ -139,6 +140,15 @@ export function AtletFormPage() {
   useEffect(() => {
     api.get<CaborOption[]>(isEdit ? "/cabor" : "/cabor?active=true").then((res) => setCabors(res.data));
   }, []);
+
+  // Only the create form offers prestasi rows, so only it needs the suggestions.
+  useEffect(() => {
+    if (isEdit) return;
+    api
+      .get<string[]>("/prestasi/kejuaraan")
+      .then((res) => setKejuaraanSuggestions(res.data))
+      .catch(() => setKejuaraanSuggestions([]));
+  }, [isEdit]);
 
   useEffect(() => {
     if (!id) return;
@@ -477,11 +487,16 @@ export function AtletFormPage() {
                       </div>
                       <div className="grid gap-4 lg:grid-cols-2">
                         <Field label="Nama Kejuaraan" required htmlFor={`namaKejuaraan-${index}`}>
-                          <Input
+                          {/* Suggests editions already recorded ("Porprov Kepri 2026")
+                              so the same championship isn't spelled several ways. */}
+                          <SearchInput
                             id={`namaKejuaraan-${index}`}
                             required
+                            showIcon={false}
+                            placeholder="Contoh: Porprov Kepri 2026"
                             value={row.namaKejuaraan}
-                            onChange={(e) => updatePrestasi(index, { namaKejuaraan: e.target.value })}
+                            onChange={(v) => updatePrestasi(index, { namaKejuaraan: v })}
+                            suggestions={kejuaraanSuggestions}
                           />
                         </Field>
                         <Field label="Tingkat Kejuaraan" required htmlFor={`tingkat-${index}`}>
