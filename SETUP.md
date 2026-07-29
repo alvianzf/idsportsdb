@@ -360,7 +360,7 @@ crontab -e
 ```
 
 ```cron
-ALERT_EMAIL=taras@devshorepartners.com
+ALERT_EMAIL=alvianzf@gmail.com
 */2 * * * * cd /home/ubuntu/inasportdb && /usr/bin/node ops/health-monitor.mjs >> /home/ubuntu/koni-health-monitor.log 2>&1
 ```
 
