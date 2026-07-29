@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import compression from "compression";
 import helmet from "helmet";
 import { env } from "./config/env.js";
+import { asyncHandler } from "./lib/asyncHandler.js";
 import { initSocket } from "./lib/socket.js";
 import { uploadRoot } from "./lib/storage.js";
 import { authenticate } from "./middleware/auth.js";
@@ -62,9 +63,25 @@ app.use("/uploads/atlet-documents", authenticate, (req, res) => {
 // All other uploads (article images, certificates, etc.) are public.
 app.use("/uploads", express.static(uploadRoot, { maxAge: "7d", immutable: false }));
 
+// Liveness: is the process up? Deliberately does NOT touch the database — a
+// monitor wired to restart on failure must not cycle the API during a DB outage.
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
+
+// Readiness: can we actually serve requests? Point alerting here — during the
+// 2026-07-19 DB outage /health stayed green for ten days while every route 500'd.
+app.get(
+  "/health/ready",
+  asyncHandler(async (_req, res) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      res.json({ status: "ok", database: "up" });
+    } catch {
+      res.status(503).json({ status: "degraded", database: "down" });
+    }
+  }),
+);
 
 app.use("/api/v1/public", publicRouter);
 app.use("/api/v1/auth", authRouter);
