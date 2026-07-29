@@ -29,7 +29,15 @@ export const updatePrestasiSchema = prestasiFields.partial();
 export const listPrestasiQuerySchema = z.object({
   cabor: z.string().optional(),
   // Matches nama atlet or nama kejuaraan — both are visible columns in the list.
-  search: z.string().trim().min(1).optional(),
+  // Blank/whitespace means "no filter" rather than a 400: the search box sends
+  // whatever is typed, and a stray space must not blank the table with an error.
+  search: z
+    .string()
+    .optional()
+    .transform((v) => {
+      const trimmed = v?.trim();
+      return trimmed ? trimmed : undefined;
+    }),
   tahun: z.coerce.number().int().optional(),
   medali: z.enum(MEDALS).optional(),
   tingkat: z.enum(COMPETITION_LEVELS).optional(),

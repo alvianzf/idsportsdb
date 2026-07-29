@@ -61,7 +61,19 @@ app.use("/uploads/atlet-documents", authenticate, (req, res) => {
 });
 
 // All other uploads (article images, certificates, etc.) are public.
-app.use("/uploads", express.static(uploadRoot, { maxAge: "7d", immutable: false }));
+//
+// `private, no-cache` rather than a long max-age: these were served with
+// `public, max-age=604800`, so Cloudflare kept returning a deleted certificate
+// from its edge for up to a week after the record and file were gone. `private`
+// keeps the CDN from storing them at all and `no-cache` forces a revalidation,
+// so a delete takes effect immediately. Costs some CDN offload on article
+// images, which is the right trade for documents that can be revoked.
+app.use(
+  "/uploads",
+  express.static(uploadRoot, {
+    setHeaders: (res) => res.setHeader("Cache-Control", "private, no-cache, must-revalidate"),
+  }),
+);
 
 // Liveness: is the process up? Deliberately does NOT touch the database — a
 // monitor wired to restart on failure must not cycle the API during a DB outage.

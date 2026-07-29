@@ -125,14 +125,25 @@ export function AtletFormPage() {
   // Same retry guard as the athlete: prestasi created in a failed attempt are
   // reused by index instead of being POSTed twice.
   const createdPrestasiIdsRef = useRef<(string | undefined)[]>([]);
+  // Certificates already uploaded, tracked separately: a retry must not re-POST
+  // the file for a row whose prestasi succeeded, or the athlete collects a
+  // duplicate certificate on every attempt.
+  const uploadedCertRef = useRef<boolean[]>([]);
 
   function updatePrestasi(index: number, patch: Partial<PrestasiDraft>) {
     setPrestasis((rows) => rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+    // A newly picked file has not been uploaded yet, whatever happened before.
+    if ("certFile" in patch) uploadedCertRef.current[index] = false;
   }
 
   function removePrestasi(index: number) {
+    // Created by an earlier failed submit? Delete it, otherwise the record stays
+    // on the athlete while the row disappears from the form.
+    const createdId = createdPrestasiIdsRef.current[index];
+    if (createdId) api.delete(`/prestasi/${createdId}`).catch(() => undefined);
     setPrestasis((rows) => rows.filter((_, i) => i !== index));
     createdPrestasiIdsRef.current.splice(index, 1);
+    uploadedCertRef.current.splice(index, 1);
   }
 
   useEffect(() => {
@@ -231,12 +242,13 @@ export function AtletFormPage() {
             prestasiId = res.data.id as string;
             createdPrestasiIdsRef.current[index] = prestasiId;
           }
-          if (row.certFile) {
+          if (row.certFile && !uploadedCertRef.current[index]) {
             const formData = new FormData();
             formData.append("file", row.certFile);
             await api.post(`/prestasi/${prestasiId}/sertifikat`, formData, {
               headers: { "Content-Type": "multipart/form-data" },
             });
+            uploadedCertRef.current[index] = true;
           }
         }
         navigate(`/atlet/${atletId}`);

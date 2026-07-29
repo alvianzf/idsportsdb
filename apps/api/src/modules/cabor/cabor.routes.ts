@@ -64,12 +64,18 @@ caborRouter.get(
 
     const cabors = await prisma.cabangOlahraga.findMany({
       where: {
-        // An ADMIN_CABOR sees only their own cabor in the management list.
-        ...(req.scopedCaborId ? { id: req.scopedCaborId } : {}),
+        // An ADMIN_CABOR sees only their own cabor in the management list. The
+        // `active` filter is skipped for them: it exists to offer assignable
+        // cabor, and narrowing a one-row list by it would leave the atlet form's
+        // cabor dropdown empty the moment their cabor is deactivated.
+        ...(req.scopedCaborId
+          ? { id: req.scopedCaborId }
+          : parsed.data.active !== undefined
+            ? { isActive: parsed.data.active }
+            : {}),
         ...(parsed.data.search
           ? { nama: { contains: parsed.data.search, mode: "insensitive" } }
           : {}),
-        ...(parsed.data.active !== undefined ? { isActive: parsed.data.active } : {}),
       },
       include: { _count: activeCounts },
       orderBy: { nama: "asc" },
