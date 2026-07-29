@@ -1,9 +1,9 @@
 import path from "node:path";
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import multer from "multer";
 import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
-import { authenticate, requireRole } from "../../middleware/auth.js";
+import { authenticate, requireRole, scopeToCabor } from "../../middleware/auth.js";
 import { sortByJabatan } from "../../lib/jabatanOrder.js";
 import {
   isForeignKeyConstraintError,
@@ -36,8 +36,22 @@ const docUpload = uploader("cabor-documents", 20 * 1024 * 1024, documentFileFilt
 
 export const caborRouter = Router();
 
-// specs/003-cabang-olahraga/spec.md §3 — read access for all authenticated users.
-caborRouter.use(authenticate);
+// specs/003-cabang-olahraga/spec.md §3 — read access for all authenticated users,
+// narrowed by specs/023-admin-cabor-scoping/spec.md: an ADMIN_CABOR only reads
+// their own cabor. Writes were already KONI-only.
+caborRouter.use(authenticate, scopeToCabor);
+
+/**
+ * 403 when a scoped ADMIN_CABOR asks for a cabor that is not theirs. Returns
+ * true when the request was rejected, so callers can `return` immediately.
+ */
+function rejectOtherCabor(req: Request, res: Response): boolean {
+  if (req.scopedCaborId && req.scopedCaborId !== req.params.id) {
+    res.status(403).json({ error: "Forbidden" });
+    return true;
+  }
+  return false;
+}
 
 caborRouter.get(
   "/",
@@ -50,6 +64,8 @@ caborRouter.get(
 
     const cabors = await prisma.cabangOlahraga.findMany({
       where: {
+        // An ADMIN_CABOR sees only their own cabor in the management list.
+        ...(req.scopedCaborId ? { id: req.scopedCaborId } : {}),
         ...(parsed.data.search
           ? { nama: { contains: parsed.data.search, mode: "insensitive" } }
           : {}),
@@ -72,6 +88,7 @@ caborRouter.get(
 caborRouter.get(
   "/:id",
   asyncHandler(async (req, res) => {
+    if (rejectOtherCabor(req, res)) return;
     const cabor = await prisma.cabangOlahraga.findUnique({
       where: { id: req.params.id },
       include: {
@@ -327,6 +344,7 @@ caborRouter.post(
 caborRouter.get(
   "/:id/documents",
   asyncHandler(async (req, res) => {
+    if (rejectOtherCabor(req, res)) return;
     const docs = await prisma.caborDocument.findMany({
       where: { caborId: req.params.id },
       orderBy: { uploadedAt: "desc" },
