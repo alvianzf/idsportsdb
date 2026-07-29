@@ -60,18 +60,35 @@ app.use("/uploads/atlet-documents", authenticate, (req, res) => {
   });
 });
 
-// All other uploads (article images, certificates, etc.) are public.
-//
-// `private, no-cache` rather than a long max-age: these were served with
-// `public, max-age=604800`, so Cloudflare kept returning a deleted certificate
-// from its edge for up to a week after the record and file were gone. `private`
-// keeps the CDN from storing them at all and `no-cache` forces a revalidation,
-// so a delete takes effect immediately. Costs some CDN offload on article
-// images, which is the right trade for documents that can be revoked.
+/**
+ * Upload directories holding documents that can be revoked — deleting one must
+ * take effect immediately. They were served with `public, max-age=604800`, so
+ * Cloudflare kept returning a deleted certificate from its edge for up to a week
+ * after both the record and the file were gone.
+ *
+ * `atlet-documents` is served by the authenticated route above and never reaches
+ * the static mount; it is listed so the protection follows if that ever changes.
+ */
+const REVOCABLE_UPLOAD_DIRS = new Set([
+  "prestasi-sertifikat",
+  "cabor-documents",
+  "pelatih-lisensi",
+  "atlet-documents",
+]);
+
+// All other uploads (article images, logos, slider, avatar) are display assets:
+// public and long-lived, and already versioned in their filenames where staleness
+// would matter. Documents opt out of caching entirely so a delete is immediate.
 app.use(
   "/uploads",
   express.static(uploadRoot, {
-    setHeaders: (res) => res.setHeader("Cache-Control", "private, no-cache, must-revalidate"),
+    maxAge: "7d",
+    setHeaders: (res, filePath) => {
+      const topDir = path.relative(uploadRoot, filePath).split(path.sep)[0];
+      if (REVOCABLE_UPLOAD_DIRS.has(topDir)) {
+        res.setHeader("Cache-Control", "private, no-cache, must-revalidate");
+      }
+    },
   }),
 );
 
