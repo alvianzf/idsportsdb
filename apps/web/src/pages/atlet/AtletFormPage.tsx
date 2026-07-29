@@ -1,17 +1,24 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Plus, Trash2 } from "lucide-react";
 import {
   ATHLETE_LEVELS,
   ATHLETE_LEVEL_LABELS,
   ATHLETE_STATUS_LABELS,
   BATAM_KECAMATAN,
+  COMPETITION_LEVEL_CHOICES,
+  COMPETITION_LEVEL_LABELS,
   EDUCATION_LEVELS,
   GENDERS,
   GENDER_LABELS,
+  MEDALS,
+  MEDAL_LABELS,
   UNSCOPED_ADMIN_ROLES,
   type AthleteStatus,
+  type CompetitionLevel,
+  type Medal,
 } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Field, Input, Select, Textarea, Combobox } from "../../components/ui";
+import { Card, PageHeader, Button, DropZone, Field, Input, Select, Textarea, Combobox } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 
@@ -63,6 +70,29 @@ const empty: AtletForm = {
   pekerjaan: "",
 };
 
+/** A prestasi typed into the create form, before the atlet exists to hang it on. */
+interface PrestasiDraft {
+  namaKejuaraan: string;
+  tingkatKejuaraan: CompetitionLevel;
+  tingkatLainnya: string;
+  tahun: string;
+  medali: Medal;
+  peringkat: string;
+  certFile: File | null;
+}
+
+function emptyPrestasi(): PrestasiDraft {
+  return {
+    namaKejuaraan: "",
+    tingkatKejuaraan: "KEJURDA",
+    tingkatLainnya: "",
+    tahun: String(new Date().getFullYear()),
+    medali: "GOLD",
+    peringkat: "",
+    certFile: null,
+  };
+}
+
 function extractError(err: unknown): string {
   const data = (err as { response?: { data?: { error?: unknown } } }).response?.data?.error;
   if (typeof data === "string") return data;
@@ -90,6 +120,21 @@ export function AtletFormPage() {
   // Tracks an athlete created in a prior submit attempt so a retry after a
   // failed document upload continues rather than creating a duplicate.
   const createdAtletIdRef = useRef<string | undefined>(undefined);
+  // Prestasi entered inline on create. Editing keeps using the Prestasi tab on
+  // the detail page, which already handles the full list.
+  const [prestasis, setPrestasis] = useState<PrestasiDraft[]>([]);
+  // Same retry guard as the athlete: prestasi created in a failed attempt are
+  // reused by index instead of being POSTed twice.
+  const createdPrestasiIdsRef = useRef<(string | undefined)[]>([]);
+
+  function updatePrestasi(index: number, patch: Partial<PrestasiDraft>) {
+    setPrestasis((rows) => rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  }
+
+  function removePrestasi(index: number) {
+    setPrestasis((rows) => rows.filter((_, i) => i !== index));
+    createdPrestasiIdsRef.current.splice(index, 1);
+  }
 
   useEffect(() => {
     api.get<CaborOption[]>(isEdit ? "/cabor" : "/cabor?active=true").then((res) => setCabors(res.data));
@@ -161,6 +206,31 @@ export function AtletFormPage() {
           const res = await api.post("/atlet", payload);
           atletId = res.data.id as string;
           createdAtletIdRef.current = atletId;
+        }
+        // A certificate needs a prestasi id and a prestasi needs an atlet id, so
+        // these have to run after the athlete exists — sequentially, so the first
+        // failure stops the rest and surfaces one error.
+        for (const [index, row] of prestasis.entries()) {
+          let prestasiId = createdPrestasiIdsRef.current[index];
+          if (!prestasiId) {
+            const res = await api.post(`/atlet/${atletId}/prestasi`, {
+              namaKejuaraan: row.namaKejuaraan,
+              tingkatKejuaraan: row.tingkatKejuaraan,
+              tingkatLainnya: row.tingkatKejuaraan === "LAINNYA" ? row.tingkatLainnya : undefined,
+              tahun: Number(row.tahun),
+              medali: row.medali,
+              peringkat: row.peringkat ? Number(row.peringkat) : undefined,
+            });
+            prestasiId = res.data.id as string;
+            createdPrestasiIdsRef.current[index] = prestasiId;
+          }
+          if (row.certFile) {
+            const formData = new FormData();
+            formData.append("file", row.certFile);
+            await api.post(`/prestasi/${prestasiId}/sertifikat`, formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+            });
+          }
         }
         navigate(`/atlet/${atletId}`);
       }
@@ -367,6 +437,120 @@ export function AtletFormPage() {
               </Field>
             </div>
           </section>
+
+          {/*
+            Prestasi are only offered on create. On edit the Prestasi tab of the
+            detail page owns the list (add, edit, delete, multiple certificates).
+          */}
+          {!isEdit && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold text-neutral-900">Prestasi</h2>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPrestasis((rows) => [...rows, emptyPrestasi()])}
+                >
+                  <Plus className="h-4 w-4" />
+                  Tambah Prestasi
+                </Button>
+              </div>
+
+              {prestasis.length === 0 ? (
+                <p className="text-sm text-neutral-500">
+                  Belum ada prestasi. Opsional — bisa juga ditambahkan nanti dari halaman detail atlet.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {prestasis.map((row, index) => (
+                    <div key={index} className="rounded-lg border border-neutral-200 p-4">
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium text-neutral-700">Prestasi {index + 1}</span>
+                        <Button
+                          type="button"
+                          variant="danger"
+                          onClick={() => removePrestasi(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Hapus
+                        </Button>
+                      </div>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <Field label="Nama Kejuaraan" required htmlFor={`namaKejuaraan-${index}`}>
+                          <Input
+                            id={`namaKejuaraan-${index}`}
+                            required
+                            value={row.namaKejuaraan}
+                            onChange={(e) => updatePrestasi(index, { namaKejuaraan: e.target.value })}
+                          />
+                        </Field>
+                        <Field label="Tingkat Kejuaraan" required htmlFor={`tingkat-${index}`}>
+                          <Select
+                            value={row.tingkatKejuaraan}
+                            onChange={(v) => updatePrestasi(index, { tingkatKejuaraan: v as CompetitionLevel })}
+                            options={COMPETITION_LEVEL_CHOICES.map((l) => ({ value: l, label: COMPETITION_LEVEL_LABELS[l] }))}
+                          />
+                        </Field>
+                        {row.tingkatKejuaraan === "LAINNYA" && (
+                          <Field label="Tingkat Lainnya" required htmlFor={`tingkatLainnya-${index}`}>
+                            <Input
+                              id={`tingkatLainnya-${index}`}
+                              required
+                              value={row.tingkatLainnya}
+                              onChange={(e) => updatePrestasi(index, { tingkatLainnya: e.target.value })}
+                            />
+                          </Field>
+                        )}
+                        <Field label="Tahun" required htmlFor={`tahun-${index}`}>
+                          <Input
+                            id={`tahun-${index}`}
+                            type="number"
+                            required
+                            min={1950}
+                            max={new Date().getFullYear() + 1}
+                            value={row.tahun}
+                            onChange={(e) => updatePrestasi(index, { tahun: e.target.value })}
+                          />
+                        </Field>
+                        <Field label="Medali" required htmlFor={`medali-${index}`}>
+                          <Select
+                            value={row.medali}
+                            onChange={(v) => updatePrestasi(index, { medali: v as Medal })}
+                            options={MEDALS.map((m) => ({ value: m, label: MEDAL_LABELS[m] }))}
+                          />
+                        </Field>
+                        {/* Server requires peringkat when no medal was won. */}
+                        <Field
+                          label="Peringkat"
+                          required={row.medali === "NONE"}
+                          htmlFor={`peringkat-${index}`}
+                        >
+                          <Input
+                            id={`peringkat-${index}`}
+                            type="number"
+                            min={1}
+                            required={row.medali === "NONE"}
+                            value={row.peringkat}
+                            onChange={(e) => updatePrestasi(index, { peringkat: e.target.value })}
+                          />
+                        </Field>
+                        <div className="md:col-span-2">
+                          <Field label="Sertifikat" htmlFor={`sertifikat-${index}`}>
+                            <DropZone
+                              accept=".pdf,image/*"
+                              value={row.certFile}
+                              onChange={(file) => updatePrestasi(index, { certFile: file })}
+                              sublabel="PDF atau gambar"
+                            />
+                          </Field>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
 
           {error && <p className="text-sm text-danger">{error}</p>}
 
