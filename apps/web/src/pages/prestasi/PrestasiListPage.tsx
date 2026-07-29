@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Trash2 } from "lucide-react";
 import {
-  COMPETITION_LEVELS,
+  COMPETITION_LEVEL_CHOICES,
   COMPETITION_LEVEL_LABELS,
   competitionLevelLabel,
   DATA_ADMIN_ROLES,
@@ -227,7 +227,7 @@ export function PrestasiListPage() {
           <Select
             value={tingkat}
             onChange={(v) => { setPage(1); setTingkat(v); }}
-            options={[{ value: "", label: "Semua Tingkat" }, ...COMPETITION_LEVELS.map((l) => ({ value: l, label: COMPETITION_LEVEL_LABELS[l] }))]}
+            options={[{ value: "", label: "Semua Tingkat" }, ...COMPETITION_LEVEL_CHOICES.map((l) => ({ value: l, label: COMPETITION_LEVEL_LABELS[l] }))]}
             className="w-full md:min-w-0 md:flex-1 md:basis-[calc(50%-0.25rem)] lg:basis-auto"
           />
           <Select

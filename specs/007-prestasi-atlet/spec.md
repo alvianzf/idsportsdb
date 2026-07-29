@@ -19,8 +19,15 @@
   - `id: String (uuid)`
   - `atletId: String` (FK → `Atlet`, cascade delete)
   - `namaKejuaraan: String`
-  - `tingkatKejuaraan: CompetitionLevel` (`KOTA | PROVINSI | NASIONAL |
-    INTERNASIONAL`)
+  - `tingkatKejuaraan: CompetitionLevel`
+    - **Offered in the form** (revisi 2026-07-29, `COMPETITION_LEVEL_CHOICES`):
+      `OLIMPIADE | ASIAN_GAMES | SEA_GAMES | PON | BK_PON | PORWIL | PORPROV |
+      KEJURNAS | KEJURDA`
+    - **Retired from the form but still valid** (`COMPETITION_LEVELS`):
+      `PORDA | POPDA | PORKOT | EVENT_KHUSUS | LAINNYA` (dropped 2026-07-29) and
+      `KOTA | PROVINSI | NASIONAL | INTERNASIONAL` (dropped earlier). Kept so
+      rows already recorded with them still validate, still render their label,
+      and still appear in the edit dropdown for their own record.
   - `tahun: Int`
   - `medali: Medal` (`GOLD | SILVER | BRONZE | NONE`)
   - `peringkat: Int?`
