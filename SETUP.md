@@ -345,6 +345,50 @@ talks to this VPS over the internet — there is no separate mobile backend.
 
 ---
 
+## 9. Uptime monitoring
+
+`ops/health-monitor.mjs` runs from cron on the VPS and checks
+**`/health/ready`** — the probe that actually queries the database. Do not point
+monitoring at `/health`: that one deliberately never touches the DB (so a
+restart-on-failure monitor cannot cycle the API during an outage), and it stayed
+green through the entire ten-day database outage in July 2026.
+
+Install (already done on the current VPS):
+
+```bash
+crontab -e
+```
+
+```cron
+ALERT_EMAIL=taras@devshorepartners.com
+*/2 * * * * cd /home/ubuntu/inasportdb && /usr/bin/node ops/health-monitor.mjs >> /home/ubuntu/koni-health-monitor.log 2>&1
+```
+
+- **Recipients**: comma-separated in `ALERT_EMAIL`. Change it in the crontab.
+- **SMTP**: reused from `apps/api/.env`, no separate credentials.
+- **Alerts fire on state change only** — after 2 consecutive failures, and once
+  more when it recovers. An ongoing outage does not mail every two minutes, and
+  a deploy restart does not page anyone.
+- **Log**: `~/koni-health-monitor.log`, rotated weekly by
+  `/etc/logrotate.d/koni-health-monitor`.
+- **State**: `~/.koni-health-state.json`. Delete it to reset after testing.
+
+Test the whole path without waiting for a real outage:
+
+```bash
+cd ~/inasportdb
+export ALERT_EMAIL=you@example.com
+HEALTH_URL=https://api.simo-konibatam.com/health/does-not-exist node ops/health-monitor.mjs  # run twice to cross the threshold
+node ops/health-monitor.mjs   # recovery mail
+```
+
+**Limitation**: this runs on the VPS itself, so it cannot report that the VPS is
+down — it covers the API process, the database connection, nginx, and TLS, but
+not total host loss. Pair it with an external checker (UptimeRobot, Better Stack)
+pointed at the same URL for that.
+
+---
+
 ## Troubleshooting
 
 - **502 from the API**: check `pm2 status` and `pm2 logs koni-api` — the
