@@ -90,7 +90,7 @@ export function PrestasiListPage() {
       .get("/prestasi", {
         params: {
           cabor: cabor || undefined,
-          search: debouncedSearch || undefined,
+          search: debouncedSearch.trim() || undefined,
           tahun: tahun || undefined,
           tingkat: tingkat || undefined,
           medali: medali || undefined,
