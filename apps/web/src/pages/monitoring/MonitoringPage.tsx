@@ -98,10 +98,14 @@ export function MonitoringPage() {
     return () => { cancelled = true; };
   }, [activeTab, mutasiStatus, isApprover]);
 
+  // Display-only name lookup for a mutasi destination. Reads the public cabor
+  // list, not /cabor: that one is scoped to an ADMIN_CABOR's own cabor
+  // (specs/023-admin-cabor-scoping/spec.md §5), which would leave the
+  // destination rendering as a raw UUID. Cabor names are public anyway.
   useEffect(() => {
     api
-      .get<{ id: string; nama: string }[]>("/cabor")
-      .then((res) => setCaborMap(new Map(res.data.map((c) => [c.id, c.nama]))))
+      .get<{ items: { id: string; nama: string }[] }>("/public/cabor")
+      .then((res) => setCaborMap(new Map(res.data.items.map((c) => [c.id, c.nama]))))
       .catch(() => undefined);
   }, []);
 
