@@ -110,6 +110,22 @@ prestasiRouter.get(
   }),
 );
 
+// Years that actually have prestasi, newest first — feeds the list page's year
+// filter so it only ever offers years with data behind them.
+prestasiRouter.get(
+  "/tahun",
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA"]),
+  asyncHandler(async (req, res) => {
+    const rows = await prisma.prestasi.findMany({
+      where: req.scopedCaborId ? { atlet: atletInCaborFilter(req.scopedCaborId) } : {},
+      distinct: ["tahun"],
+      select: { tahun: true },
+      orderBy: { tahun: "desc" },
+    });
+    res.json(rows.map((r) => r.tahun));
+  }),
+);
+
 prestasiRouter.get(
   "/",
   requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI", "ADMIN_CABOR", "ADMIN_DISPORA"]),
@@ -119,11 +135,19 @@ prestasiRouter.get(
       res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
-    const { cabor, tahun, medali, tingkat, page, pageSize } = parsed.data;
+    const { cabor, search, tahun, medali, tingkat, page, pageSize } = parsed.data;
 
     const conditions: Prisma.PrestasiWhereInput[] = [];
     const effectiveCaborId = req.scopedCaborId ?? cabor;
     if (effectiveCaborId) conditions.push({ atlet: atletInCaborFilter(effectiveCaborId) });
+    if (search) {
+      conditions.push({
+        OR: [
+          { atlet: { namaLengkap: { contains: search, mode: "insensitive" } } },
+          { namaKejuaraan: { contains: search, mode: "insensitive" } },
+        ],
+      });
+    }
     if (tahun) conditions.push({ tahun });
     if (medali) conditions.push({ medali });
     if (tingkat) conditions.push({ tingkatKejuaraan: tingkat });
