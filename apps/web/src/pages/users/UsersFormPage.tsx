@@ -283,7 +283,7 @@ export function UsersFormPage({ embedded = false, onDone }: { embedded?: boolean
       {!embedded && <PageHeader title={isEdit ? "Ubah Pengguna" : "Tambah Pengguna"} />}
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-2">
             <Field label="Nama Lengkap" required htmlFor="fullName">
               <Input
                 id="fullName"

@@ -388,27 +388,32 @@ export function AtletListPage() {
           onSubmit={() => setDebouncedSearch(search)}
           suggestions={items?.map((a) => a.namaLengkap) ?? []}
         />
-        <div className="flex flex-col gap-2">
+        {/*
+          Dropdowns share one row from md (iPad portrait) up — three controls at
+          768px still leave ~240px each, enough for the longest kecamatan label.
+          Mobile stacks.
+        */}
+        <div className="flex flex-col gap-2 md:flex-row md:items-center">
           {isUnscopedAdmin && (
             <Combobox
               value={cabor}
               onChange={(v) => { setPage(1); setCabor(v); }}
               options={[{ value: "", label: "Semua Cabor" }, ...cabors.map((c) => ({ value: c.id, label: c.nama }))]}
               placeholder="Semua Cabor"
-              className="w-full"
+              className="w-full md:min-w-0 md:flex-1"
             />
           )}
           <Select
             value={status}
             onChange={(v) => { setPage(1); setStatus(v); }}
             options={[{ value: "", label: "Semua Status" }, ...ATHLETE_STATUSES.map((s) => ({ value: s, label: ATHLETE_STATUS_LABELS[s] }))]}
-            className="w-full"
+            className="w-full md:min-w-0 md:flex-1"
           />
           <Select
             value={kecamatan}
             onChange={(v) => { setPage(1); setKecamatan(v); }}
             options={[{ value: "", label: "Semua Kecamatan" }, ...BATAM_KECAMATAN.map((k) => ({ value: k, label: k }))]}
-            className="w-full"
+            className="w-full md:min-w-0 md:flex-1"
           />
         </div>
       </Card>

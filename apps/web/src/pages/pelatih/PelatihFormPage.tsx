@@ -151,7 +151,7 @@ export function PelatihFormPage({ embedded = false, onDone }: { embedded?: boole
       {!embedded && <PageHeader title={isEdit ? "Ubah Pelatih" : "Tambah Pelatih"} />}
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-2">
             <Field label="Nama Pelatih" required htmlFor="namaPelatih">
               <Input
                 id="namaPelatih"
@@ -196,7 +196,7 @@ export function PelatihFormPage({ embedded = false, onDone }: { embedded?: boole
                 ]}
               />
             </Field>
-            <div className="md:col-span-2">
+            <div className="lg:col-span-2">
               <Field label="File Lisensi (PDF/JPG)" htmlFor="lisensiFile">
                 <DropZone
                   accept=".pdf,.jpg,.jpeg"
