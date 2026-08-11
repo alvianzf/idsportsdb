@@ -21,8 +21,11 @@ interface AuthState {
 }
 
 // The refresh token is NOT stored here — it lives in an httpOnly cookie set by
-// the API so JS/XSS can't read it (issue #4). Only the short-lived access token
-// and the user object are persisted.
+// the API so JS/XSS can't read it (issue #4). The access token stays in-memory
+// only (not persisted) so an XSS payload can't read it out of localStorage;
+// only the user object is persisted, so the UI still renders immediately on
+// reload while bootstrapAuth() silently exchanges the refresh cookie for a
+// fresh access token (see lib/api.ts).
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -32,6 +35,6 @@ export const useAuthStore = create<AuthState>()(
       setAccessToken: (accessToken) => set({ accessToken }),
       logout: () => set({ accessToken: null, user: null }),
     }),
-    { name: "koni-auth" },
+    { name: "koni-auth", partialize: (state) => ({ user: state.user }) },
   ),
 );
