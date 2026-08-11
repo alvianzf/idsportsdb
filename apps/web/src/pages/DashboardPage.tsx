@@ -1,7 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Users, UserCog, Building2, Trophy, Medal, ArrowLeftRight, UserPlus, Upload, CalendarPlus, Dumbbell } from "lucide-react";
-import { DATA_ADMIN_ROLES } from "@inasportdb/shared-types";
+import {
+  DATA_ADMIN_ROLES,
+  COMPETITION_LEVEL_CHOICES,
+  COMPETITION_LEVEL_LABELS,
+  type CompetitionLevel,
+} from "@inasportdb/shared-types";
 import { Card, PageHeader, Badge, SearchInput } from "../components/ui";
 import { api, resolveFileUrl } from "../lib/api";
 import { getSocket } from "../lib/socket";
@@ -129,7 +134,15 @@ function CaborStatCard({ c }: { c: PerCaborStat }) {
 }
 
 /** Prominent "Perolehan Medali" totals — one big colored figure + medal icon per medal. */
-function MedalTotalsCard({ stats }: { stats: { key: string; count: number }[] | null }) {
+function MedalTotalsCard({
+  stats,
+  tingkat,
+  onTingkatChange,
+}: {
+  stats: { key: string; count: number }[] | null;
+  tingkat: CompetitionLevel | "";
+  onTingkatChange: (v: CompetitionLevel | "") => void;
+}) {
   const get = (k: string) => stats?.find((s) => s.key === k)?.count ?? 0;
   const items = [
     { key: "GOLD", label: "Emas", color: "text-[#f7b500]", count: get("GOLD") },
@@ -138,7 +151,19 @@ function MedalTotalsCard({ stats }: { stats: { key: string; count: number }[] | 
   ];
   return (
     <Card className="mt-4 md:mt-6">
-      <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-neutral-700">Perolehan Medali</h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-xs font-bold uppercase tracking-wide text-neutral-700">Perolehan Medali</h2>
+        <select
+          value={tingkat}
+          onChange={(e) => onTingkatChange(e.target.value as CompetitionLevel | "")}
+          className="rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-700 focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          <option value="">Semua Tingkat</option>
+          {COMPETITION_LEVEL_CHOICES.map((level) => (
+            <option key={level} value={level}>{COMPETITION_LEVEL_LABELS[level]}</option>
+          ))}
+        </select>
+      </div>
       <div className="grid grid-cols-3 gap-3">
         {items.map((m) => (
           <div
@@ -278,6 +303,7 @@ export function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [perCabor, setPerCabor] = useState<PerCaborStat[] | null>(null);
   const [prestasiStats, setPrestasiStats] = useState<PrestasiStat[] | null>(null);
+  const [medalTingkat, setMedalTingkat] = useState<CompetitionLevel | "">("");
   const [pendingMutasi, setPendingMutasi] = useState(0);
   const [error, setError] = useState(false);
   // Quick actions open their form here and only route away once the work
@@ -305,7 +331,9 @@ export function DashboardPage() {
           summary: DashboardSummary;
           perCabor: PerCaborStat[] | null;
           prestasiStats: PrestasiStat[];
-        }>("/dashboard/all", { params: { tahun: selectedYear } });
+        }>("/dashboard/all", {
+          params: { tahun: selectedYear, tingkatKejuaraan: medalTingkat || undefined },
+        });
         if (cancelled) return;
 
         setSummary(data.summary);
@@ -321,7 +349,7 @@ export function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedYear]);
+  }, [selectedYear, medalTingkat]);
 
   useEffect(() => {
     const socket = getSocket();
@@ -429,7 +457,7 @@ export function DashboardPage() {
       </div>
 
       {/* Perolehan Medali — prominent totals, above the per-cabor cards. */}
-      <MedalTotalsCard stats={prestasiStats} />
+      <MedalTotalsCard stats={prestasiStats} tingkat={medalTingkat} onTingkatChange={setMedalTingkat} />
 
       {isUnscopedAdmin && (
         <section className="mt-4 md:mt-6">

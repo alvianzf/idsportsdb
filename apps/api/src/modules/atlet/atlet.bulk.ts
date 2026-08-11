@@ -117,7 +117,7 @@ atletBulkRouter.get(
 
     const rows = atlets.map((a) => ({
       nomorIndukAtlet: a.nomorIndukAtlet ?? "",
-      nomorRegistrasi: a.nomorRegistrasi,
+      nomorRegistrasi: a.nomorRegistrasi ?? "",
       namaLengkap: a.namaLengkap,
       nik: a.nik,
       jenisKelamin: GENDER_LABELS[a.jenisKelamin as Gender],
@@ -485,9 +485,11 @@ atletBulkRouter.post(
       // Nomor induk is optional; a blank one is never a duplicate of anything.
       const nikKey = normalizeId(parsed.data.nik);
       const indukKey = parsed.data.nomorIndukAtlet ? normalizeId(parsed.data.nomorIndukAtlet) : null;
-      const regKey = normalizeId(parsed.data.nomorRegistrasi);
+      const regKey = parsed.data.nomorRegistrasi ? normalizeId(parsed.data.nomorRegistrasi) : null;
       const firstDupRow =
-        seenNik.get(nikKey) ?? (indukKey ? seenInduk.get(indukKey) : undefined) ?? seenReg.get(regKey);
+        seenNik.get(nikKey) ??
+        (indukKey ? seenInduk.get(indukKey) : undefined) ??
+        (regKey ? seenReg.get(regKey) : undefined);
       if (firstDupRow !== undefined) {
         const label = seenNik.has(nikKey)
           ? "NIK"
@@ -499,7 +501,7 @@ atletBulkRouter.post(
       }
       seenNik.set(nikKey, rowNumber);
       if (indukKey) seenInduk.set(indukKey, rowNumber);
-      seenReg.set(regKey, rowNumber);
+      if (regKey) seenReg.set(regKey, rowNumber);
 
       candidates.push({
         row: rowNumber,
@@ -527,13 +529,15 @@ atletBulkRouter.post(
       const existInduk = new Set(
         existing.flatMap((e) => (e.nomorIndukAtlet ? [normalizeId(e.nomorIndukAtlet)] : [])),
       );
-      const existReg = new Set(existing.map((e) => normalizeId(e.nomorRegistrasi)));
+      const existReg = new Set(
+        existing.flatMap((e) => (e.nomorRegistrasi ? [normalizeId(e.nomorRegistrasi)] : [])),
+      );
       for (const c of candidates) {
         const label = existNik.has(normalizeId(c.data.nik))
           ? "NIK"
           : c.data.nomorIndukAtlet && existInduk.has(normalizeId(c.data.nomorIndukAtlet))
             ? "Nomor induk"
-            : existReg.has(normalizeId(c.data.nomorRegistrasi))
+            : c.data.nomorRegistrasi && existReg.has(normalizeId(c.data.nomorRegistrasi))
               ? "Nomor registrasi"
               : null;
         if (label) {

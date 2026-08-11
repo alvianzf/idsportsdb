@@ -11,7 +11,12 @@ export const createAtletSchema = z.object({
     .trim()
     .optional()
     .transform((v) => (v ? canonicalIdentifier(v) : undefined)),
-  nomorRegistrasi: z.string().trim().min(1).transform(canonicalIdentifier),
+  // Revisi 2026-08-11: optional, sama seperti nomorIndukAtlet — belum ada penomoran.
+  nomorRegistrasi: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v ? canonicalIdentifier(v) : undefined)),
   namaLengkap: z.string().min(1),
   nik: z.string().regex(/^\d{16}$/, "NIK harus 16 digit angka"),
   // Revisi 2026-07-12: tempat/tanggal lahir on hold — optional.

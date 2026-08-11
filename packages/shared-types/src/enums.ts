@@ -199,14 +199,15 @@ export type BatamKecamatan = (typeof BATAM_KECAMATAN)[number];
  */
 export const JABATAN_PENGURUS = [
   "KETUA_UMUM",
+  // Revisi 2026-08-11: ketua harian & wakil ketua tepat di bawah ketua umum.
+  "KETUA_HARIAN",
+  "WAKIL_KETUA",
   "SEKRETARIS_UMUM",
   // Revisi 2026-07-27: wakil sekretaris/bendahara umum, tepat di bawah atasannya.
   "WAKIL_SEKRETARIS_UMUM",
   "BENDAHARA_UMUM",
   "WAKIL_BENDAHARA_UMUM",
   "WAKIL_KETUA_UMUM",
-  "KETUA_HARIAN",
-  "WAKIL_KETUA",
   "KETUA_BIDANG",
   "WAKIL_KETUA_BIDANG",
   "KETUA_SEKSI",

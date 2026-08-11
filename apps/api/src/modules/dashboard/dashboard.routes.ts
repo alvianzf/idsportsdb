@@ -37,7 +37,11 @@ type DashboardRow = {
 // open new connections on a remote DB (~100–500ms cold overhead each). A single
 // $queryRaw with correlated subqueries and json_agg eliminates that entirely.
 // See specs/002-dashboard/spec.md §3.2 and specs/016-indexing/spec.md.
-async function fetchAll(caborId: string | null | undefined, tahun: number) {
+async function fetchAll(
+  caborId: string | null | undefined,
+  tahun: number,
+  tingkatKejuaraan?: string,
+) {
   // #70 — exclude soft-deleted rows from every count.
   const atletCaborFilter = caborId
     ? Prisma.sql`AND "cabangOlahragaId" = ${caborId}`
@@ -48,6 +52,10 @@ async function fetchAll(caborId: string | null | undefined, tahun: number) {
   const prestasiCaborFilter = caborId
     ? Prisma.sql`AND "atletId" IN (SELECT id FROM "Atlet" WHERE "deletedAt" IS NULL AND "cabangOlahragaId" = ${caborId})`
     : Prisma.sql`AND "atletId" IN (SELECT id FROM "Atlet" WHERE "deletedAt" IS NULL)`;
+  // Revisi 2026-08-11: filter Perolehan Medali per tingkat kejuaraan.
+  const prestasiTingkatFilter = tingkatKejuaraan
+    ? Prisma.sql`AND "tingkatKejuaraan" = ${tingkatKejuaraan}`
+    : Prisma.empty;
 
   const [row] = await prisma.$queryRaw<DashboardRow[]>`
     SELECT
@@ -80,7 +88,7 @@ async function fetchAll(caborId: string | null | undefined, tahun: number) {
       } AS per_cabor,
       (SELECT json_agg(r) FROM (
         SELECT medali, COUNT(*) AS cnt FROM "Prestasi"
-        WHERE TRUE ${prestasiCaborFilter}
+        WHERE TRUE ${prestasiCaborFilter} ${prestasiTingkatFilter}
         GROUP BY medali
       ) r) AS prestasi_stats
   `;
@@ -126,7 +134,7 @@ dashboardRouter.get(
       return;
     }
     const tahun = parsed.data.tahun ?? new Date().getFullYear();
-    res.json(await fetchAll(req.scopedCaborId, tahun));
+    res.json(await fetchAll(req.scopedCaborId, tahun, parsed.data.tingkatKejuaraan));
   }),
 );
 

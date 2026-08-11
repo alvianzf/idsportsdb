@@ -232,7 +232,8 @@ model Atlet {
   // Revisi 2026-07-20: nomor induk atlet optional — not every athlete has one
   // yet. Still @unique when present (Postgres allows multiple NULLs).
   nomorIndukAtlet   String?       @unique
-  nomorRegistrasi   String        @unique
+  // Revisi 2026-08-11: nomor registrasi optional too — belum ada penomorannya.
+  nomorRegistrasi   String?       @unique
   namaLengkap       String
   nik               String        @unique
   // Revisi 2026-07-12: tempat/tanggal lahir on hold — optional, hidden from forms.

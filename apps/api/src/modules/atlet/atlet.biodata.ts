@@ -22,7 +22,7 @@ import {
 export interface BiodataAtlet {
   namaLengkap: string;
   nomorIndukAtlet: string | null;
-  nomorRegistrasi: string;
+  nomorRegistrasi: string | null;
   nik: string;
   jenisKelamin: Gender;
   tempatLahir: string | null;
@@ -169,7 +169,7 @@ export function drawBiodataPdf(doc: PDFKit.PDFDocument, a: BiodataAtlet) {
   // ── Keolahragaan ──────────────────────────────────────────────────
   sectionTitle(doc, "Data Keolahragaan");
   fieldRow(doc, "Nomor Induk Atlet", a.nomorIndukAtlet ?? "-");
-  fieldRow(doc, "Nomor Registrasi", a.nomorRegistrasi);
+  fieldRow(doc, "Nomor Registrasi", a.nomorRegistrasi ?? "-");
   fieldRow(doc, "Cabang Olahraga", a.cabangOlahraga.nama);
   if (a.caborTambahan.length > 0) {
     fieldRow(doc, "Cabor Tambahan", a.caborTambahan.map((c) => c.cabangOlahraga.nama).join(", "));

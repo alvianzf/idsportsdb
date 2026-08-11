@@ -99,7 +99,7 @@ export function CaborFormPage() {
         setLogoFile(null);
       }
 
-      navigate(`/cabor/${caborId}`);
+      navigate(`/cabor/${caborId}`, { replace: true });
     } catch (err) {
       const message =
         (err as { response?: { data?: { error?: string } } }).response?.data?.error ??

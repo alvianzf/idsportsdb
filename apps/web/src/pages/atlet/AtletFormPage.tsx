@@ -195,7 +195,7 @@ export function AtletFormPage() {
     try {
       const payload = {
         nomorIndukAtlet: form.nomorIndukAtlet || undefined,
-        nomorRegistrasi: form.nomorRegistrasi,
+        nomorRegistrasi: form.nomorRegistrasi || undefined,
         namaLengkap: form.namaLengkap,
         nik: form.nik,
         jenisKelamin: form.jenisKelamin,
@@ -297,10 +297,9 @@ export function AtletFormPage() {
                   onChange={(e) => setForm((f) => ({ ...f, nomorIndukAtlet: e.target.value }))}
                 />
               </Field>
-              <Field label="Nomor Registrasi" required htmlFor="nomorRegistrasi">
+              <Field label="Nomor Registrasi" htmlFor="nomorRegistrasi">
                 <Input
                   id="nomorRegistrasi"
-                  required
                   value={form.nomorRegistrasi}
                   onChange={(e) => setForm((f) => ({ ...f, nomorRegistrasi: e.target.value }))}
                 />
