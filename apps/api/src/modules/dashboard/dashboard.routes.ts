@@ -53,8 +53,10 @@ async function fetchAll(
     ? Prisma.sql`AND "atletId" IN (SELECT id FROM "Atlet" WHERE "deletedAt" IS NULL AND "cabangOlahragaId" = ${caborId})`
     : Prisma.sql`AND "atletId" IN (SELECT id FROM "Atlet" WHERE "deletedAt" IS NULL)`;
   // Revisi 2026-08-11: filter Perolehan Medali per tingkat kejuaraan.
+  // "tingkatKejuaraan" is a native Postgres enum — the raw-SQL parameter must
+  // be cast explicitly, or Postgres rejects the enum = text comparison.
   const prestasiTingkatFilter = tingkatKejuaraan
-    ? Prisma.sql`AND "tingkatKejuaraan" = ${tingkatKejuaraan}`
+    ? Prisma.sql`AND "tingkatKejuaraan" = ${tingkatKejuaraan}::"CompetitionLevel"`
     : Prisma.empty;
 
   const [row] = await prisma.$queryRaw<DashboardRow[]>`
