@@ -81,6 +81,7 @@ export type EducationLevel = (typeof EDUCATION_LEVELS)[number];
 // records. Revisi 2026-07-29: trimmed to the client's list — Porda, Popda,
 // Porkot, Event Khusus, and Lainnya are no longer offered.
 export const COMPETITION_LEVEL_CHOICES = [
+  "INTERNASIONAL",
   "OLIMPIADE",
   "ASIAN_GAMES",
   "SEA_GAMES",
@@ -92,11 +93,12 @@ export const COMPETITION_LEVEL_CHOICES = [
   "KEJURDA",
 ] as const;
 
-// Revisi 2026-07-29: the offered list is now the complete list — the retired
-// values were dropped from the database enum too, so nothing else is valid.
+// Revisi 2026-08-12: added INTERNASIONAL for international events not covered
+// by the specific named tiers (Olimpiade, Asian Games, SEA Games).
 export const COMPETITION_LEVELS = COMPETITION_LEVEL_CHOICES;
 export type CompetitionLevel = (typeof COMPETITION_LEVELS)[number];
 export const COMPETITION_LEVEL_LABELS: Record<CompetitionLevel, string> = {
+  INTERNASIONAL: "Internasional",
   OLIMPIADE: "Olimpiade",
   ASIAN_GAMES: "Asian Games",
   SEA_GAMES: "SEA Games",

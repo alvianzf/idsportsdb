@@ -71,6 +71,7 @@ enum EventLevel {
 // PROVINSI, NASIONAL, INTERNASIONAL, PORDA, POPDA, PORKOT, EVENT_KHUSUS, and
 // LAINNYA — no prestasi row used any of them.
 enum CompetitionLevel {
+  INTERNASIONAL
   OLIMPIADE
   ASIAN_GAMES
   SEA_GAMES
