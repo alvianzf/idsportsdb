@@ -74,6 +74,7 @@ const empty: AtletForm = {
 interface PrestasiDraft {
   namaKejuaraan: string;
   tingkatKejuaraan: CompetitionLevel;
+  kategori: string;
   tahun: string;
   medali: Medal;
   peringkat: string;
@@ -84,6 +85,7 @@ function emptyPrestasi(): PrestasiDraft {
   return {
     namaKejuaraan: "",
     tingkatKejuaraan: "KEJURDA",
+    kategori: "",
     tahun: String(new Date().getFullYear()),
     medali: "GOLD",
     peringkat: "",
@@ -235,6 +237,7 @@ export function AtletFormPage() {
             const res = await api.post(`/atlet/${atletId}/prestasi`, {
               namaKejuaraan: row.namaKejuaraan,
               tingkatKejuaraan: row.tingkatKejuaraan,
+              kategori: row.kategori || undefined,
               tahun: Number(row.tahun),
               medali: row.medali,
               peringkat: row.peringkat ? Number(row.peringkat) : undefined,
@@ -512,6 +515,14 @@ export function AtletFormPage() {
                             value={row.tingkatKejuaraan}
                             onChange={(v) => updatePrestasi(index, { tingkatKejuaraan: v as CompetitionLevel })}
                             options={COMPETITION_LEVEL_CHOICES.map((l) => ({ value: l, label: COMPETITION_LEVEL_LABELS[l] }))}
+                          />
+                        </Field>
+                        <Field label="Kategori" htmlFor={`kategori-${index}`}>
+                          <Input
+                            id={`kategori-${index}`}
+                            placeholder="Contoh: Kelas 58kg Putra"
+                            value={row.kategori}
+                            onChange={(e) => updatePrestasi(index, { kategori: e.target.value })}
                           />
                         </Field>
                         <Field label="Tahun" required htmlFor={`tahun-${index}`}>
