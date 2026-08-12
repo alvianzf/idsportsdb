@@ -44,7 +44,8 @@ Full-stack web application for KONI Batam (Komite Olahraga Nasional Indonesia, B
 ### Prestasi Atlet (Achievements)
 - Full CRUD with filters: cabor, year, competition level, medal type
 - Medals: Emas / Perak / Perunggu / Tanpa Medali with colour-coded badges
-- Competition levels: Internasional · Nasional · Regional · Provinsi · Kota
+- Competition levels: Internasional, Olimpiade, Asian Games, SEA Games, PON, BK PON, Porwil, Porprov, Kejurnas, Kejurda
+- Optional free-text Kategori field (e.g. weight class, age group), display-only, not used for filtering or aggregation
 - Optional ranking field (`peringkat`)
 - Pagination and bulk delete
 
@@ -123,6 +124,7 @@ Full-stack web application for KONI Batam (Komite Olahraga Nasional Indonesia, B
 | Mobile | Capacitor (Android + iOS webview) |
 | Shared types | `@inasportdb/shared-types` — roles, enums, labels |
 | API middleware | `compression` (gzip), `helmet` (security headers), CORS |
+| Env validation | `env-validate-sarcastically`, startup check against `apps/api/.env.example` |
 
 ## Roles & Permissions
 
