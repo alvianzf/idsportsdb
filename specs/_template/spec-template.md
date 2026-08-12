@@ -53,3 +53,10 @@
 ## 8. Dependencies
 
 - Depends on: `specs/<NNN-name>/spec.md`
+
+## 9. Documentation (Optional)
+
+- If this change affects user-facing UI/fields, the SIMO user manuals
+  (`Panduan-SIMO-SuperAdmin-AdminKONI.pdf`, `Panduan-SIMO-AdminCabor.pdf`) may
+  be updated to match. Optional — skip if the change is internal-only or the
+  manuals are out of scope for this task.
