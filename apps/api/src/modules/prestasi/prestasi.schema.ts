@@ -6,6 +6,9 @@ const currentYear = new Date().getFullYear();
 const prestasiFields = z.object({
   namaKejuaraan: z.string().min(1),
   tingkatKejuaraan: z.enum(COMPETITION_LEVELS),
+  // Free-text category (e.g. kelas berat, kelompok umur). Prisma binds this as
+  // a parameterized value, so it's safe from SQL injection by construction.
+  kategori: z.string().trim().max(100).optional(),
   tahun: z.coerce.number().int().min(1950).max(currentYear + 1),
   medali: z.enum(MEDALS),
   peringkat: z.coerce.number().int().min(1).optional(),

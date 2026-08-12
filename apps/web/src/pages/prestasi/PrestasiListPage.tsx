@@ -22,6 +22,7 @@ interface PrestasiRow {
   id: string;
   namaKejuaraan: string;
   tingkatKejuaraan: CompetitionLevel;
+  kategori: string | null;
   tahun: number;
   medali: Medal;
   peringkat: number | null;
@@ -180,6 +181,13 @@ export function PrestasiListPage() {
       sortable: true,
       getValue: (p) => p.tingkatKejuaraan,
       render: (p) => <span className="text-neutral-600">{competitionLevelLabel(p.tingkatKejuaraan)}</span>,
+    },
+    {
+      key: "kategori",
+      label: "Kategori",
+      sortable: true,
+      getValue: (p) => p.kategori ?? "",
+      render: (p) => <span className="text-neutral-600">{p.kategori ?? "-"}</span>,
     },
     {
       key: "tahun",

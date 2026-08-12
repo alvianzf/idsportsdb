@@ -33,6 +33,7 @@ interface Prestasi {
   id: string;
   namaKejuaraan: string;
   tingkatKejuaraan: CompetitionLevel;
+  kategori: string | null;
   tahun: number;
   medali: Medal;
   peringkat: number | null;
@@ -44,6 +45,7 @@ interface Prestasi {
 interface PrestasiForm {
   namaKejuaraan: string;
   tingkatKejuaraan: CompetitionLevel;
+  kategori: string;
   tahun: string;
   medali: Medal;
   peringkat: string;
@@ -52,6 +54,7 @@ interface PrestasiForm {
 const emptyForm: PrestasiForm = {
   namaKejuaraan: "",
   tingkatKejuaraan: "KEJURDA",
+  kategori: "",
   tahun: String(new Date().getFullYear()),
   medali: "GOLD",
   peringkat: "",
@@ -157,6 +160,7 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
     setForm({
       namaKejuaraan: p.namaKejuaraan,
       tingkatKejuaraan: p.tingkatKejuaraan,
+      kategori: p.kategori ?? "",
       tahun: String(p.tahun),
       medali: p.medali,
       peringkat: p.peringkat != null ? String(p.peringkat) : "",
@@ -174,6 +178,7 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
       const payload = {
         namaKejuaraan: form.namaKejuaraan,
         tingkatKejuaraan: form.tingkatKejuaraan,
+        kategori: form.kategori || undefined,
         tahun: Number(form.tahun),
         medali: form.medali,
         peringkat: form.peringkat ? Number(form.peringkat) : undefined,
@@ -281,6 +286,7 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
                     <p className="font-medium text-neutral-900">{p.namaKejuaraan}</p>
                     <p className="text-neutral-500">
                       {competitionLevelLabel(p.tingkatKejuaraan)} &middot; {p.tahun}
+                      {p.kategori ? ` \u00b7 ${p.kategori}` : ""}
                       {p.peringkat ? ` \u00b7 Peringkat ${p.peringkat}` : ""}
                     </p>
                   </div>
@@ -417,6 +423,14 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
                 />
               </Field>
             </div>
+            <Field label="Kategori" htmlFor="kategori">
+              <Input
+                id="kategori"
+                placeholder="Contoh: Kelas 58kg Putra"
+                value={form.kategori}
+                onChange={(e) => setForm((f) => ({ ...f, kategori: e.target.value }))}
+              />
+            </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Medali" required htmlFor="medali">
                 <Select

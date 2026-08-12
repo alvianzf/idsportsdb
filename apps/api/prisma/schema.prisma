@@ -383,6 +383,9 @@ model Prestasi {
   atlet            Atlet    @relation(fields: [atletId], references: [id], onDelete: Cascade)
   namaKejuaraan    String
   tingkatKejuaraan CompetitionLevel
+  // Free-text category (e.g. weight class, age group) — display-only, never
+  // aggregated/grouped in reports or dashboard stats.
+  kategori         String?
   tahun            Int
   medali           Medal
   peringkat        Int?
