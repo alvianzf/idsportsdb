@@ -178,7 +178,9 @@ export function PrestasiTab({ atletId, canManage }: PrestasiTabProps) {
       const payload = {
         namaKejuaraan: form.namaKejuaraan,
         tingkatKejuaraan: form.tingkatKejuaraan,
-        kategori: form.kategori || undefined,
+        // Always send the field (even "") so clearing it on an edit reaches the
+        // server as an explicit clear, not an omitted key a PATCH would ignore.
+        kategori: form.kategori,
         tahun: Number(form.tahun),
         medali: form.medali,
         peringkat: form.peringkat ? Number(form.peringkat) : undefined,

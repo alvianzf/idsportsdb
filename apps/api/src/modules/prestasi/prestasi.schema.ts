@@ -8,7 +8,14 @@ const prestasiFields = z.object({
   tingkatKejuaraan: z.enum(COMPETITION_LEVELS),
   // Free-text category (e.g. kelas berat, kelompok umur). Prisma binds this as
   // a parameterized value, so it's safe from SQL injection by construction.
-  kategori: z.string().trim().max(100).optional(),
+  // An emptied field arrives as "" (the form always sends the field) and is
+  // stored as null so it can actually be cleared, not just left unset.
+  kategori: z
+    .string()
+    .trim()
+    .max(100)
+    .optional()
+    .transform((v) => (v ? v : null)),
   tahun: z.coerce.number().int().min(1950).max(currentYear + 1),
   medali: z.enum(MEDALS),
   peringkat: z.coerce.number().int().min(1).optional(),

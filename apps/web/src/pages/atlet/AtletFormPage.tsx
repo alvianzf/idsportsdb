@@ -237,7 +237,7 @@ export function AtletFormPage() {
             const res = await api.post(`/atlet/${atletId}/prestasi`, {
               namaKejuaraan: row.namaKejuaraan,
               tingkatKejuaraan: row.tingkatKejuaraan,
-              kategori: row.kategori || undefined,
+              kategori: row.kategori,
               tahun: Number(row.tahun),
               medali: row.medali,
               peringkat: row.peringkat ? Number(row.peringkat) : undefined,
