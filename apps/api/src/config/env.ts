@@ -3,10 +3,8 @@ import validateEnv from "env-validate-sarcastically";
 
 // Extra startup check on top of required() below, catches a missing .env
 // before the app boots and lists everything that's absent in one message.
-// v1.0.6 changed the default requiredPath to ".env.example", which doesn't
-// exist in apps/api (only the monorepo root has one), so pass the path
-// explicitly to keep using the curated minimal list.
-validateEnv(".env", ".env.required");
+// Reads apps/api/.env.example (the package's default requiredPath as of 1.0.6).
+validateEnv();
 
 function required(name: string): string {
   const value = process.env[name];
