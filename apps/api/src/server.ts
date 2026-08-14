@@ -140,7 +140,7 @@ async function checkRedundancy() {
   try {
     const rows = await prisma.$queryRaw<
       { check_remote_health: { reachable: boolean; latencyMs: number; pendingFailures: number; code?: string } }[]
-    >`SELECT check_remote_health()`;
+    >`SELECT ops.check_remote_health()`;
     const r = rows[0].check_remote_health;
     return {
       status: r.reachable ? ("up" as const) : ("down" as const),
