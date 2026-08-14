@@ -29,6 +29,11 @@ const ALERT_EMAIL = process.env.ALERT_EMAIL ?? "";
 const STATE_FILE = path.join(process.env.HOME ?? os.homedir(), ".koni-health-state.json");
 const FAILURE_THRESHOLD = 2;
 const TIMEOUT_MS = 15_000;
+// Backup DB sync backlog: pendingFailures is rows in ops._sync_failures that
+// the retry cron (every 5min) hasn't been able to push to the remote yet.
+// A handful is normal transient lag; a pile-up means the remote is down or
+// the retry cron itself broke.
+const PENDING_FAILURES_THRESHOLD = 10;
 
 function readState() {
   try {
@@ -62,13 +67,22 @@ function summarise(payload) {
   }
   if (payload.uptimeSeconds != null) parts.push(`up ${Math.round(payload.uptimeSeconds / 60)}m`);
   if (payload.version) parts.push(`v${payload.version}`);
+  const redundancy = payload.checks?.redundancy;
+  if (redundancy) {
+    parts.push(
+      `backup ${redundancy.status}${redundancy.code ? ` (${redundancy.code})` : ""}` +
+        (redundancy.pendingFailures != null ? `, ${redundancy.pendingFailures} pending` : ""),
+    );
+  }
   return parts.join(", ");
 }
 
 /**
- * Resolves to `{ failure, detail }` — `failure` is a short reason when
- * unhealthy or null when healthy, `detail` is the parsed summary either way so
- * a warning (disk filling up) is visible even while the check still passes.
+ * Resolves to `{ failure, detail, payload }` — `failure` is a short reason
+ * when unhealthy or null when healthy, `detail` is the parsed summary either
+ * way so a warning (disk filling up) is visible even while the check still
+ * passes, `payload` is the parsed body (or null) for callers that need a
+ * specific field (e.g. redundancy backlog).
  */
 async function probe() {
   const controller = new AbortController();
@@ -84,15 +98,19 @@ async function probe() {
     }
     const detail = summarise(payload);
     if (res.status !== 200) {
-      return { failure: `HTTP ${res.status}${detail ? ` — ${detail}` : ` — ${body.slice(0, 200)}`}`, detail };
+      return {
+        failure: `HTTP ${res.status}${detail ? ` — ${detail}` : ` — ${body.slice(0, 200)}`}`,
+        detail,
+        payload,
+      };
     }
     // 200 with database:"down" should never happen (the route 503s), but treat
     // the body as authoritative rather than trusting the status alone.
-    if (payload?.database === "down") return { failure: `database down — ${detail}`, detail };
-    return { failure: null, detail };
+    if (payload?.database === "down") return { failure: `database down — ${detail}`, detail, payload };
+    return { failure: null, detail, payload };
   } catch (err) {
     const reason = err.name === "AbortError" ? `timeout after ${TIMEOUT_MS}ms` : err.message;
-    return { failure: `unreachable — ${reason}`, detail: "" };
+    return { failure: `unreachable — ${reason}`, detail: "", payload: null };
   } finally {
     clearTimeout(timer);
   }
@@ -118,8 +136,52 @@ async function sendAlert(subject, text) {
   log(`alert sent to ${ALERT_EMAIL}: ${subject}`);
 }
 
+/**
+ * Same transition-only alerting as the main API check, applied to the backup
+ * DB sync backlog: alert once when pendingFailures crosses the threshold for
+ * `FAILURE_THRESHOLD` consecutive checks, alert once when it drops back down.
+ * Only evaluated when the main probe succeeded — no point double-alerting a
+ * backlog reading pulled from an API that's already down.
+ */
+async function checkRedundancyBacklog(state, payload) {
+  const pending = payload?.checks?.redundancy?.pendingFailures ?? null;
+  const rStatus = payload?.checks?.redundancy?.status;
+  const piling = pending != null && pending >= PENDING_FAILURES_THRESHOLD;
+
+  if (piling || rStatus === "down") {
+    state.redundancyFailures = (state.redundancyFailures ?? 0) + 1;
+    if (!state.redundancyDown && state.redundancyFailures >= FAILURE_THRESHOLD) {
+      state.redundancyDown = true;
+      state.redundancySince = new Date().toISOString();
+      await sendAlert(
+        "[KONI] BACKUP DB TERTUNDA",
+        `Sinkronisasi ke database cadangan bermasalah.\n\n` +
+          `Status: ${rStatus}\nPending: ${pending}\nWaktu: ${state.redundancySince}\n\n` +
+          `Langkah cek di VPS:\n` +
+          `  sudo -u postgres psql -d rendang5018_sport_db -c "SELECT * FROM ops._sync_failures ORDER BY occurred_at DESC LIMIT 20;"\n` +
+          `  sudo -u postgres psql -d rendang5018_sport_db -c "SELECT ops.check_remote_health();"\n` +
+          `  sudo cat /var/lib/postgresql/retry_sync_failures.log | tail -20\n` +
+          `  nc -z dbts.sidra.id 65433   # database cadangan dapat dihubungi?\n`,
+      ).catch((e) => log(`redundancy alert failed: ${e.message}`));
+    }
+  } else {
+    if (state.redundancyDown) {
+      await sendAlert(
+        "[KONI] BACKUP DB PULIH",
+        `Sinkronisasi ke database cadangan kembali normal.\n` +
+          `Mulai bermasalah: ${state.redundancySince ?? "tidak tercatat"}\nPulih: ${new Date().toISOString()}\n`,
+      ).catch((e) => log(`redundancy recovery alert failed: ${e.message}`));
+    }
+    state.redundancyDown = false;
+    state.redundancyFailures = 0;
+    delete state.redundancySince;
+  }
+}
+
 const state = readState();
-const { failure, detail } = await probe();
+const { failure, detail, payload } = await probe();
+
+if (!failure) await checkRedundancyBacklog(state, payload);
 
 if (failure) {
   state.consecutiveFailures += 1;
