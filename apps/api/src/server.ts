@@ -130,6 +130,30 @@ async function checkDatabase() {
 }
 
 /**
+ * Is the redundancy backup (dblink trigger sync to the external DB) working?
+ * `check_remote_health()` lives in Postgres, not here — it reuses the same
+ * dblink connection the sync triggers use, so the app never needs the
+ * remote's credentials. A down backup never fails readiness (the app runs
+ * fine off the primary alone); it only downgrades status to "warning".
+ */
+async function checkRedundancy() {
+  try {
+    const rows = await prisma.$queryRaw<
+      { check_remote_health: { reachable: boolean; latencyMs: number; pendingFailures: number; code?: string } }[]
+    >`SELECT check_remote_health()`;
+    const r = rows[0].check_remote_health;
+    return {
+      status: r.reachable ? ("up" as const) : ("down" as const),
+      latencyMs: r.latencyMs,
+      pendingFailures: r.pendingFailures,
+      ...(r.code ? { code: r.code } : {}),
+    };
+  } catch {
+    return { status: "unknown" as const };
+  }
+}
+
+/**
  * Uploads must be writable and the disk must have room — a full disk fails
  * certificate uploads while every other check still looks perfectly healthy.
  */
@@ -163,19 +187,24 @@ async function checkStorage() {
 app.get(
   "/health/ready",
   asyncHandler(async (_req, res) => {
-    const [database, storage] = await Promise.all([checkDatabase(), checkStorage()]);
+    const [database, storage, redundancy] = await Promise.all([
+      checkDatabase(),
+      checkStorage(),
+      checkRedundancy(),
+    ]);
     const memory = process.memoryUsage();
     const healthy = database.status === "up" && storage.status !== "error";
+    const warning = storage.status === "low" || redundancy.status !== "up";
 
     res.status(healthy ? 200 : 503).json({
-      status: healthy ? (storage.status === "low" ? "warning" : "ok") : "degraded",
+      status: healthy ? (warning ? "warning" : "ok") : "degraded",
       // `database` kept as a bare string too: the monitor and any existing
       // check that greps for `"database":"up"` must keep working.
       database: database.status,
       timestamp: new Date().toISOString(),
       uptimeSeconds: Math.round(process.uptime()),
       version: pkg.version,
-      checks: { database, storage },
+      checks: { database, storage, redundancy },
       memory: {
         rssMb: Math.round(memory.rss / 1024 / 1024),
         heapUsedMb: Math.round(memory.heapUsed / 1024 / 1024),
