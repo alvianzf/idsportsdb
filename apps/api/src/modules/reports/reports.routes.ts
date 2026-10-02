@@ -432,7 +432,7 @@ reportsRouter.get(
     }
 
     const caborId = req.scopedCaborId ?? parsed.data.cabor ?? null;
-    const data = await getRekapMedali(caborId, parsed.data.tahun);
+    const data = await getRekapMedali(caborId, parsed.data.tahun, parsed.data.tingkat);
 
     if (parsed.data.format === "json") {
       res.json(data);

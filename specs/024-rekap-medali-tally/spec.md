@@ -105,3 +105,45 @@ No new entities or columns. Reads `Prestasi.medali` joined through `Atlet` to
   (reuses `getRekapMedali`), `018-public-pages`. Additive-only; no existing
   endpoint's shape changes except two additive fields (`medals` on `GET
   /cabor/:id` and `GET /public/cabor/:id/pengurus`).
+
+---
+
+## Changelog
+
+### Public medal-tally hub + ranking + detail (added)
+
+- **New top-level public menu "Medali"** (`PUBLIC_NAV`, `PublicBottomNav`) →
+  `/medali` (`MedaliIndexPage.tsx`), the centerpiece medal-tally page. Shows:
+  the full `RekapMedaliTable` (same shared component as `/data`'s Medali
+  tab), a **Tingkat Kejuaraan** filter-card grid, and a **Tahun** filter-card
+  grid — each card shows a mini Emas/Perak/Perunggu readout and, when
+  clicked, filters the table to that dimension (`?tingkat=`/`?tahun=` in the
+  URL, one active filter at a time, with a clear/"×" chip).
+  - New endpoint `GET /api/v1/public/medali-summary` → `{ byTingkat, byTahun
+    }` totals (via `getMedaliSummary()`, `prisma.prestasi.groupBy`).
+  - `GET /api/v1/public/rekap-medali` and the admin `GET
+    /api/v1/reports/rekap-medali` both gained an optional `?tingkat=` filter
+    (`getRekapMedali(caborId, tahun?, tingkat?)`).
+- **New `/medali/:jenis` ranking page** (`MedaliRankingPage.tsx`,
+  `jenis` = `emas`/`perak`/`perunggu`) — every cabor that won that medal
+  type, ranked descending with an animated progress-bar list; reached by
+  clicking the Emas/Perak/Perunggu figure on the landing page's "Perolehan
+  Medali" card.
+- **Landing page** (`LandingPage.tsx`): the four hero stat cards (Atlet
+  Aktif/Cabang Olahraga/Pelatih/Total Medali) are now links to their
+  respective public pages; "Perolehan Medali" card gained a "Detail" link to
+  `/medali`.
+- **Per-cabor medal detail tab** (`CaborMedaliDetail.tsx`, shared by
+  dashboard `CaborDetailPage.tsx` and public `CaborPublicPage.tsx`): an
+  interactive year-chip filter + animated list of that cabor's individual
+  medal records (kejuaraan, tingkat, tahun; athlete name on the dashboard
+  side only). Sits below the existing Emas/Perak/Perunggu/Total summary,
+  which is unchanged. New endpoints: `GET /api/v1/cabor/:id/prestasi`
+  (authenticated, reuses `getPrestasiReport`, includes athlete name) and
+  `GET /api/v1/public/cabor/:id/prestasi` (no auth, no athlete name).
+- **Back-link awareness**: cabor detail links from `RekapMedaliTable`,
+  `MedaliRankingPage`, and the landing page's cabor grid now carry router
+  `state: { backTo, backLabel }`; `CaborPublicPage`'s back button reads it
+  (via `useLocation().state`, falling back to "Kembali ke daftar cabor") so
+  it names the page the visitor actually came from (e.g. "Kembali ke
+  Perolehan Medali", "Kembali ke Peringkat Medali Emas").

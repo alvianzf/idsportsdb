@@ -111,6 +111,7 @@ export function MedaliRankingPage() {
               >
                 <Link
                   to={`/cabang-olahraga/${r.cabangOlahragaId}`}
+                  state={{ backTo: `/medali/${jenis}`, backLabel: `Kembali ke Peringkat Medali ${meta.label}` }}
                   className={`block rounded-xl border border-neutral-200 bg-white p-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${i === 0 ? `ring-2 ${meta.ring}` : ""}`}
                 >
                   <div className="flex items-center gap-3">

@@ -13,6 +13,7 @@ import { api, resolveFileUrl } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 import { useAuthStore } from "../../store/authStore";
 import { PengurusViews, type Pengurus } from "./PengurusOrgViews";
+import { CaborMedaliDetail, type MedaliDetailRow } from "./CaborMedaliDetail";
 
 interface CaborDetail {
   id: string;
@@ -110,6 +111,7 @@ export function CaborDetailPage() {
 
   const [cabor, setCabor] = useState<CaborDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [medaliRows, setMedaliRows] = useState<MedaliDetailRow[] | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPengurus, setEditingPengurus] = useState<Pengurus | null>(null);
@@ -126,6 +128,23 @@ export function CaborDetailPage() {
   }
 
   useEffect(load, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    setMedaliRows(null);
+    api
+      .get<{ namaKejuaraan: string; tingkatKejuaraan: MedaliDetailRow["tingkatKejuaraan"]; tahun: number; medali: MedaliDetailRow["medali"]; atlet: { namaLengkap: string } }[]>(
+        `/cabor/${id}/prestasi`,
+      )
+      .then((res) =>
+        setMedaliRows(
+          res.data
+            .filter((p) => p.medali !== "NONE")
+            .map((p) => ({ namaKejuaraan: p.namaKejuaraan, tingkatKejuaraan: p.tingkatKejuaraan, tahun: p.tahun, medali: p.medali, atletNama: p.atlet.namaLengkap })),
+        ),
+      )
+      .catch(() => setMedaliRows([]));
+  }, [id]);
 
   function openCreate() {
     setEditingPengurus(null);
@@ -306,6 +325,10 @@ export function CaborDetailPage() {
           <span className="font-semibold text-neutral-900">Total {cabor.medals.total}</span>
         </div>
       </Card>
+
+      <div className="mb-4">
+        <CaborMedaliDetail rows={medaliRows} />
+      </div>
 
       <Card className="mb-4">
         <h2 className="mb-3 text-sm font-semibold text-neutral-900">Data Sekretariat</h2>

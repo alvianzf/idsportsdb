@@ -3,7 +3,9 @@ import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { publicArtikelQuerySchema } from "../artikel/artikel.schema.js";
 import { sortByJabatan } from "../../lib/jabatanOrder.js";
-import { getCaborMedalTally, getRekapMedali } from "../reports/reports.service.js";
+import { COMPETITION_LEVELS, type CompetitionLevel } from "@inasportdb/shared-types";
+import { getCaborMedalTally, getMedaliSummary, getRekapMedali } from "../reports/reports.service.js";
+import { atletInCaborFilter, atletNotDeleted } from "../atlet/atlet.service.js";
 
 export const publicRouter = Router();
 
@@ -316,13 +318,48 @@ publicRouter.get(
   }),
 );
 
+/** specs/024-rekap-medali-tally/spec.md — this cabor's individual medal
+ * records (kejuaraan + tingkat + tahun), for the public cabor detail page's
+ * "Rincian Medali" tab. Athlete names withheld, same as the rest of this file. */
+publicRouter.get(
+  "/cabor/:id/prestasi",
+  asyncHandler(async (req, res) => {
+    const rows = await prisma.prestasi.findMany({
+      where: {
+        atlet: { ...atletNotDeleted, ...atletInCaborFilter(req.params.id) },
+        medali: { in: ["GOLD", "SILVER", "BRONZE"] },
+      },
+      select: { namaKejuaraan: true, tingkatKejuaraan: true, tahun: true, medali: true },
+      orderBy: [{ tahun: "desc" }, { namaKejuaraan: "asc" }],
+    });
+    res.json(rows);
+  }),
+);
+
 /** specs/024-rekap-medali-tally/spec.md — public counterpart to
- * `/reports/rekap-medali`: every cabor's medal tally, no auth. */
+ * `/reports/rekap-medali`: every cabor's medal tally, no auth. Accepts the
+ * same `?tahun=`/`?tingkat=` filters as the public medal-tally hub page's
+ * Tingkat Kejuaraan / Tahun cards. */
 publicRouter.get(
   "/rekap-medali",
   asyncHandler(async (req, res) => {
     const tahun = Number(req.query.tahun) || undefined;
-    const data = await getRekapMedali(null, tahun);
+    const tingkatRaw = req.query.tingkat;
+    const tingkat =
+      typeof tingkatRaw === "string" && (COMPETITION_LEVELS as readonly string[]).includes(tingkatRaw)
+        ? (tingkatRaw as CompetitionLevel)
+        : undefined;
+    const data = await getRekapMedali(null, tahun, tingkat);
+    res.json(data);
+  }),
+);
+
+/** specs/024-rekap-medali-tally/spec.md — medal totals by Tingkat Kejuaraan
+ * and by Tahun, for the public medal-tally hub page's filter cards. */
+publicRouter.get(
+  "/medali-summary",
+  asyncHandler(async (_req, res) => {
+    const data = await getMedaliSummary();
     res.json(data);
   }),
 );

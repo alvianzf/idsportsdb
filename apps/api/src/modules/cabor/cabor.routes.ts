@@ -13,7 +13,7 @@ import {
 import { documentFileFilter, uploadRoot, uploader } from "../../lib/storage.js";
 import { createCaborSchema, updateCaborSchema, listCaborQuerySchema, setCaborActiveSchema } from "./cabor.schema.js";
 import { writeAudit } from "../../lib/audit.js";
-import { getCaborMedalTally } from "../reports/reports.service.js";
+import { getCaborMedalTally, getPrestasiReport } from "../reports/reports.service.js";
 
 // Revisi 2026-07-27: atlet/pelatih are soft-deleted, so an unfiltered _count
 // kept reporting removed records (a cabor with nothing in it showed "1 atlet").
@@ -117,6 +117,18 @@ caborRouter.get(
       jumlahPelatih: _count.pelatihs,
       medals,
     });
+  }),
+);
+
+/** specs/024-rekap-medali-tally/spec.md — this cabor's individual prestasi
+ * records (kejuaraan + tingkat + tahun + medali, with athlete name), for the
+ * dashboard cabor detail page's "Medali" tab. */
+caborRouter.get(
+  "/:id/prestasi",
+  asyncHandler(async (req, res) => {
+    if (rejectOtherCabor(req, res)) return;
+    const data = await getPrestasiReport(req.params.id);
+    res.json(data);
   }),
 );
 

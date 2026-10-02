@@ -39,4 +39,5 @@ export const rekapMedaliQuerySchema = z.object({
   format: reportFormatSchema,
   tahun: reportYearSchema,
   cabor: z.string().optional(),
+  tingkat: z.enum(COMPETITION_LEVELS).optional(),
 });

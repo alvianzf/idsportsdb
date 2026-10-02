@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, FileText, Mail, MapPin, Medal, Phone, User, Users, UserCog } from "lucide-react";
 import { Card, SearchInput } from "../../components/ui";
 import { api, resolveEmbedUrl, resolveFileUrl } from "../../lib/api";
 import { PublicShell } from "./PublicShell";
 import { PengurusViews, type Pengurus } from "../cabor/PengurusOrgViews";
+import { CaborMedaliDetail, type MedaliDetailRow } from "../cabor/CaborMedaliDetail";
 
 interface PublicCabor {
   id: string;
@@ -115,9 +116,21 @@ interface PublicDokumen {
   fileUrl: string;
 }
 
+/** Where the visitor came from, so the back link can name that page instead of
+ * always pointing at the cabor list. Callers pass this via `<Link state={...}>`. */
+export interface CaborBackLink {
+  backTo: string;
+  backLabel: string;
+}
+
+const DEFAULT_BACK: CaborBackLink = { backTo: "/cabang-olahraga", backLabel: "Kembali ke daftar cabor" };
+
 function CaborPengurusDetail({ caborId }: { caborId: string }) {
   const [data, setData] = useState<CaborDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [medaliRows, setMedaliRows] = useState<MedaliDetailRow[] | null>(null);
+  const location = useLocation();
+  const back = (location.state as CaborBackLink | null) ?? DEFAULT_BACK;
 
   useEffect(() => {
     api
@@ -128,14 +141,22 @@ function CaborPengurusDetail({ caborId }: { caborId: string }) {
       );
   }, [caborId]);
 
+  useEffect(() => {
+    setMedaliRows(null);
+    api
+      .get<MedaliDetailRow[]>(`/public/cabor/${caborId}/prestasi`)
+      .then((res) => setMedaliRows(res.data))
+      .catch(() => setMedaliRows([]));
+  }, [caborId]);
+
   return (
     <PublicShell
       title={data?.cabor.nama ?? "Pengurus Cabor"}
       description={data?.cabor.organisasiNasional ?? "Struktur pengurus cabang olahraga"}
     >
       <div className="space-y-4">
-        <Link to="/cabang-olahraga" className="inline-flex items-center gap-1 text-sm font-medium text-primary">
-          <ArrowLeft size={16} /> Kembali ke daftar cabor
+        <Link to={back.backTo} className="inline-flex items-center gap-1 text-sm font-medium text-primary">
+          <ArrowLeft size={16} /> {back.backLabel}
         </Link>
 
         {data?.cabor.logoOrganisasiUrl && (
@@ -172,6 +193,8 @@ function CaborPengurusDetail({ caborId }: { caborId: string }) {
             </div>
           </Card>
         )}
+
+        {data && <CaborMedaliDetail rows={medaliRows} />}
 
         {/* Revisi 2026-07-27: data sekretariat cabor. */}
         {data && (data.cabor.sekretariat || data.cabor.teleponSekretariat || data.cabor.emailSekretariat || data.cabor.narahubungSekretariat) && (

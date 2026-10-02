@@ -165,7 +165,7 @@ export function LandingPage() {
             { label: "Atlet Aktif", value: stats?.activeAtletCount, icon: Users, to: "/data" },
             { label: "Cabang Olahraga", value: stats?.caborCount, icon: Building2, to: "/cabang-olahraga" },
             { label: "Pelatih", value: stats?.pelatihCount, icon: UserCog, to: "/data?tab=tenaga" },
-            { label: "Total Medali", value: totalMedali, icon: MedalIcon, to: "/data?tab=medali" },
+            { label: "Total Medali", value: totalMedali, icon: MedalIcon, to: "/medali" },
           ].map(({ label, value, icon: Icon, to }) => (
             <motion.div
               key={label}
@@ -201,7 +201,7 @@ export function LandingPage() {
                   Perolehan Medali
                 </h2>
                 <Link
-                  to="/data?tab=medali"
+                  to="/medali"
                   className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
                 >
                   Detail <ArrowRight size={13} />
@@ -240,6 +240,7 @@ export function LandingPage() {
                 <Link
                   key={c.id}
                   to={`/cabang-olahraga/${c.id}`}
+                  state={{ backTo: "/", backLabel: "Kembali ke beranda" }}
                   className="group flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg"
                 >
                   {c.logoOrganisasiUrl ? (

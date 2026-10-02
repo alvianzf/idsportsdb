@@ -139,11 +139,12 @@ export function getPrestasiReport(
 }
 
 /** specs/009-pelaporan/spec.md — report 6: rekap medali (per cabor). */
-export async function getRekapMedali(caborId: string | null, tahun?: number) {
+export async function getRekapMedali(caborId: string | null, tahun?: number, tingkat?: CompetitionLevel) {
   const prestasis = await prisma.prestasi.findMany({
     where: {
       atlet: { ...atletNotDeleted, ...(caborId ? atletInCaborFilter(caborId) : {}) },
       ...(tahun ? { tahun } : {}),
+      ...(tingkat ? { tingkatKejuaraan: tingkat } : {}),
     },
     select: {
       medali: true,
@@ -195,4 +196,36 @@ export async function getCaborMedalTally(caborId: string) {
   return row
     ? { gold: row.gold, silver: row.silver, bronze: row.bronze, total: row.total }
     : { gold: 0, silver: 0, bronze: 0, total: 0 };
+}
+
+/** specs/024-rekap-medali-tally/spec.md — medal totals grouped by Tingkat
+ * Kejuaraan and by Tahun, for the public medal-tally hub page's filter cards. */
+export async function getMedaliSummary() {
+  const groups = await prisma.prestasi.groupBy({
+    by: ["tingkatKejuaraan", "tahun", "medali"],
+    _count: { _all: true },
+    where: { atlet: atletNotDeleted, medali: { in: ["GOLD", "SILVER", "BRONZE"] } },
+  });
+
+  const byTingkat = new Map<string, { gold: number; silver: number; bronze: number }>();
+  const byTahun = new Map<number, { gold: number; silver: number; bronze: number }>();
+
+  for (const g of groups) {
+    const tEntry = byTingkat.get(g.tingkatKejuaraan) ?? { gold: 0, silver: 0, bronze: 0 };
+    const yEntry = byTahun.get(g.tahun) ?? { gold: 0, silver: 0, bronze: 0 };
+    const field = g.medali === "GOLD" ? "gold" : g.medali === "SILVER" ? "silver" : "bronze";
+    tEntry[field] += g._count._all;
+    yEntry[field] += g._count._all;
+    byTingkat.set(g.tingkatKejuaraan, tEntry);
+    byTahun.set(g.tahun, yEntry);
+  }
+
+  const withTotal = (v: { gold: number; silver: number; bronze: number }) => ({ ...v, total: v.gold + v.silver + v.bronze });
+
+  return {
+    byTingkat: Array.from(byTingkat.entries()).map(([tingkatKejuaraan, v]) => ({ tingkatKejuaraan, ...withTotal(v) })),
+    byTahun: Array.from(byTahun.entries())
+      .map(([tahun, v]) => ({ tahun, ...withTotal(v) }))
+      .sort((a, b) => b.tahun - a.tahun),
+  };
 }

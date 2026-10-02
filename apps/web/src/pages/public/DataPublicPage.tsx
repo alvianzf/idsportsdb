@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { Building2, Medal as MedalIcon, UserCog, Users } from "lucide-react";
 import {
   ATHLETE_LEVEL_LABELS,
@@ -16,6 +16,7 @@ import {
 import { Badge, Card, DataTable, Pagination, Select, type Column } from "../../components/ui";
 import { api } from "../../lib/api";
 import { PublicShell } from "./PublicShell";
+import { RekapMedaliTable, type RekapMedaliRow } from "./RekapMedaliTable";
 
 interface PublicStats {
   caborCount: number;
@@ -55,15 +56,6 @@ const MEDAL_TEXT: Record<Medal, string> = {
   BRONZE: "text-bronze",
   NONE: "text-neutral-500",
 };
-
-interface RekapMedaliRow {
-  cabangOlahragaId: string;
-  nama: string;
-  gold: number;
-  silver: number;
-  bronze: number;
-  total: number;
-}
 
 const PAGE_SIZE = 20;
 const MEDALI_TAHUN_OPTIONS = Array.from({ length: new Date().getFullYear() - 2019 }, (_, i) => new Date().getFullYear() - i);
@@ -207,36 +199,6 @@ export function DataPublicPage() {
     },
   ];
 
-  const medaliColumns: Column<RekapMedaliRow>[] = [
-    {
-      key: "nama",
-      label: "Cabang Olahraga",
-      mobile: true,
-      render: (r) => (
-        <Link to={`/cabang-olahraga/${r.cabangOlahragaId}`} className="font-medium text-primary hover:underline">
-          {r.nama}
-        </Link>
-      ),
-    },
-    {
-      key: "gold",
-      label: <MedalHeader tone={MEDAL_TEXT.GOLD} label="Emas" />,
-      mobile: true,
-      render: (r) => <span className={MEDAL_TEXT.GOLD}>{r.gold}</span>,
-    },
-    {
-      key: "silver",
-      label: <MedalHeader tone={MEDAL_TEXT.SILVER} label="Perak" />,
-      render: (r) => <span className={MEDAL_TEXT.SILVER}>{r.silver}</span>,
-    },
-    {
-      key: "bronze",
-      label: <MedalHeader tone={MEDAL_TEXT.BRONZE} label="Perunggu" />,
-      render: (r) => <span className={MEDAL_TEXT.BRONZE}>{r.bronze}</span>,
-    },
-    { key: "total", label: "Total", mobile: true, render: (r) => <span className="font-semibold text-neutral-900">{r.total}</span> },
-  ];
-
   return (
     <PublicShell title="Data & Statistik" description="Data atlet, tenaga olahraga, dan statistik KONI Batam">
       {/* Statistics */}
@@ -313,19 +275,11 @@ export function DataPublicPage() {
           {medali === null ? (
             <Card className="text-sm text-neutral-500">Memuat data...</Card>
           ) : (
-            <DataTable columns={medaliColumns} rows={medali.map((r) => ({ ...r, id: r.cabangOlahragaId }))} emptyMessage="Belum ada perolehan medali." />
+            <RekapMedaliTable rows={medali} linkState={{ backTo: "/data?tab=medali", backLabel: "Kembali ke Data" }} />
           )}
         </>
       )}
     </PublicShell>
-  );
-}
-
-function MedalHeader({ tone, label }: { tone: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1">
-      <MedalIcon size={13} className={tone} /> {label}
-    </span>
   );
 }
 

@@ -5,6 +5,7 @@ export const PUBLIC_NAV = [
   { to: "/", label: "Beranda" },
   { to: "/data", label: "Data" },
   { to: "/cabang-olahraga", label: "Cabor" },
+  { to: "/medali", label: "Medali" },
   ...(BERITA_ENABLED ? [{ to: "/berita", label: "Berita" }] : []),
   { to: "/event", label: "Kalender Event" },
 ];
