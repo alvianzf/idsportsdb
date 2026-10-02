@@ -162,26 +162,30 @@ export function LandingPage() {
           className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4"
         >
           {[
-            { label: "Atlet Aktif", value: stats?.activeAtletCount, icon: Users },
-            { label: "Cabang Olahraga", value: stats?.caborCount, icon: Building2 },
-            { label: "Pelatih", value: stats?.pelatihCount, icon: UserCog },
-            { label: "Total Medali", value: totalMedali, icon: MedalIcon },
-          ].map(({ label, value, icon: Icon }) => (
+            { label: "Atlet Aktif", value: stats?.activeAtletCount, icon: Users, to: "/data" },
+            { label: "Cabang Olahraga", value: stats?.caborCount, icon: Building2, to: "/cabang-olahraga" },
+            { label: "Pelatih", value: stats?.pelatihCount, icon: UserCog, to: "/data?tab=tenaga" },
+            { label: "Total Medali", value: totalMedali, icon: MedalIcon, to: "/data?tab=medali" },
+          ].map(({ label, value, icon: Icon, to }) => (
             <motion.div
               key={label}
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
               transition={{ duration: 0.45, ease: "easeOut" }}
-              className="rounded-xl border border-neutral-200 bg-white p-4 shadow-lg shadow-neutral-900/5"
             >
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#990000] to-[#d92626] text-white shadow-md shadow-red-900/30">
-                  <Icon size={20} />
+              <Link
+                to={to}
+                className="block rounded-xl border border-neutral-200 bg-white p-4 shadow-lg shadow-neutral-900/5 transition-shadow hover:shadow-xl"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#990000] to-[#d92626] text-white shadow-md shadow-red-900/30">
+                    <Icon size={20} />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-extrabold tabular-nums text-neutral-900">{value ?? "—"}</p>
+                    <p className="text-xs font-medium text-neutral-500">{label}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-2xl font-extrabold tabular-nums text-neutral-900">{value ?? "—"}</p>
-                  <p className="text-xs font-medium text-neutral-500">{label}</p>
-                </div>
-              </div>
+              </Link>
             </motion.div>
           ))}
         </motion.div>
@@ -192,22 +196,30 @@ export function LandingPage() {
         {stats && (
           <motion.section {...fadeUp} className="mt-10 md:mt-14">
             <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
-              <div className="border-b border-neutral-100 px-5 py-4">
+              <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
                 <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-900">
                   Perolehan Medali
                 </h2>
+                <Link
+                  to="/data?tab=medali"
+                  className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                >
+                  Detail <ArrowRight size={13} />
+                </Link>
               </div>
               <div className="grid grid-cols-3 divide-x divide-neutral-100">
                 {[
-                  { label: "Emas", value: stats.medals.GOLD, cls: "from-[#f7b500] to-[#e08700]" },
-                  { label: "Perak", value: stats.medals.SILVER, cls: "from-[#9ca3af] to-[#6b7280]" },
-                  { label: "Perunggu", value: stats.medals.BRONZE, cls: "from-[#c9793a] to-[#98501c]" },
+                  { label: "Emas", value: stats.medals.GOLD, cls: "from-[#f7b500] to-[#e08700]", iconCls: "text-[#e08700]" },
+                  { label: "Perak", value: stats.medals.SILVER, cls: "from-[#9ca3af] to-[#6b7280]", iconCls: "text-[#6b7280]" },
+                  { label: "Perunggu", value: stats.medals.BRONZE, cls: "from-[#c9793a] to-[#98501c]", iconCls: "text-[#98501c]" },
                 ].map((m) => (
                   <div key={m.label} className="px-4 py-6 text-center">
                     <p className={`bg-gradient-to-b ${m.cls} bg-clip-text text-4xl font-extrabold tabular-nums text-transparent`}>
                       {m.value}
                     </p>
-                    <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-neutral-500">{m.label}</p>
+                    <p className="mt-1 flex items-center justify-center gap-1 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+                      <MedalIcon size={12} className={m.iconCls} /> {m.label}
+                    </p>
                   </div>
                 ))}
               </div>

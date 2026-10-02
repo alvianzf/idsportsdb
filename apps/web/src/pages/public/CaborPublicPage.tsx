@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, FileText, Mail, MapPin, Phone, User, Users, UserCog } from "lucide-react";
+import { ArrowLeft, FileText, Mail, MapPin, Medal, Phone, User, Users, UserCog } from "lucide-react";
 import { Card, SearchInput } from "../../components/ui";
 import { api, resolveEmbedUrl, resolveFileUrl } from "../../lib/api";
 import { PublicShell } from "./PublicShell";
@@ -159,9 +159,15 @@ function CaborPengurusDetail({ caborId }: { caborId: string }) {
           <Card>
             <h2 className="text-sm font-semibold text-neutral-900">Perolehan Medali</h2>
             <div className="mt-2 flex flex-wrap items-center gap-4 text-sm">
-              <span className="font-bold text-gold">Emas {data.cabor.medals.gold}</span>
-              <span className="font-bold text-silver">Perak {data.cabor.medals.silver}</span>
-              <span className="font-bold text-bronze">Perunggu {data.cabor.medals.bronze}</span>
+              <span className="flex items-center gap-1 font-bold text-gold">
+                <Medal size={14} /> Emas {data.cabor.medals.gold}
+              </span>
+              <span className="flex items-center gap-1 font-bold text-silver">
+                <Medal size={14} /> Perak {data.cabor.medals.silver}
+              </span>
+              <span className="flex items-center gap-1 font-bold text-bronze">
+                <Medal size={14} /> Perunggu {data.cabor.medals.bronze}
+              </span>
               <span className="font-semibold text-neutral-900">Total {data.cabor.medals.total}</span>
             </div>
           </Card>

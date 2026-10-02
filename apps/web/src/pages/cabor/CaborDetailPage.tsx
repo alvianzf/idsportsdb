@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, FileText, Mail, MapPin, Pencil, Phone, Plus, Trash2, User, type LucideIcon } from "lucide-react";
+import { ArrowLeft, FileText, Mail, MapPin, Medal, Pencil, Phone, Plus, Trash2, User, type LucideIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   JABATAN_PENGURUS,
@@ -294,9 +294,15 @@ export function CaborDetailPage() {
       <Card className="mb-4">
         <h2 className="mb-3 text-sm font-semibold text-neutral-900">Perolehan Medali</h2>
         <div className="flex flex-wrap items-center gap-3 text-sm">
-          <Badge tone="gold">Emas {cabor.medals.gold}</Badge>
-          <Badge tone="silver">Perak {cabor.medals.silver}</Badge>
-          <Badge tone="bronze">Perunggu {cabor.medals.bronze}</Badge>
+          <Badge tone="gold" className="gap-1">
+            <Medal size={13} /> Emas {cabor.medals.gold}
+          </Badge>
+          <Badge tone="silver" className="gap-1">
+            <Medal size={13} /> Perak {cabor.medals.silver}
+          </Badge>
+          <Badge tone="bronze" className="gap-1">
+            <Medal size={13} /> Perunggu {cabor.medals.bronze}
+          </Badge>
           <span className="font-semibold text-neutral-900">Total {cabor.medals.total}</span>
         </div>
       </Card>

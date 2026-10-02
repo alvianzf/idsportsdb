@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Building2, Medal as MedalIcon, UserCog, Users } from "lucide-react";
 import {
   ATHLETE_LEVEL_LABELS,
@@ -72,8 +73,16 @@ type SubMenu = "atlet" | "tenaga" | "medali";
 /** Public "Data" menu (revisi 2026-07-12): athlete data (censored names) +
  * statistics, with a "Tenaga Olahraga" submenu for coach data (uncensored). */
 export function DataPublicPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const initialMenu: SubMenu = tabParam === "tenaga" || tabParam === "medali" ? tabParam : "atlet";
+
   const [stats, setStats] = useState<PublicStats | null>(null);
-  const [menu, setMenu] = useState<SubMenu>("atlet");
+  const [menu, setMenuState] = useState<SubMenu>(initialMenu);
+  function setMenu(next: SubMenu) {
+    setMenuState(next);
+    setSearchParams(next === "atlet" ? {} : { tab: next }, { replace: true });
+  }
 
   const [atlet, setAtlet] = useState<PublicAtlet[] | null>(null);
   const [atletTotal, setAtletTotal] = useState(0);
@@ -203,11 +212,28 @@ export function DataPublicPage() {
       key: "nama",
       label: "Cabang Olahraga",
       mobile: true,
-      render: (r) => <span className="font-medium text-neutral-900">{r.nama}</span>,
+      render: (r) => (
+        <Link to={`/cabang-olahraga/${r.cabangOlahragaId}`} className="font-medium text-primary hover:underline">
+          {r.nama}
+        </Link>
+      ),
     },
-    { key: "gold", label: "Emas", mobile: true, render: (r) => <span className={MEDAL_TEXT.GOLD}>{r.gold}</span> },
-    { key: "silver", label: "Perak", render: (r) => <span className={MEDAL_TEXT.SILVER}>{r.silver}</span> },
-    { key: "bronze", label: "Perunggu", render: (r) => <span className={MEDAL_TEXT.BRONZE}>{r.bronze}</span> },
+    {
+      key: "gold",
+      label: <MedalHeader tone={MEDAL_TEXT.GOLD} label="Emas" />,
+      mobile: true,
+      render: (r) => <span className={MEDAL_TEXT.GOLD}>{r.gold}</span>,
+    },
+    {
+      key: "silver",
+      label: <MedalHeader tone={MEDAL_TEXT.SILVER} label="Perak" />,
+      render: (r) => <span className={MEDAL_TEXT.SILVER}>{r.silver}</span>,
+    },
+    {
+      key: "bronze",
+      label: <MedalHeader tone={MEDAL_TEXT.BRONZE} label="Perunggu" />,
+      render: (r) => <span className={MEDAL_TEXT.BRONZE}>{r.bronze}</span>,
+    },
     { key: "total", label: "Total", mobile: true, render: (r) => <span className="font-semibold text-neutral-900">{r.total}</span> },
   ];
 
@@ -292,6 +318,14 @@ export function DataPublicPage() {
         </>
       )}
     </PublicShell>
+  );
+}
+
+function MedalHeader({ tone, label }: { tone: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <MedalIcon size={13} className={tone} /> {label}
+    </span>
   );
 }
 

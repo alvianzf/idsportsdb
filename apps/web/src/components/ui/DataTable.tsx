@@ -4,7 +4,7 @@ import { Button } from "./Button";
 
 export interface Column<T> {
   key: string;
-  label: string;
+  label: ReactNode;
   sortable?: boolean;
   /** Show on mobile. Columns without mobile:true are collapsed on small screens. */
   mobile?: boolean;
