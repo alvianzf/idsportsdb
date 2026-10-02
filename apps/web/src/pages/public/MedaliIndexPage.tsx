@@ -15,9 +15,16 @@ interface MedalCounts {
   total: number;
 }
 
-interface MedaliSummary {
-  byTingkat: (MedalCounts & { tingkatKejuaraan: CompetitionLevel })[];
-  byTahun: (MedalCounts & { tahun: number })[];
+/** One (Tingkat, Tahun) cell from `/public/medali-summary` — the raw matrix,
+ * not pre-aggregated per dimension, so card totals can cross-filter by
+ * whichever OTHER dimension is currently selected. */
+type SummaryCell = MedalCounts & { tingkatKejuaraan: CompetitionLevel; tahun: number };
+
+function sumCounts(cells: MedalCounts[]): MedalCounts {
+  return cells.reduce(
+    (acc, c) => ({ gold: acc.gold + c.gold, silver: acc.silver + c.silver, bronze: acc.bronze + c.bronze, total: acc.total + c.total }),
+    { gold: 0, silver: 0, bronze: 0, total: 0 },
+  );
 }
 
 const fadeUp = {
@@ -55,12 +62,12 @@ export function MedaliIndexPage() {
   const tingkat = searchParams.get("tingkat");
   const tahun = searchParams.get("tahun");
 
-  const [summary, setSummary] = useState<MedaliSummary | null>(null);
+  const [summary, setSummary] = useState<SummaryCell[] | null>(null);
   const [rows, setRows] = useState<RekapMedaliRow[] | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    api.get<MedaliSummary>("/public/medali-summary").then((res) => setSummary(res.data)).catch(() => undefined);
+    api.get<SummaryCell[]>("/public/medali-summary").then((res) => setSummary(res.data)).catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -72,11 +79,28 @@ export function MedaliIndexPage() {
       .catch(() => setError(true));
   }, [tingkat, tahun]);
 
-  const orderedTingkat = useMemo(() => {
+  // Tingkat card totals cross-filter by the active Tahun (and vice versa), so
+  // selecting both narrows each other's displayed counts — e.g. "Internasional"
+  // shows only its 2025 tally once "2025" is also selected. Every tingkat/tahun
+  // that has ever had a medal keeps its card even when the cross-filtered
+  // count is 0 — cards never disappear, they just show 0.
+  const tingkatCards = useMemo(() => {
     if (!summary) return [];
-    const byKey = new Map(summary.byTingkat.map((t) => [t.tingkatKejuaraan, t]));
-    return COMPETITION_LEVEL_CHOICES.map((k) => byKey.get(k)).filter((t): t is NonNullable<typeof t> => !!t);
-  }, [summary]);
+    const present = new Set(summary.map((c) => c.tingkatKejuaraan));
+    return COMPETITION_LEVEL_CHOICES.filter((k) => present.has(k)).map((k) => ({
+      tingkatKejuaraan: k,
+      ...sumCounts(summary.filter((c) => c.tingkatKejuaraan === k && (!tahun || c.tahun === Number(tahun)))),
+    }));
+  }, [summary, tahun]);
+
+  const tahunCards = useMemo(() => {
+    if (!summary) return [];
+    const years = Array.from(new Set(summary.map((c) => c.tahun))).sort((a, b) => b - a);
+    return years.map((y) => ({
+      tahun: y,
+      ...sumCounts(summary.filter((c) => c.tahun === y && (!tingkat || c.tingkatKejuaraan === tingkat))),
+    }));
+  }, [summary, tingkat]);
 
   // Both filters can be active together (AND) — e.g. Internasional + 2025 —
   // so each toggle only ever touches its own param, leaving the other intact.
@@ -96,7 +120,7 @@ export function MedaliIndexPage() {
   const activeLabel = [tingkat ? competitionLevelLabel(tingkat as CompetitionLevel) : null, tahun ? `Tahun ${tahun}` : null]
     .filter((v): v is string => !!v)
     .join(" · ") || null;
-  const grandTotal = summary ? summary.byTahun.reduce((s, y) => s + y.total, 0) : null;
+  const grandTotal = summary ? sumCounts(summary).total : null;
 
   return (
     <PublicShell title="Perolehan Medali" description="Rekap medali seluruh cabang olahraga KONI Batam, per tingkat kejuaraan dan tahun.">
@@ -127,7 +151,7 @@ export function MedaliIndexPage() {
           <Trophy size={15} className="text-primary" /> Tingkat Kejuaraan
         </h2>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
-          {orderedTingkat.map((t) => {
+          {tingkatCards.map((t) => {
             const active = tingkat === t.tingkatKejuaraan;
             return (
               <button
@@ -143,7 +167,7 @@ export function MedaliIndexPage() {
               </button>
             );
           })}
-          {summary && orderedTingkat.length === 0 && (
+          {summary && tingkatCards.length === 0 && (
             <p className="col-span-full text-sm text-neutral-500">Belum ada perolehan medali.</p>
           )}
         </div>
@@ -155,7 +179,7 @@ export function MedaliIndexPage() {
           <CalendarDays size={15} className="text-primary" /> Tahun
         </h2>
         <div className="flex flex-wrap gap-2.5">
-          {(summary?.byTahun ?? []).map((y) => {
+          {tahunCards.map((y) => {
             const active = tahun === String(y.tahun);
             return (
               <button
@@ -170,7 +194,7 @@ export function MedaliIndexPage() {
               </button>
             );
           })}
-          {summary && summary.byTahun.length === 0 && <p className="text-sm text-neutral-500">Belum ada perolehan medali.</p>}
+          {summary && tahunCards.length === 0 && <p className="text-sm text-neutral-500">Belum ada perolehan medali.</p>}
         </div>
       </motion.section>
 

@@ -125,10 +125,13 @@ export interface CaborBackLink {
 
 const DEFAULT_BACK: CaborBackLink = { backTo: "/cabang-olahraga", backLabel: "Kembali ke daftar cabor" };
 
+type CaborTab = "pengurus" | "medali";
+
 function CaborPengurusDetail({ caborId }: { caborId: string }) {
   const [data, setData] = useState<CaborDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [medaliRows, setMedaliRows] = useState<MedaliDetailRow[] | null>(null);
+  const [tab, setTab] = useState<CaborTab>("pengurus");
   const location = useLocation();
   const back = (location.state as CaborBackLink | null) ?? DEFAULT_BACK;
 
@@ -194,8 +197,6 @@ function CaborPengurusDetail({ caborId }: { caborId: string }) {
           </Card>
         )}
 
-        {data && <CaborMedaliDetail rows={medaliRows} />}
-
         {/* Revisi 2026-07-27: data sekretariat cabor. */}
         {data && (data.cabor.sekretariat || data.cabor.teleponSekretariat || data.cabor.emailSekretariat || data.cabor.narahubungSekretariat) && (
           <Card>
@@ -235,22 +236,52 @@ function CaborPengurusDetail({ caborId }: { caborId: string }) {
 
         {error && <Card className="text-sm text-danger">{error}</Card>}
         {!error && data === null && <Card className="text-sm text-neutral-500">Memuat data...</Card>}
-        {data !== null && data.pengurus.length === 0 && (
-          <Card className="text-sm text-neutral-500">Belum ada pengurus terdaftar.</Card>
-        )}
-        {data !== null && data.pengurus.length > 0 && (
-          <PengurusViews
-            pengurus={data.pengurus}
-            canManage={false}
-            onEdit={() => undefined}
-            onDelete={() => undefined}
-            onReassign={() => undefined}
-            onSwap={() => undefined}
-            publicMode
-          />
+
+        {data !== null && (
+          <div className="flex gap-1 border-b border-neutral-200">
+            {(
+              [
+                { key: "pengurus", label: "Pengurus" },
+                { key: "medali", label: "Medali" },
+              ] as { key: CaborTab; label: string }[]
+            ).map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+                  tab === t.key
+                    ? "border-primary text-primary"
+                    : "border-transparent text-neutral-500 hover:text-neutral-700"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         )}
 
-        {data !== null && data.dokumen.length > 0 && <DokumenSection dokumen={data.dokumen} />}
+        {data !== null && tab === "pengurus" && (
+          <>
+            {data.pengurus.length === 0 && (
+              <Card className="text-sm text-neutral-500">Belum ada pengurus terdaftar.</Card>
+            )}
+            {data.pengurus.length > 0 && (
+              <PengurusViews
+                pengurus={data.pengurus}
+                canManage={false}
+                onEdit={() => undefined}
+                onDelete={() => undefined}
+                onReassign={() => undefined}
+                onSwap={() => undefined}
+                publicMode
+              />
+            )}
+
+            {data.dokumen.length > 0 && <DokumenSection dokumen={data.dokumen} />}
+          </>
+        )}
+
+        {data !== null && tab === "medali" && <CaborMedaliDetail rows={medaliRows} />}
       </div>
     </PublicShell>
   );

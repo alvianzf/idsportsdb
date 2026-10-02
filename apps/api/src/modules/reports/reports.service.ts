@@ -198,8 +198,12 @@ export async function getCaborMedalTally(caborId: string) {
     : { gold: 0, silver: 0, bronze: 0, total: 0 };
 }
 
-/** specs/024-rekap-medali-tally/spec.md — medal totals grouped by Tingkat
- * Kejuaraan and by Tahun, for the public medal-tally hub page's filter cards. */
+/** specs/024-rekap-medali-tally/spec.md — medal totals per (Tingkat
+ * Kejuaraan, Tahun) cell, for the public medal-tally hub page's filter cards.
+ * Returned as a flat matrix (not pre-aggregated per dimension) so the client
+ * can cross-filter one dimension's card totals by the other's active
+ * selection — e.g. Tingkat card counts reflect the selected Tahun, and
+ * vice versa. */
 export async function getMedaliSummary() {
   const groups = await prisma.prestasi.groupBy({
     by: ["tingkatKejuaraan", "tahun", "medali"],
@@ -207,25 +211,14 @@ export async function getMedaliSummary() {
     where: { atlet: atletNotDeleted, medali: { in: ["GOLD", "SILVER", "BRONZE"] } },
   });
 
-  const byTingkat = new Map<string, { gold: number; silver: number; bronze: number }>();
-  const byTahun = new Map<number, { gold: number; silver: number; bronze: number }>();
-
+  const cells = new Map<string, { tingkatKejuaraan: CompetitionLevel; tahun: number; gold: number; silver: number; bronze: number }>();
   for (const g of groups) {
-    const tEntry = byTingkat.get(g.tingkatKejuaraan) ?? { gold: 0, silver: 0, bronze: 0 };
-    const yEntry = byTahun.get(g.tahun) ?? { gold: 0, silver: 0, bronze: 0 };
+    const key = `${g.tingkatKejuaraan}|${g.tahun}`;
+    const entry = cells.get(key) ?? { tingkatKejuaraan: g.tingkatKejuaraan, tahun: g.tahun, gold: 0, silver: 0, bronze: 0 };
     const field = g.medali === "GOLD" ? "gold" : g.medali === "SILVER" ? "silver" : "bronze";
-    tEntry[field] += g._count._all;
-    yEntry[field] += g._count._all;
-    byTingkat.set(g.tingkatKejuaraan, tEntry);
-    byTahun.set(g.tahun, yEntry);
+    entry[field] += g._count._all;
+    cells.set(key, entry);
   }
 
-  const withTotal = (v: { gold: number; silver: number; bronze: number }) => ({ ...v, total: v.gold + v.silver + v.bronze });
-
-  return {
-    byTingkat: Array.from(byTingkat.entries()).map(([tingkatKejuaraan, v]) => ({ tingkatKejuaraan, ...withTotal(v) })),
-    byTahun: Array.from(byTahun.entries())
-      .map(([tahun, v]) => ({ tahun, ...withTotal(v) }))
-      .sort((a, b) => b.tahun - a.tahun),
-  };
+  return Array.from(cells.values()).map((v) => ({ ...v, total: v.gold + v.silver + v.bronze }));
 }

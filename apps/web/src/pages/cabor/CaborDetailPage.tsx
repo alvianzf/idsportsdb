@@ -112,6 +112,7 @@ export function CaborDetailPage() {
   const [cabor, setCabor] = useState<CaborDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [medaliRows, setMedaliRows] = useState<MedaliDetailRow[] | null>(null);
+  const [tab, setTab] = useState<"pengurus" | "medali">("pengurus");
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPengurus, setEditingPengurus] = useState<Pengurus | null>(null);
@@ -326,10 +327,6 @@ export function CaborDetailPage() {
         </div>
       </Card>
 
-      <div className="mb-4">
-        <CaborMedaliDetail rows={medaliRows} />
-      </div>
-
       <Card className="mb-4">
         <h2 className="mb-3 text-sm font-semibold text-neutral-900">Data Sekretariat</h2>
         {!cabor.sekretariat &&
@@ -365,32 +362,59 @@ export function CaborDetailPage() {
         )}
       </Card>
 
-      <Card>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-neutral-900">Pengurus Cabor</h2>
-          {isUnscopedAdmin && (
-            <Button variant="outline" onClick={openCreate}>
-              <Plus size={16} /> Tambah
-            </Button>
-          )}
-        </div>
+      <div className="mb-4 flex gap-1 border-b border-neutral-200">
+        {(
+          [
+            { key: "pengurus", label: "Pengurus" },
+            { key: "medali", label: "Medali" },
+          ] as { key: "pengurus" | "medali"; label: string }[]
+        ).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              tab === t.key
+                ? "border-primary text-primary"
+                : "border-transparent text-neutral-500 hover:text-neutral-700"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-        {cabor.pengurus.length === 0 ? (
-          <p className="text-sm text-neutral-500">Belum ada data pengurus.</p>
-        ) : (
-          <PengurusViews
-            pengurus={cabor.pengurus}
-            canManage={!!isUnscopedAdmin}
-            onEdit={openEdit}
-            onDelete={handleDeletePengurus}
-            onReassign={handleReassignPengurus}
-            onSwap={handleSwapPengurus}
-          />
-        )}
-      </Card>
+      {tab === "pengurus" && (
+        <>
+          <Card>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-neutral-900">Pengurus Cabor</h2>
+              {isUnscopedAdmin && (
+                <Button variant="outline" onClick={openCreate}>
+                  <Plus size={16} /> Tambah
+                </Button>
+              )}
+            </div>
 
-      {/* SK & Dokumen Resmi */}
-      <CaborDokumenSection caborId={cabor.id} canManage={!!isUnscopedAdmin} />
+            {cabor.pengurus.length === 0 ? (
+              <p className="text-sm text-neutral-500">Belum ada data pengurus.</p>
+            ) : (
+              <PengurusViews
+                pengurus={cabor.pengurus}
+                canManage={!!isUnscopedAdmin}
+                onEdit={openEdit}
+                onDelete={handleDeletePengurus}
+                onReassign={handleReassignPengurus}
+                onSwap={handleSwapPengurus}
+              />
+            )}
+          </Card>
+
+          {/* SK & Dokumen Resmi */}
+          <CaborDokumenSection caborId={cabor.id} canManage={!!isUnscopedAdmin} />
+        </>
+      )}
+
+      {tab === "medali" && <CaborMedaliDetail rows={medaliRows} />}
 
       {modalOpen && (
         <Modal title={editingPengurus ? "Ubah Pengurus" : "Tambah Pengurus"} onClose={() => setModalOpen(false)}>
