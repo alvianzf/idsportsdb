@@ -186,3 +186,13 @@ export async function getRekapMedali(caborId: string | null, tahun?: number) {
     }))
     .sort((a, b) => a.nama.localeCompare(b.nama, "id"));
 }
+
+/** specs/024-rekap-medali-tally/spec.md — one cabor's medal tally, for its
+ * detail page (dashboard + public). Zeros instead of an absent row when the
+ * cabor has no medals yet. */
+export async function getCaborMedalTally(caborId: string) {
+  const [row] = await getRekapMedali(caborId);
+  return row
+    ? { gold: row.gold, silver: row.silver, bronze: row.bronze, total: row.total }
+    : { gold: 0, silver: 0, bronze: 0, total: 0 };
+}

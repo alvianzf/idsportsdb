@@ -3,6 +3,7 @@ import { prisma } from "../../lib/prisma.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { publicArtikelQuerySchema } from "../artikel/artikel.schema.js";
 import { sortByJabatan } from "../../lib/jabatanOrder.js";
+import { getCaborMedalTally, getRekapMedali } from "../reports/reports.service.js";
 
 export const publicRouter = Router();
 
@@ -307,9 +308,22 @@ publicRouter.get(
       }),
     ]);
 
+    const medals = await getCaborMedalTally(cabor.id);
+
     // Already name-sorted by the query, so a stable rank sort yields
     // jabatan order first, then alphabetical within the same jabatan.
-    res.json({ cabor, pengurus: sortByJabatan(pengurus), dokumen });
+    res.json({ cabor: { ...cabor, medals }, pengurus: sortByJabatan(pengurus), dokumen });
+  }),
+);
+
+/** specs/024-rekap-medali-tally/spec.md — public counterpart to
+ * `/reports/rekap-medali`: every cabor's medal tally, no auth. */
+publicRouter.get(
+  "/rekap-medali",
+  asyncHandler(async (req, res) => {
+    const tahun = Number(req.query.tahun) || undefined;
+    const data = await getRekapMedali(null, tahun);
+    res.json(data);
   }),
 );
 

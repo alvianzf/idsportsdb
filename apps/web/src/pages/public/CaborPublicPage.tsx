@@ -101,6 +101,7 @@ interface CaborDetail {
     teleponSekretariat: string | null;
     emailSekretariat: string | null;
     narahubungSekretariat: string | null;
+    medals: { gold: number; silver: number; bronze: number; total: number };
   };
   pengurus: Pengurus[];
   dokumen: PublicDokumen[];
@@ -149,6 +150,19 @@ function CaborPengurusDetail({ caborId }: { caborId: string }) {
               {data.cabor.organisasiNasional && (
                 <p className="text-sm text-neutral-500">{data.cabor.organisasiNasional}</p>
               )}
+            </div>
+          </Card>
+        )}
+
+        {/* specs/024-rekap-medali-tally/spec.md — per-cabor medal tally. */}
+        {data && (
+          <Card>
+            <h2 className="text-sm font-semibold text-neutral-900">Perolehan Medali</h2>
+            <div className="mt-2 flex flex-wrap items-center gap-4 text-sm">
+              <span className="font-bold text-gold">Emas {data.cabor.medals.gold}</span>
+              <span className="font-bold text-silver">Perak {data.cabor.medals.silver}</span>
+              <span className="font-bold text-bronze">Perunggu {data.cabor.medals.bronze}</span>
+              <span className="font-semibold text-neutral-900">Total {data.cabor.medals.total}</span>
             </div>
           </Card>
         )}

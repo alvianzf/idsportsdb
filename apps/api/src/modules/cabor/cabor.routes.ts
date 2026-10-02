@@ -13,6 +13,7 @@ import {
 import { documentFileFilter, uploadRoot, uploader } from "../../lib/storage.js";
 import { createCaborSchema, updateCaborSchema, listCaborQuerySchema, setCaborActiveSchema } from "./cabor.schema.js";
 import { writeAudit } from "../../lib/audit.js";
+import { getCaborMedalTally } from "../reports/reports.service.js";
 
 // Revisi 2026-07-27: atlet/pelatih are soft-deleted, so an unfiltered _count
 // kept reporting removed records (a cabor with nothing in it showed "1 atlet").
@@ -107,12 +108,14 @@ caborRouter.get(
       return;
     }
 
+    const medals = await getCaborMedalTally(cabor.id);
     const { _count, ...rest } = cabor;
     res.json({
       ...rest,
       pengurus: sortByJabatan(rest.pengurus),
       jumlahAtlet: _count.atlets,
       jumlahPelatih: _count.pelatihs,
+      medals,
     });
   }),
 );

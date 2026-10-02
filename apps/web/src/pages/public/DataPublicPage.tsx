@@ -12,7 +12,7 @@ import {
   type Gender,
   type Medal,
 } from "@inasportdb/shared-types";
-import { Badge, Card, DataTable, Pagination, type Column } from "../../components/ui";
+import { Badge, Card, DataTable, Pagination, Select, type Column } from "../../components/ui";
 import { api } from "../../lib/api";
 import { PublicShell } from "./PublicShell";
 
@@ -55,9 +55,19 @@ const MEDAL_TEXT: Record<Medal, string> = {
   NONE: "text-neutral-500",
 };
 
-const PAGE_SIZE = 20;
+interface RekapMedaliRow {
+  cabangOlahragaId: string;
+  nama: string;
+  gold: number;
+  silver: number;
+  bronze: number;
+  total: number;
+}
 
-type SubMenu = "atlet" | "tenaga";
+const PAGE_SIZE = 20;
+const MEDALI_TAHUN_OPTIONS = Array.from({ length: new Date().getFullYear() - 2019 }, (_, i) => new Date().getFullYear() - i);
+
+type SubMenu = "atlet" | "tenaga" | "medali";
 
 /** Public "Data" menu (revisi 2026-07-12): athlete data (censored names) +
  * statistics, with a "Tenaga Olahraga" submenu for coach data (uncensored). */
@@ -72,6 +82,9 @@ export function DataPublicPage() {
   const [pelatih, setPelatih] = useState<PublicPelatih[] | null>(null);
   const [pelatihTotal, setPelatihTotal] = useState(0);
   const [pelatihPage, setPelatihPage] = useState(1);
+
+  const [medali, setMedali] = useState<RekapMedaliRow[] | null>(null);
+  const [medaliTahun, setMedaliTahun] = useState("");
 
   useEffect(() => {
     api.get<PublicStats>("/public/stats").then((res) => setStats(res.data)).catch(() => undefined);
@@ -102,6 +115,14 @@ export function DataPublicPage() {
       })
       .catch(() => setPelatih([]));
   }, [pelatihPage]);
+
+  useEffect(() => {
+    setMedali(null);
+    api
+      .get<RekapMedaliRow[]>("/public/rekap-medali", { params: { tahun: medaliTahun || undefined } })
+      .then((res) => setMedali([...res.data].sort((a, b) => b.total - a.total)))
+      .catch(() => setMedali([]));
+  }, [medaliTahun]);
 
   // Mobile shows Nama + Cabor; the rest collapses behind the chevron
   // (client note 2026-07-12 — "for data, focus on name and cabor").
@@ -177,6 +198,19 @@ export function DataPublicPage() {
     },
   ];
 
+  const medaliColumns: Column<RekapMedaliRow>[] = [
+    {
+      key: "nama",
+      label: "Cabang Olahraga",
+      mobile: true,
+      render: (r) => <span className="font-medium text-neutral-900">{r.nama}</span>,
+    },
+    { key: "gold", label: "Emas", mobile: true, render: (r) => <span className={MEDAL_TEXT.GOLD}>{r.gold}</span> },
+    { key: "silver", label: "Perak", render: (r) => <span className={MEDAL_TEXT.SILVER}>{r.silver}</span> },
+    { key: "bronze", label: "Perunggu", render: (r) => <span className={MEDAL_TEXT.BRONZE}>{r.bronze}</span> },
+    { key: "total", label: "Total", mobile: true, render: (r) => <span className="font-semibold text-neutral-900">{r.total}</span> },
+  ];
+
   return (
     <PublicShell title="Data & Statistik" description="Data atlet, tenaga olahraga, dan statistik KONI Batam">
       {/* Statistics */}
@@ -197,6 +231,7 @@ export function DataPublicPage() {
           [
             { key: "atlet", label: "Atlet" },
             { key: "tenaga", label: "Tenaga Olahraga" },
+            { key: "medali", label: "Medali" },
           ] as { key: SubMenu; label: string }[]
         ).map((t) => (
           <button
@@ -236,6 +271,24 @@ export function DataPublicPage() {
           <div className="mt-3">
             <Pagination page={pelatihPage} pageSize={PAGE_SIZE} total={pelatihTotal} onPageChange={setPelatihPage} />
           </div>
+        </>
+      )}
+
+      {menu === "medali" && (
+        <>
+          <div className="mb-3 flex justify-end">
+            <Select
+              value={medaliTahun}
+              onChange={setMedaliTahun}
+              options={[{ value: "", label: "Semua Tahun" }, ...MEDALI_TAHUN_OPTIONS.map((y) => ({ value: String(y), label: String(y) }))]}
+              className="w-40"
+            />
+          </div>
+          {medali === null ? (
+            <Card className="text-sm text-neutral-500">Memuat data...</Card>
+          ) : (
+            <DataTable columns={medaliColumns} rows={medali.map((r) => ({ ...r, id: r.cabangOlahragaId }))} emptyMessage="Belum ada perolehan medali." />
+          )}
         </>
       )}
     </PublicShell>

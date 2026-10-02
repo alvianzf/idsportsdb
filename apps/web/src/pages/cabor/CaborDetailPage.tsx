@@ -8,7 +8,7 @@ import {
   UNSCOPED_ADMIN_ROLES,
   type JabatanPengurus,
 } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Field, Input, Select, Modal, Combobox, DropZone } from "../../components/ui";
+import { Card, PageHeader, Button, Field, Input, Select, Modal, Combobox, DropZone, Badge } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 import { useAuthStore } from "../../store/authStore";
@@ -28,6 +28,7 @@ interface CaborDetail {
   jumlahAtlet: number;
   jumlahPelatih: number;
   pengurus: Pengurus[];
+  medals: { gold: number; silver: number; bronze: number; total: number };
 }
 
 // Revisi 2026-07-20: jabatan is a fixed enum (shared-types `JABATAN_PENGURUS`);
@@ -286,6 +287,17 @@ export function CaborDetailPage() {
             <InfoItem label="Jumlah Pelatih" value={`${cabor.jumlahPelatih} pelatih`} />
             <InfoItem label="Jumlah Pengurus" value={`${cabor.pengurus.length} pengurus`} />
           </dl>
+        </div>
+      </Card>
+
+      {/* specs/024-rekap-medali-tally/spec.md — per-cabor medal tally. */}
+      <Card className="mb-4">
+        <h2 className="mb-3 text-sm font-semibold text-neutral-900">Perolehan Medali</h2>
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <Badge tone="gold">Emas {cabor.medals.gold}</Badge>
+          <Badge tone="silver">Perak {cabor.medals.silver}</Badge>
+          <Badge tone="bronze">Perunggu {cabor.medals.bronze}</Badge>
+          <span className="font-semibold text-neutral-900">Total {cabor.medals.total}</span>
         </div>
       </Card>
 
