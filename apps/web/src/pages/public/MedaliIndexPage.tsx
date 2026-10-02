@@ -78,18 +78,24 @@ export function MedaliIndexPage() {
     return COMPETITION_LEVEL_CHOICES.map((k) => byKey.get(k)).filter((t): t is NonNullable<typeof t> => !!t);
   }, [summary]);
 
+  // Both filters can be active together (AND) — e.g. Internasional + 2025 —
+  // so each toggle only ever touches its own param, leaving the other intact.
   function selectTingkat(key: CompetitionLevel) {
-    setSearchParams(tingkat === key ? {} : { tingkat: key });
+    const next = new URLSearchParams(searchParams);
+    if (tingkat === key) next.delete("tingkat");
+    else next.set("tingkat", key);
+    setSearchParams(next);
   }
   function selectTahun(year: number) {
-    setSearchParams(tahun === String(year) ? {} : { tahun: String(year) });
+    const next = new URLSearchParams(searchParams);
+    if (tahun === String(year)) next.delete("tahun");
+    else next.set("tahun", String(year));
+    setSearchParams(next);
   }
 
-  const activeLabel = tingkat
-    ? competitionLevelLabel(tingkat as CompetitionLevel)
-    : tahun
-      ? `Tahun ${tahun}`
-      : null;
+  const activeLabel = [tingkat ? competitionLevelLabel(tingkat as CompetitionLevel) : null, tahun ? `Tahun ${tahun}` : null]
+    .filter((v): v is string => !!v)
+    .join(" · ") || null;
   const grandTotal = summary ? summary.byTahun.reduce((s, y) => s + y.total, 0) : null;
 
   return (

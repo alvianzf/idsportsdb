@@ -35,6 +35,8 @@ export function MedaliRankingPage() {
 
   useEffect(() => {
     if (!meta) return;
+    setRows(null);
+    setError(false);
     api
       .get<RekapMedaliRow[]>("/public/rekap-medali")
       .then((res) => setRows(res.data))

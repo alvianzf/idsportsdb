@@ -22,7 +22,7 @@ const MEDAL_TEXT: Record<string, string> = { GOLD: "text-gold", SILVER: "text-si
  * (`CaborDetailPage`, with athlete name) and public (`CaborPublicPage`,
  * without) cabor detail pages. See specs/024-rekap-medali-tally/spec.md.
  */
-export function CaborMedaliDetail({ rows, loading }: { rows: MedaliDetailRow[] | null; loading?: boolean }) {
+export function CaborMedaliDetail({ rows }: { rows: MedaliDetailRow[] | null }) {
   const [year, setYear] = useState<number | "all">("all");
 
   const years = useMemo(
@@ -40,13 +40,13 @@ export function CaborMedaliDetail({ rows, loading }: { rows: MedaliDetailRow[] |
         <MedalIcon size={15} className="text-primary" /> Rincian Medali
       </h2>
 
-      {loading && <p className="text-sm text-neutral-500">Memuat data...</p>}
+      {rows === null && <p className="text-sm text-neutral-500">Memuat data...</p>}
 
-      {!loading && rows !== null && rows.length === 0 && (
+      {rows !== null && rows.length === 0 && (
         <p className="text-sm text-neutral-500">Belum ada perolehan medali.</p>
       )}
 
-      {!loading && rows !== null && rows.length > 0 && (
+      {rows !== null && rows.length > 0 && (
         <LayoutGroup>
           {/* Year tabs */}
           <div className="mb-3 flex flex-wrap gap-1.5">
