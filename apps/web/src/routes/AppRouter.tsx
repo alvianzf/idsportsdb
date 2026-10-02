@@ -67,6 +67,7 @@ const EventPublicPage = page(() => import("../pages/public/EventPublicPage"), "E
 const DataPublicPage = page(() => import("../pages/public/DataPublicPage"), "DataPublicPage");
 const BeritaPage = page(() => import("../pages/public/BeritaPage"), "BeritaPage");
 const CaborPublicPage = page(() => import("../pages/public/CaborPublicPage"), "CaborPublicPage");
+const MedaliRankingPage = page(() => import("../pages/public/MedaliRankingPage"), "MedaliRankingPage");
 
 const ReportsIndexPage = page(() => import("../pages/reports/ReportsIndexPage"), "ReportsIndexPage");
 const AtletPerCaborReportPage = page(() => import("../pages/reports/AtletPerCaborReportPage"), "AtletPerCaborReportPage");
@@ -134,6 +135,14 @@ const router = createBrowserRouter([
     element: (
       <Suspense fallback={<PageLoader />}>
         <CaborPublicPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/medali/:jenis",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <MedaliRankingPage />
       </Suspense>
     ),
   },

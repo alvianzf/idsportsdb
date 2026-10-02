@@ -307,7 +307,7 @@ export function DataPublicPage() {
               value={medaliTahun}
               onChange={setMedaliTahun}
               options={[{ value: "", label: "Semua Tahun" }, ...MEDALI_TAHUN_OPTIONS.map((y) => ({ value: String(y), label: String(y) }))]}
-              className="w-40"
+              className="w-full sm:w-56"
             />
           </div>
           {medali === null ? (

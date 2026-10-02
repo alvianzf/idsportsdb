@@ -209,18 +209,22 @@ export function LandingPage() {
               </div>
               <div className="grid grid-cols-3 divide-x divide-neutral-100">
                 {[
-                  { label: "Emas", value: stats.medals.GOLD, cls: "from-[#f7b500] to-[#e08700]", iconCls: "text-[#e08700]" },
-                  { label: "Perak", value: stats.medals.SILVER, cls: "from-[#9ca3af] to-[#6b7280]", iconCls: "text-[#6b7280]" },
-                  { label: "Perunggu", value: stats.medals.BRONZE, cls: "from-[#c9793a] to-[#98501c]", iconCls: "text-[#98501c]" },
+                  { label: "Emas", jenis: "emas", value: stats.medals.GOLD, cls: "from-[#f7b500] to-[#e08700]", iconCls: "text-[#e08700]" },
+                  { label: "Perak", jenis: "perak", value: stats.medals.SILVER, cls: "from-[#9ca3af] to-[#6b7280]", iconCls: "text-[#6b7280]" },
+                  { label: "Perunggu", jenis: "perunggu", value: stats.medals.BRONZE, cls: "from-[#c9793a] to-[#98501c]", iconCls: "text-[#98501c]" },
                 ].map((m) => (
-                  <div key={m.label} className="px-4 py-6 text-center">
+                  <Link
+                    key={m.label}
+                    to={`/medali/${m.jenis}`}
+                    className="block px-4 py-6 text-center transition-colors hover:bg-neutral-50"
+                  >
                     <p className={`bg-gradient-to-b ${m.cls} bg-clip-text text-4xl font-extrabold tabular-nums text-transparent`}>
                       {m.value}
                     </p>
                     <p className="mt-1 flex items-center justify-center gap-1 text-xs font-semibold uppercase tracking-wider text-neutral-500">
                       <MedalIcon size={12} className={m.iconCls} /> {m.label}
                     </p>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
