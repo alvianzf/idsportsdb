@@ -26,6 +26,7 @@ import { reportsRouter } from "./modules/reports/reports.routes.js";
 import { artikelRouter } from "./modules/artikel/artikel.routes.js";
 import { eventRouter } from "./modules/event/event.routes.js";
 import { sliderRouter } from "./modules/slider/slider.routes.js";
+import { medaliEventRouter } from "./modules/medaliEvent/medaliEvent.routes.js";
 import { publicRouter } from "./modules/public/public.routes.js";
 import { auditRouter } from "./modules/audit/audit.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -204,6 +205,7 @@ app.use("/api/v1/reports", reportsRouter);
 app.use("/api/v1/artikel", artikelRouter);
 app.use("/api/v1/events", eventRouter);
 app.use("/api/v1/slider", sliderRouter);
+app.use("/api/v1/medali-event", medaliEventRouter);
 app.use("/api/v1/audit", auditRouter);
 
 app.use("/api/v1", (_req, res) => {

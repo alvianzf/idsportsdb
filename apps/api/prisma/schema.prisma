@@ -172,10 +172,58 @@ model CabangOlahraga {
   atletTambahan AtletCabor[]
   documents     CaborDocument[]
   events        Event[]
+  medaliEventKontingenTallies MedaliEventKontingenTally[]
 
   // jumlahAtlet / jumlahPelatih (Modul E) are derived via _count, not stored;
   // jumlahAtlet includes athletes whose primary cabor is this one plus those
   // who additionally compete here via AtletCabor (atletTambahan).
+}
+
+// specs/025-medali-event-adhoc/spec.md — ad-hoc multi-kontingen medal tally
+// (e.g. "PORPROV KEPRI VI"). At most one row ever exists, enforced in the
+// service layer (not a DB constraint, since zero rows is also valid).
+model MedaliEvent {
+  id               String           @id @default(uuid())
+  nama             String
+  tingkatKejuaraan CompetitionLevel
+  tahun            Int
+  logoUrl          String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  kontingen MedaliEventKontingen[]
+}
+
+// One Kabupaten/Kota participating, Batam included (`isOwn`) — every
+// kontingen's tally, ours too, is entered manually the same way; this is a
+// separate ad-hoc record, not derived from Prestasi.
+model MedaliEventKontingen {
+  id            String      @id @default(uuid())
+  medaliEventId String
+  medaliEvent   MedaliEvent @relation(fields: [medaliEventId], references: [id], onDelete: Cascade)
+  nama          String
+  isOwn         Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  tallies MedaliEventKontingenTally[]
+
+  @@unique([medaliEventId, nama])
+}
+
+// One kontingen's medal count for one cabang olahraga. Sparse — a row only
+// exists for a cabor the kontingen actually won a medal in.
+model MedaliEventKontingenTally {
+  id               String               @id @default(uuid())
+  kontingenId      String
+  kontingen        MedaliEventKontingen @relation(fields: [kontingenId], references: [id], onDelete: Cascade)
+  cabangOlahragaId String
+  cabangOlahraga   CabangOlahraga       @relation(fields: [cabangOlahragaId], references: [id], onDelete: Cascade)
+  gold             Int                  @default(0)
+  silver           Int                  @default(0)
+  bronze           Int                  @default(0)
+
+  @@unique([kontingenId, cabangOlahragaId])
 }
 
 // Revisi 2026-07-12: slider foto full-width di landing page, dikelola

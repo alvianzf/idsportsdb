@@ -83,6 +83,8 @@ const ArtikelFormPage = page(() => import("../pages/artikel/ArtikelFormPage"), "
 const ArtikelPublicPage = page(() => import("../pages/artikel/ArtikelPublicPage"), "ArtikelPublicPage");
 
 const SliderAdminPage = page(() => import("../pages/slider/SliderAdminPage"), "SliderAdminPage");
+const MedaliEventAdminPage = page(() => import("../pages/medaliEvent/MedaliEventAdminPage"), "MedaliEventAdminPage");
+const MedaliEventPublicPage = page(() => import("../pages/public/MedaliEventPublicPage"), "MedaliEventPublicPage");
 const UsersListPage = page(() => import("../pages/users/UsersListPage"), "UsersListPage");
 const UsersFormPage = page(() => import("../pages/users/UsersFormPage"), "UsersFormPage");
 const AuditLogPage = page(() => import("../pages/audit/AuditLogPage"), "AuditLogPage");
@@ -144,6 +146,14 @@ const router = createBrowserRouter([
     element: (
       <Suspense fallback={<PageLoader />}>
         <MedaliIndexPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/medali/event",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <MedaliEventPublicPage />
       </Suspense>
     ),
   },
@@ -248,6 +258,16 @@ const router = createBrowserRouter([
         element: (
           <RequireRole roles={["SUPER_ADMIN_KONI"]}>
             <Suspense fallback={<PageLoader />}><SliderAdminPage /></Suspense>
+          </RequireRole>
+        ),
+      },
+
+      // Event Medali ad-hoc, spec 025
+      {
+        path: "medali-event",
+        element: (
+          <RequireRole roles={["SUPER_ADMIN_KONI", "ADMIN_KONI"]}>
+            <Suspense fallback={<PageLoader />}><MedaliEventAdminPage /></Suspense>
           </RequireRole>
         ),
       },

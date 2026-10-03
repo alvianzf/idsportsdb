@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Newspaper,
   History,
+  Award,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@inasportdb/shared-types";
@@ -38,6 +39,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { to: "/monitoring", label: "Monitoring", icon: Activity, mobile: true, roles: ADMIN_ROLES },
   { to: "/reports", label: "Pelaporan", icon: FileBarChart, mobile: true, roles: ADMIN_ROLES },
   { to: "/prestasi", label: "Prestasi", icon: Trophy, roles: ADMIN_ROLES },
+  { to: "/medali-event", label: "Event Medali", icon: Award, roles: ["SUPER_ADMIN_KONI", "ADMIN_KONI"] },
   { to: "/events", label: "Event", icon: CalendarDays, roles: ADMIN_ROLES },
   { to: "/pelatih", label: "Pelatih", icon: UserCog, roles: ADMIN_ROLES },
   { to: "/cabor", label: "Cabang Olahraga", icon: Building2, roles: ADMIN_ROLES },

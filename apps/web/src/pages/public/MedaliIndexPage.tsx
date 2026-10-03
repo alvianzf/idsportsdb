@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Medal as MedalIcon, Trophy, CalendarDays, X } from "lucide-react";
+import { ArrowRight, Medal as MedalIcon, Trophy, CalendarDays, X } from "lucide-react";
 import { COMPETITION_LEVEL_CHOICES, competitionLevelLabel, type CompetitionLevel } from "@inasportdb/shared-types";
 import { Card } from "../../components/ui";
-import { api } from "../../lib/api";
+import { api, resolveFileUrl } from "../../lib/api";
 import { PublicShell } from "./PublicShell";
 import { RekapMedaliTable, type RekapMedaliRow } from "./RekapMedaliTable";
+
+interface MedaliEventSummary {
+  event: { nama: string; tahun: number; tingkatKejuaraan: CompetitionLevel; logoUrl: string | null };
+  grandTotal: number;
+}
 
 interface MedalCounts {
   gold: number;
@@ -65,6 +70,11 @@ export function MedaliIndexPage() {
   const [summary, setSummary] = useState<SummaryCell[] | null>(null);
   const [rows, setRows] = useState<RekapMedaliRow[] | null>(null);
   const [error, setError] = useState(false);
+  const [adHocEvent, setAdHocEvent] = useState<MedaliEventSummary | null>(null);
+
+  useEffect(() => {
+    api.get<MedaliEventSummary | null>("/public/medali-event").then((res) => setAdHocEvent(res.data)).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     api.get<SummaryCell[]>("/public/medali-summary").then((res) => setSummary(res.data)).catch(() => undefined);
@@ -144,6 +154,30 @@ export function MedaliIndexPage() {
           </div>
         </div>
       </motion.div>
+
+      {/* specs/025-medali-event-adhoc/spec.md — banner for the current
+          ad-hoc multi-kontingen event, when one is configured. */}
+      {adHocEvent && (
+        <Link
+          to="/medali/event"
+          className="mb-8 flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+        >
+          {adHocEvent.event.logoUrl ? (
+            <img src={resolveFileUrl(adHocEvent.event.logoUrl)} alt="" className="h-10 w-10 shrink-0 object-contain" />
+          ) : (
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary">
+              <Trophy size={18} />
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-neutral-900">{adHocEvent.event.nama}</p>
+            <p className="text-xs text-neutral-500">
+              {competitionLevelLabel(adHocEvent.event.tingkatKejuaraan)} {adHocEvent.event.tahun} · {adHocEvent.grandTotal} medali
+            </p>
+          </div>
+          <ArrowRight size={16} className="shrink-0 text-primary" />
+        </Link>
+      )}
 
       {/* Tingkat Kejuaraan filter cards */}
       <motion.section {...fadeUp} className="mt-8">

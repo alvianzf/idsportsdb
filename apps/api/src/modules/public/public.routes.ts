@@ -6,6 +6,7 @@ import { sortByJabatan } from "../../lib/jabatanOrder.js";
 import { COMPETITION_LEVELS, type CompetitionLevel } from "@inasportdb/shared-types";
 import { getCaborMedalTally, getMedaliSummary, getRekapMedali } from "../reports/reports.service.js";
 import { atletInCaborFilter, atletNotDeleted } from "../atlet/atlet.service.js";
+import { getCurrentEvent, buildPublicPayload } from "../medaliEvent/medaliEvent.service.js";
 
 export const publicRouter = Router();
 
@@ -374,5 +375,21 @@ publicRouter.get(
       select: { id: true, imageUrl: true, caption: true, linkUrl: true },
     });
     res.json(slides);
+  }),
+);
+
+/** specs/025-medali-event-adhoc/spec.md §3.1 — the current ad-hoc event's
+ * full tally (Batam's own computed live, other kontingens from stored
+ * rows), or `null` when none is configured. Powers the landing-page card,
+ * the /medali hub's event banner, and /medali/event. */
+publicRouter.get(
+  "/medali-event",
+  asyncHandler(async (_req, res) => {
+    const event = await getCurrentEvent();
+    if (!event) {
+      res.json(null);
+      return;
+    }
+    res.json(await buildPublicPayload(event));
   }),
 );

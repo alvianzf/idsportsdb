@@ -50,6 +50,12 @@ interface PublicCabor {
   logoOrganisasiUrl: string | null;
 }
 
+interface MedaliEventSummary {
+  event: { nama: string; tahun: number; logoUrl: string | null };
+  grandTotal: number;
+  kontingen: { isOwn: boolean; gold: number; silver: number; bronze: number }[];
+}
+
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
   whileInView: { opacity: 1, y: 0 },
@@ -65,6 +71,7 @@ export function LandingPage() {
   const [articles, setArticles] = useState<PublicArtikel[]>([]);
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [cabor, setCabor] = useState<PublicCabor[]>([]);
+  const [adHocEvent, setAdHocEvent] = useState<MedaliEventSummary | null>(null);
 
   const loadData = useCallback(() => {
     api.get<PublicStats>("/public/stats").then((res) => setStats(res.data)).catch(() => undefined);
@@ -79,6 +86,10 @@ export function LandingPage() {
     api
       .get<{ items: PublicCabor[] }>("/public/cabor")
       .then((res) => setCabor(res.data.items))
+      .catch(() => undefined);
+    api
+      .get<MedaliEventSummary | null>("/public/medali-event")
+      .then((res) => setAdHocEvent(res.data))
       .catch(() => undefined);
   }, []);
 
@@ -192,6 +203,33 @@ export function LandingPage() {
       </section>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 md:px-6">
+        {/* specs/025-medali-event-adhoc/spec.md — current ad-hoc event, when
+            configured (identification + tally, linking to the full page). */}
+        {adHocEvent && (
+          <motion.section {...fadeUp} className="mt-10 md:mt-14">
+            <Link
+              to="/medali/event"
+              className="flex items-center gap-4 overflow-hidden rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+            >
+              {adHocEvent.event.logoUrl ? (
+                <img src={resolveFileUrl(adHocEvent.event.logoUrl)} alt="" className="h-14 w-14 shrink-0 object-contain" />
+              ) : (
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#990000] to-[#d92626] text-white">
+                  <Trophy size={24} />
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold uppercase tracking-widest text-primary">Event Medali Berlangsung</p>
+                <p className="truncate text-lg font-extrabold text-neutral-900">{adHocEvent.event.nama}</p>
+                <p className="text-sm text-neutral-500">
+                  Total {adHocEvent.grandTotal} medali · Tahun {adHocEvent.event.tahun}
+                </p>
+              </div>
+              <ArrowRight size={18} className="shrink-0 text-primary" />
+            </Link>
+          </motion.section>
+        )}
+
         {/* Medali */}
         {stats && (
           <motion.section {...fadeUp} className="mt-10 md:mt-14">
