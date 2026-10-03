@@ -379,7 +379,7 @@ publicRouter.get(
 );
 
 /** specs/025-medali-event-adhoc/spec.md §3.1 — the current ad-hoc event's
- * full tally (Batam's own computed live, other kontingens from stored
+ * full tally (every kontingen, Batam included, from manually-entered
  * rows), or `null` when none is configured. Powers the landing-page card,
  * the /medali hub's event banner, and /medali/event. */
 publicRouter.get(

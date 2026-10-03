@@ -361,6 +361,7 @@ function InlineTally({
   }
 
   async function removeRow(t: Tally) {
+    if (!(await confirmAction({ text: `Hapus tally ${t.cabangOlahraga.nama} untuk "${kontingen.nama}"?`, danger: true, confirmText: "Hapus" }))) return;
     try {
       await api.put(`/medali-event/kontingen/${kontingen.id}/tally/${t.cabangOlahragaId}`, { gold: 0, silver: 0, bronze: 0 });
       onChange();
