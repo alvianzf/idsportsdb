@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
 import { Plus, Trash2 } from "lucide-react";
 import { COMPETITION_LEVEL_CHOICES, COMPETITION_LEVEL_LABELS, type CompetitionLevel } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Field, Input, Select, Combobox, DropZone, Badge, Modal, DataTable, type Column } from "../../components/ui";
+import { Card, PageHeader, Button, Field, Input, Select, Combobox, DropZone, Modal, DataTable, type Column } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 import { useAuthStore } from "../../store/authStore";
@@ -204,12 +204,7 @@ function EventManager({
       mobile: true,
       sortable: true,
       getValue: (k) => k.nama,
-      render: (k) => (
-        <span className="flex items-center gap-2 font-medium text-neutral-900">
-          {k.nama}
-          {k.isOwn && <Badge tone="info">Kontingen Kita</Badge>}
-        </span>
-      ),
+      render: (k) => <span className="font-medium text-neutral-900">{k.nama}</span>,
     },
     { key: "gold", label: "Emas", sortable: true, getValue: (k) => k.tallies.reduce((s, t) => s + t.gold, 0), render: (k) => <span className="text-gold">{k.tallies.reduce((s, t) => s + t.gold, 0)}</span> },
     { key: "silver", label: "Perak", sortable: true, getValue: (k) => k.tallies.reduce((s, t) => s + t.silver, 0), render: (k) => <span className="text-silver">{k.tallies.reduce((s, t) => s + t.silver, 0)}</span> },

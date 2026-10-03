@@ -125,10 +125,7 @@ export function MedaliEventPublicPage() {
                 active ? "border-primary bg-primary-50 ring-2 ring-primary/30" : "border-neutral-200 bg-white"
               }`}
             >
-              <div className="flex items-center gap-1.5">
-                <p className="truncate text-xs font-semibold text-neutral-700">{k.nama}</p>
-                {k.isOwn && <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-primary">Kita</span>}
-              </div>
+              <p className="truncate text-xs font-semibold text-neutral-700">{k.nama}</p>
               <p className="mt-1 text-xl font-extrabold tabular-nums text-neutral-900">{k.total}</p>
               <MiniTally k={k} />
             </button>
