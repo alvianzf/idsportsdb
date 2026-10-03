@@ -11,6 +11,7 @@ import { ReportPage } from "./ReportPage";
 interface Row {
   namaKejuaraan: string;
   tingkatKejuaraan: string;
+  kategori: string | null;
   tahun: number;
   medali: keyof typeof MEDAL_LABELS;
   peringkat: number | null;
@@ -52,6 +53,7 @@ export function PrestasiReportPage() {
         { header: "Cabang Olahraga", render: (r) => r.atlet.cabangOlahraga.nama },
         { header: "Kejuaraan", render: (r) => r.namaKejuaraan },
         { header: "Tingkat", render: (r) => COMPETITION_LEVEL_LABELS[r.tingkatKejuaraan as keyof typeof COMPETITION_LEVEL_LABELS] },
+        { header: "Kategori", render: (r) => r.kategori ?? "-" },
         { header: "Tahun", render: (r) => r.tahun },
         { header: "Medali", render: (r) => MEDAL_LABELS[r.medali] },
         { header: "Peringkat", render: (r) => r.peringkat ?? "-" },

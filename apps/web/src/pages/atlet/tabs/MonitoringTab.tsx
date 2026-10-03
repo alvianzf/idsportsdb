@@ -269,7 +269,16 @@ export function MonitoringTab({ atletId, canManage, currentCabangOlahragaId }: M
                       options={[{ value: "", label: "-" }, ...ATHLETE_STATUSES.map((s) => ({ value: s, label: ATHLETE_STATUS_LABELS[s] }))]}
                     />
                   </Field>
-                  <Field label="Ke Status" required htmlFor="toValue">
+                  <Field
+                    label="Ke Status"
+                    required
+                    htmlFor="toValue"
+                    hint={
+                      editing
+                        ? "Mengubah catatan ini tidak mengubah status atlet saat ini — buat entri Status baru untuk itu."
+                        : undefined
+                    }
+                  >
                     <Select
                       id="toValue"
                       required
