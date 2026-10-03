@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { COMPETITION_LEVEL_CHOICES, COMPETITION_LEVEL_LABELS, type CompetitionLevel } from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Field, Input, Select, Combobox, DropZone, Modal, DataTable, type Column } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
@@ -160,6 +160,17 @@ function EventManager({
     }
   }
 
+  async function handleDeleteLogo() {
+    if (!(await confirmAction({ text: "Hapus logo event?", danger: true, confirmText: "Hapus" }))) return;
+    try {
+      await api.delete(`/medali-event/${event.id}/logo`);
+      toast.success("Logo berhasil dihapus.");
+      onChange();
+    } catch {
+      toast.error("Gagal menghapus logo.");
+    }
+  }
+
   async function handleDeleteEvent() {
     if (!(await confirmAction({ text: `Hapus event "${event.nama}"? Semua data kontingen & tally ikut terhapus.`, danger: true, confirmText: "Hapus" })))
       return;
@@ -244,7 +255,18 @@ function EventManager({
         <form onSubmit={handleSaveDetails} className="space-y-4">
           <div className="flex items-start gap-4">
             {event.logoUrl && (
-              <img src={resolveFileUrl(event.logoUrl)} alt="" className="h-16 w-16 shrink-0 rounded-lg border border-neutral-200 object-contain p-1" />
+              <div className="relative shrink-0">
+                <img src={resolveFileUrl(event.logoUrl)} alt="" className="h-16 w-16 rounded-lg border border-neutral-200 object-contain p-1" />
+                <button
+                  type="button"
+                  onClick={handleDeleteLogo}
+                  title="Hapus logo"
+                  aria-label="Hapus logo"
+                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                >
+                  <X size={11} />
+                </button>
+              </div>
             )}
             <div className="flex-1 space-y-3">
               <Field label="Nama Event" required htmlFor="nama">

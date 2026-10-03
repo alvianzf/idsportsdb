@@ -128,6 +128,24 @@ medaliEventRouter.post(
   }),
 );
 
+/** DELETE /medali-event/:id/logo — remove the event logo, no replacement. */
+medaliEventRouter.delete(
+  "/:id/logo",
+  asyncHandler(async (req, res) => {
+    const existing = await prisma.medaliEvent.findUnique({ where: { id: req.params.id }, select: { logoUrl: true } });
+    if (!existing) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (existing.logoUrl) {
+      await prisma.medaliEvent.update({ where: { id: req.params.id }, data: { logoUrl: null } });
+      const oldFile = path.join(uploadRoot, existing.logoUrl.replace(/^\/uploads\//, ""));
+      await fs.unlink(oldFile).catch(() => undefined);
+    }
+    res.status(204).end();
+  }),
+);
+
 medaliEventRouter.post(
   "/:id/kontingen",
   asyncHandler(async (req, res) => {

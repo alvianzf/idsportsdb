@@ -75,6 +75,7 @@
 | PATCH | `/api/v1/medali-event/:id` | SUPER_ADMIN_KONI, ADMIN_KONI | partial fields | `MedaliEvent` | |
 | DELETE | `/api/v1/medali-event/:id` | SUPER_ADMIN_KONI | - | `204` | cascades kontingen + their tally rows; system returns to "no event" |
 | POST | `/api/v1/medali-event/:id/logo` | SUPER_ADMIN_KONI, ADMIN_KONI | multipart `file` | `{ logoUrl }` | same pattern as `POST /cabor/:id/logo` |
+| DELETE | `/api/v1/medali-event/:id/logo` | SUPER_ADMIN_KONI, ADMIN_KONI | - | `204` | clears `logoUrl` and removes the file; no-op if none set |
 | POST | `/api/v1/medali-event/:id/kontingen` | SUPER_ADMIN_KONI, ADMIN_KONI | `{ nama }` | `MedaliEventKontingen` | `nama` unique within the event (409 on dup) |
 | PATCH | `/api/v1/medali-event/kontingen/:kontingenId` | SUPER_ADMIN_KONI, ADMIN_KONI | `{ nama }` | `MedaliEventKontingen` | |
 | DELETE | `/api/v1/medali-event/kontingen/:kontingenId` | SUPER_ADMIN_KONI, ADMIN_KONI | - | `204` or `400` | `400` when `isOwn` (the Batam row can't be deleted) |
@@ -112,8 +113,9 @@
   - **No event configured**: a form (Nama, Tingkat, Tahun) to create one —
     this also creates the Batam kontingen automatically.
   - **Event configured**:
-    - Edit form for Nama/Tingkat/Tahun + logo upload (`DropZone`) + "Hapus
-      Event" (`SUPER_ADMIN_KONI` only).
+    - Edit form for Nama/Tingkat/Tahun + logo upload (`DropZone`), with a
+      small remove button on the current logo's thumbnail (if set) that
+      clears it, + "Hapus Event" (`SUPER_ADMIN_KONI` only).
     - "Kabupaten & Kota" — a sortable `DataTable` (Kabupaten/Kota, Emas,
       Perak, Perunggu, Total, Aksi), one row per kontingen including Batam
       (no visual marker distinguishing it — see §1). "Tambah" opens a small
