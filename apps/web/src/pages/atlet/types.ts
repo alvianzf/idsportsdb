@@ -10,6 +10,8 @@ export interface AtletDocument {
   type: DocumentType;
   fileUrl: string;
   uploadedAt: string;
+  uploadedById: string | null;
+  verified: boolean;
 }
 
 export interface AtletDetail {

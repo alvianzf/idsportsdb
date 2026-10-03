@@ -139,7 +139,7 @@ export function AtletDetailPage() {
 
       {tab === "biodata" && <BiodataTab atlet={atlet} />}
       {tab === "dokumen" && (
-        <DokumenTab atletId={atlet.id} documents={atlet.documents ?? []} canManage={!!canEdit} onChange={load} />
+        <DokumenTab atletId={atlet.id} documents={atlet.documents ?? []} canManage={!!canEdit} isAdmin onChange={load} />
       )}
       {tab === "prestasi" && <PrestasiTab atletId={atlet.id} canManage={!!canEdit} />}
       {tab === "monitoring" && (

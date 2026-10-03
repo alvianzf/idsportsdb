@@ -559,11 +559,23 @@ atletRouter.post(
 
     const fileUrl = publicUrl("atlet-documents", req.file.filename);
 
+    // An admin's own upload is trusted immediately; an ATLET's self-upload
+    // starts unverified until an admin verifies it (see the verify route).
+    const isAdminUpload = req.user!.role !== "ATLET";
+
     // specs/004-atlet/spec.md §7 — keep fotoUrl in sync with the PAS_FOTO document;
     // the document row and the fotoUrl update must land together.
     const document = await prisma.$transaction(async (tx) => {
       const doc = await tx.atletDocument.create({
-        data: { atletId: req.params.id, type: parsed.data.type, fileUrl },
+        data: {
+          atletId: req.params.id,
+          type: parsed.data.type,
+          fileUrl,
+          uploadedById: req.user!.id,
+          verified: isAdminUpload,
+          verifiedAt: isAdminUpload ? new Date() : null,
+          verifiedById: isAdminUpload ? req.user!.id : null,
+        },
       });
       if (parsed.data.type === "PAS_FOTO") {
         await tx.atlet.update({ where: { id: req.params.id }, data: { fotoUrl: fileUrl } });
@@ -599,6 +611,13 @@ atletRouter.delete(
       return;
     }
 
+    // An ATLET may only remove their own, not-yet-verified uploads — once an
+    // admin uploads or verifies a document, only an admin can remove it.
+    if (req.user!.role === "ATLET" && (document.uploadedById !== req.user!.id || document.verified)) {
+      res.status(403).json({ error: "Dokumen ini sudah diverifikasi dan hanya dapat dihapus oleh admin." });
+      return;
+    }
+
     await prisma.atletDocument.delete({ where: { id: req.params.docId } });
 
     // If deleting the PAS_FOTO, also clear fotoUrl on the atlet record
@@ -610,5 +629,41 @@ atletRouter.delete(
     fs.unlink(filePath, () => undefined);
 
     res.status(204).send();
+  }),
+);
+
+// Admin-only: mark a self-uploaded document verified (or unverify it again).
+// Once verified, the athlete can no longer delete it themselves.
+atletRouter.patch(
+  "/:id/documents/:docId/verify",
+  requireRole(DATA_ADMIN_ROLES),
+  asyncHandler(async (req, res) => {
+    const atlet = await prisma.atlet.findFirst({
+      where: { id: req.params.id, ...atletNotDeleted },
+      include: caborTambahanInclude,
+    });
+    if (!atlet) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (!canAccessAtlet(req, atlet)) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    const document = await prisma.atletDocument.findUnique({ where: { id: req.params.docId } });
+    if (!document || document.atletId !== req.params.id) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    const verified = req.body.verified !== false;
+    const updated = await prisma.atletDocument.update({
+      where: { id: req.params.docId },
+      data: verified
+        ? { verified: true, verifiedAt: new Date(), verifiedById: req.user!.id }
+        : { verified: false, verifiedAt: null, verifiedById: null },
+    });
+    res.json(updated);
   }),
 );

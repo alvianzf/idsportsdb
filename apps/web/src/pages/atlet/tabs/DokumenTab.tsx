@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Download, FileText, ImageIcon, Trash2, Upload } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, Download, FileText, ImageIcon, ShieldCheck, Trash2, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   DOCUMENT_TYPE_LABELS,
@@ -9,12 +9,17 @@ import {
 import { Card, Badge, Button, DropZone, Modal } from "../../../components/ui";
 import { api, resolveEmbedUrl, resolveFileUrl } from "../../../lib/api";
 import { confirmAction } from "../../../lib/confirm";
+import { useAuthStore } from "../../../store/authStore";
 import type { AtletDocument } from "../types";
 
 interface DokumenTabProps {
   atletId: string;
   documents: AtletDocument[];
   canManage: boolean;
+  /** True on the admin-facing detail page; false on the athlete's own MePage.
+   * An admin can always delete; the athlete can only delete their own
+   * not-yet-verified uploads, and only an admin can verify a document. */
+  isAdmin?: boolean;
   onChange: () => void;
 }
 
@@ -27,7 +32,8 @@ function isImage(url: string) {
  * prestasi) — identity papers were dropped. Each file is an expandable row that
  * previews inline, matching the prestasi document rows.
  */
-export function DokumenTab({ atletId, documents, canManage, onChange }: DokumenTabProps) {
+export function DokumenTab({ atletId, documents, canManage, isAdmin = false, onChange }: DokumenTabProps) {
+  const currentUserId = useAuthStore((state) => state.user?.id);
   const [uploading, setUploading] = useState<DocumentType | null>(null);
   const [pendingFile, setPendingFile] = useState<{ type: DocumentType; file: File | null } | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -75,9 +81,29 @@ export function DokumenTab({ atletId, documents, canManage, onChange }: DokumenT
       await api.delete(`/atlet/${atletId}/documents/${doc.id}`);
       toast.success("Dokumen berhasil dihapus.");
       onChange();
-    } catch {
-      toast.error("Gagal menghapus dokumen.");
+    } catch (err) {
+      const message = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
+      toast.error(message ?? "Gagal menghapus dokumen.");
     }
+  }
+
+  async function handleVerify(doc: AtletDocument) {
+    try {
+      await api.patch(`/atlet/${atletId}/documents/${doc.id}/verify`, { verified: !doc.verified });
+      toast.success(doc.verified ? "Verifikasi dibatalkan." : "Dokumen diverifikasi.");
+      onChange();
+    } catch {
+      toast.error("Gagal mengubah status verifikasi.");
+    }
+  }
+
+  // Admins with edit rights can always delete. An athlete viewing their own
+  // record can only delete uploads that are both their own and unverified —
+  // once an admin verifies it (or uploaded it themselves), only an admin can.
+  function canDeleteDoc(doc: AtletDocument): boolean {
+    if (!canManage) return false;
+    if (isAdmin) return true;
+    return doc.uploadedById === currentUserId && !doc.verified;
   }
 
   function renderRow(doc: AtletDocument, opts: { canDelete: boolean }) {
@@ -103,6 +129,11 @@ export function DokumenTab({ atletId, documents, canManage, onChange }: DokumenT
               <FileText size={15} className="shrink-0 text-neutral-400" />
             )}
             <span className="truncate font-medium">{DOCUMENT_TYPE_LABELS[doc.type]}</span>
+            {doc.verified && (
+              <span title="Terverifikasi">
+                <CheckCircle2 size={14} className="shrink-0 text-success" />
+              </span>
+            )}
           </button>
           <span className="shrink-0 text-xs text-neutral-400">
             {new Date(doc.uploadedAt).toLocaleDateString("id-ID")}
@@ -117,6 +148,16 @@ export function DokumenTab({ atletId, documents, canManage, onChange }: DokumenT
           >
             <Download size={14} />
           </a>
+          {isAdmin && canManage && (
+            <button
+              onClick={() => handleVerify(doc)}
+              aria-label={doc.verified ? "Batalkan verifikasi" : "Verifikasi"}
+              title={doc.verified ? "Batalkan verifikasi" : "Verifikasi"}
+              className={`shrink-0 rounded p-1 hover:text-success ${doc.verified ? "text-success" : "text-neutral-400"}`}
+            >
+              <ShieldCheck size={14} />
+            </button>
+          )}
           {opts.canDelete && (
             <button
               onClick={() => handleDelete(doc)}
@@ -178,7 +219,7 @@ export function DokumenTab({ atletId, documents, canManage, onChange }: DokumenT
       {supporting.length === 0 ? (
         <p className="text-sm text-neutral-500">Belum ada dokumen pendukung.</p>
       ) : (
-        <ul>{supporting.map((doc) => renderRow(doc, { canDelete: canManage }))}</ul>
+        <ul>{supporting.map((doc) => renderRow(doc, { canDelete: canDeleteDoc(doc) }))}</ul>
       )}
 
       {legacy.length > 0 && (
@@ -186,7 +227,7 @@ export function DokumenTab({ atletId, documents, canManage, onChange }: DokumenT
           <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
             Dokumen lama
           </h3>
-          <ul className="mt-1">{legacy.map((doc) => renderRow(doc, { canDelete: canManage }))}</ul>
+          <ul className="mt-1">{legacy.map((doc) => renderRow(doc, { canDelete: canDeleteDoc(doc) }))}</ul>
         </div>
       )}
 

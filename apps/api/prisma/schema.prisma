@@ -143,6 +143,8 @@ model User {
   auditLogs        AuditLog[]
   monitoringEvents MonitoringEvent[] @relation("MonitoringCreatedBy")
   articles         Article[]
+  uploadedDocuments AtletDocument[] @relation("AtletDocumentUploadedBy")
+  verifiedDocuments AtletDocument[] @relation("AtletDocumentVerifiedBy")
 
   @@index([cabangOlahragaId])
 }
@@ -348,14 +350,28 @@ model AtletCabor {
 }
 
 model AtletDocument {
-  id         String       @id @default(uuid())
-  atletId    String
-  atlet      Atlet        @relation(fields: [atletId], references: [id], onDelete: Cascade)
-  type       DocumentType
-  fileUrl    String
-  uploadedAt DateTime     @default(now())
+  id               String       @id @default(uuid())
+  atletId          String
+  atlet            Atlet        @relation(fields: [atletId], references: [id], onDelete: Cascade)
+  type             DocumentType
+  fileUrl          String
+  uploadedAt       DateTime     @default(now())
+
+  // Nullable so existing rows (uploaded before this field existed) don't need
+  // a backfill — treated as admin-uploaded/verified-only-deletable (see
+  // atlet.routes.ts delete handler).
+  uploadedById     String?
+  uploadedBy       User?        @relation("AtletDocumentUploadedBy", fields: [uploadedById], references: [id])
+
+  // An admin's own upload counts as verified immediately; an ATLET's
+  // self-upload starts unverified until an admin verifies it.
+  verified         Boolean      @default(false)
+  verifiedAt       DateTime?
+  verifiedById     String?
+  verifiedBy       User?        @relation("AtletDocumentVerifiedBy", fields: [verifiedById], references: [id])
 
   @@index([atletId, type])
+  @@index([uploadedById])
 }
 
 model Pelatih {
