@@ -59,6 +59,7 @@ export function AtletPerCaborReportPage() {
         { header: "Cabang Olahraga", render: (r) => r.nama },
         { header: "Jumlah Atlet", render: (r) => r.jumlahAtlet },
       ]}
+      footnote="Catatan: atlet yang terdaftar di lebih dari satu cabang olahraga dihitung di setiap cabornya, sehingga total seluruh baris bisa lebih besar dari jumlah atlet unik."
     />
   );
 }

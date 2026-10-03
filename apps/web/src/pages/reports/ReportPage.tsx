@@ -17,6 +17,8 @@ interface ReportPageProps<T> {
   filters?: ReactNode;
   columns: ReportColumn<T>[];
   filenameBase: string;
+  /** Caveat shown under the table (e.g. a column that isn't a unique total). */
+  footnote?: ReactNode;
 }
 
 type DownloadFormat = "pdf" | "excel" | "csv";
@@ -34,7 +36,7 @@ async function downloadFile(endpoint: string, params: Record<string, unknown>, f
 }
 
 /** Shared layout for Module H report pages. See specs/009-pelaporan/spec.md. */
-export function ReportPage<T>({ title, description, endpoint, params, filters, columns, filenameBase }: ReportPageProps<T>) {
+export function ReportPage<T>({ title, description, endpoint, params, filters, columns, filenameBase, footnote }: ReportPageProps<T>) {
   const [rows, setRows] = useState<T[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<DownloadFormat | null>(null);
@@ -121,6 +123,10 @@ export function ReportPage<T>({ title, description, endpoint, params, filters, c
             </tbody>
           </table>
         </Card>
+      )}
+
+      {rows !== null && rows.length > 0 && footnote && (
+        <p className="mt-2 text-xs text-neutral-500">{footnote}</p>
       )}
     </div>
   );

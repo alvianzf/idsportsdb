@@ -149,11 +149,16 @@ reportsRouter.get(
       return;
     }
 
+    // Athletes registered in more than one cabor are counted in each of
+    // their cabor's rows, so the column total can exceed the unique athlete
+    // count — call that out on every export, not just the on-screen table.
+    const multiCaborNote = "Catatan: atlet yang terdaftar di lebih dari satu cabang olahraga dihitung di setiap cabornya, sehingga total seluruh baris bisa lebih besar dari jumlah atlet unik.";
+
     if (parsed.data.format === "csv") {
       await streamCsv(res, "atlet-per-cabor.csv", [
         { header: "Cabang Olahraga", key: "nama", width: 30 },
         { header: "Jumlah Atlet", key: "jumlahAtlet", width: 15 },
-      ], data);
+      ], [...data, { cabangOlahragaId: "", nama: multiCaborNote, jumlahAtlet: "" }]);
       return;
     }
     const atlets = await getAtletDetail(caborId, filters);
@@ -165,7 +170,7 @@ reportsRouter.get(
             { header: "Cabang Olahraga", key: "nama", width: 30 },
             { header: "Jumlah Atlet", key: "jumlahAtlet", width: 15 },
           ],
-          rows: data,
+          rows: [...data, { cabangOlahragaId: "", nama: multiCaborNote, jumlahAtlet: "" }],
         },
         atletDetailSheet(atlets),
       ]);
@@ -181,6 +186,7 @@ reportsRouter.get(
         ],
         data.map((d) => [d.nama, d.jumlahAtlet]),
       );
+      doc.moveDown(0.5).fontSize(8).fillColor("gray").text(multiCaborNote, { align: "left" }).fillColor("black");
       drawAtletDetailPdf(doc, atlets);
     }, await pdfMeta(req.user!.id));
   }),
