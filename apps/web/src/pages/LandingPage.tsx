@@ -219,11 +219,23 @@ export function LandingPage() {
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold uppercase tracking-widest text-primary">Event Medali Berlangsung</p>
                 <p className="truncate text-lg font-extrabold text-neutral-900">{adHocEvent.event.nama}</p>
-                <p className="text-sm text-neutral-500">
-                  Total {adHocEvent.grandTotal} medali · Tahun {adHocEvent.event.tahun}
-                </p>
+                {(() => {
+                  const own = adHocEvent.kontingen.find((k) => k.isOwn);
+                  return own ? (
+                    <div className="mt-1 flex items-center gap-3 text-sm font-bold">
+                      <span className="flex items-center gap-1 text-gold">
+                        <MedalIcon size={14} /> {own.gold}
+                      </span>
+                      <span className="flex items-center gap-1 text-silver">
+                        <MedalIcon size={14} /> {own.silver}
+                      </span>
+                      <span className="flex items-center gap-1 text-bronze">
+                        <MedalIcon size={14} /> {own.bronze}
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
               </div>
               <ArrowRight size={18} className="shrink-0 text-primary" />
             </Link>
