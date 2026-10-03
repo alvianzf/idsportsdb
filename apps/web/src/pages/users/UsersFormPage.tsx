@@ -42,7 +42,9 @@ export function UsersFormPage({ embedded = false, onDone }: { embedded?: boolean
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const currentRole = useAuthStore((state) => state.user?.role);
+  const currentUser = useAuthStore((state) => state.user);
+  const currentRole = currentUser?.role;
+  const isSelf = isEdit && id === currentUser?.id;
 
   // #68 — "Buatkan Akun" shortcut deep-links here with the athlete pre-selected.
   const athleteIdParam = searchParams.get("athleteId") ?? "";
@@ -150,6 +152,12 @@ export function UsersFormPage({ embedded = false, onDone }: { embedded?: boolean
         // fails the first has already persisted, so reconcile the form with the
         // server's actual state and tell the user exactly what did save.
         await api.patch(`/users/${id}`, { fullName: form.fullName, email: form.email });
+        // Role is locked (and the API now rejects it) when editing your own account.
+        if (isSelf) {
+          toast.success("Pengguna berhasil diubah.");
+          navigate("/users");
+          return;
+        }
         try {
           await api.patch(`/users/${id}/role`, {
             role: form.role,
@@ -301,11 +309,16 @@ export function UsersFormPage({ embedded = false, onDone }: { embedded?: boolean
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               />
             </Field>
-            <Field label="Role" required htmlFor="role">
+            <Field
+              label="Role"
+              required
+              htmlFor="role"
+              hint={isSelf ? "Tidak dapat mengubah peran akun Anda sendiri." : undefined}
+            >
               <Select
                 id="role"
                 required
-                disabled={athleteLocked || allowedRoles.length === 1}
+                disabled={isSelf || athleteLocked || allowedRoles.length === 1}
                 value={form.role}
                 onChange={(v) => setForm((f) => ({ ...f, role: v as Role }))}
                 options={allowedRoles.map((r) => ({ value: r, label: ROLE_LABELS[r] }))}

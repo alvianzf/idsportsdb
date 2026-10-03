@@ -389,7 +389,7 @@ atletRouter.patch(
 // accidental (bulk) delete can be recovered. Files and cascaded records are kept.
 atletRouter.delete(
   "/:id",
-  requireRole(["SUPER_ADMIN_KONI"]),
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI"]),
   asyncHandler(async (req, res) => {
     try {
       // Archive the athlete and deactivate any linked ATLET login together, so

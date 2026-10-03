@@ -263,6 +263,10 @@ usersRouter.patch(
 
     const { role, cabangOlahragaId, athleteId } = parsed.data;
 
+    if (req.params.id === req.user!.id) {
+      res.status(400).json({ error: "Tidak dapat mengubah peran Anda sendiri" });
+      return;
+    }
     // Guard the current target account, then the role being assigned.
     if ((await loadManageableTarget(req, res)) === null) return;
     if (!canAssignRole(req.user!.role, role)) {

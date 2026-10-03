@@ -195,7 +195,10 @@ export function CaborListPage() {
       : []),
   ];
 
-  const bulkActions: BulkAction[] = canCreate
+  // Delete (bulk or single) is SUPER_ADMIN_KONI-only on the backend — gate on
+  // canToggleActive, not canCreate, so ADMIN_KONI isn't shown an action that
+  // will 403.
+  const bulkActions: BulkAction[] = canToggleActive
     ? [{ label: "Hapus", icon: Trash2, variant: "danger", onClick: handleBulkDelete }]
     : [];
 
