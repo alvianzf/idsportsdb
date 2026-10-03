@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
-import { Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { COMPETITION_LEVEL_CHOICES, COMPETITION_LEVEL_LABELS, type CompetitionLevel } from "@inasportdb/shared-types";
-import { Card, PageHeader, Button, Field, Input, Select, Combobox, DropZone, Badge } from "../../components/ui";
+import { Card, PageHeader, Button, Field, Input, Select, Combobox, DropZone, Badge, Modal, DataTable, type Column } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 import { useAuthStore } from "../../store/authStore";
@@ -129,7 +129,9 @@ function EventManager({
   const [tahun, setTahun] = useState(String(event.tahun));
   const [saving, setSaving] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [addModalOpen, setAddModalOpen] = useState(false);
   const [kontingenNama, setKontingenNama] = useState("");
+  const [editing, setEditing] = useState<Kontingen | null>(null);
 
   async function handleSaveDetails(e: FormEvent) {
     e.preventDefault();
@@ -177,6 +179,7 @@ function EventManager({
     try {
       await api.post(`/medali-event/${event.id}/kontingen`, { nama: kontingenNama.trim() });
       setKontingenNama("");
+      setAddModalOpen(false);
       onChange();
     } catch (err) {
       const message = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
@@ -194,6 +197,58 @@ function EventManager({
       toast.error(message ?? "Gagal menghapus kontingen.");
     }
   }
+
+  // Keep an open tally-editor modal in sync with fresh data after each save.
+  useEffect(() => {
+    if (!editing) return;
+    const fresh = event.kontingen.find((k) => k.id === editing.id);
+    setEditing(fresh ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event.kontingen]);
+
+  const kontingenColumns: Column<Kontingen>[] = [
+    {
+      key: "nama",
+      label: "Kabupaten/Kota",
+      mobile: true,
+      sortable: true,
+      getValue: (k) => k.nama,
+      render: (k) => (
+        <span className="flex items-center gap-2 font-medium text-neutral-900">
+          {k.nama}
+          {k.isOwn && <Badge tone="info">Kontingen Kita</Badge>}
+        </span>
+      ),
+    },
+    { key: "gold", label: "Emas", sortable: true, getValue: (k) => k.tallies.reduce((s, t) => s + t.gold, 0), render: (k) => <span className="text-gold">{k.tallies.reduce((s, t) => s + t.gold, 0)}</span> },
+    { key: "silver", label: "Perak", sortable: true, getValue: (k) => k.tallies.reduce((s, t) => s + t.silver, 0), render: (k) => <span className="text-silver">{k.tallies.reduce((s, t) => s + t.silver, 0)}</span> },
+    { key: "bronze", label: "Perunggu", sortable: true, getValue: (k) => k.tallies.reduce((s, t) => s + t.bronze, 0), render: (k) => <span className="text-bronze">{k.tallies.reduce((s, t) => s + t.bronze, 0)}</span> },
+    {
+      key: "total",
+      label: "Total",
+      mobile: true,
+      sortable: true,
+      getValue: (k) => k.tallies.reduce((s, t) => s + t.gold + t.silver + t.bronze, 0),
+      render: (k) => <span className="font-semibold text-neutral-900">{k.tallies.reduce((s, t) => s + t.gold + t.silver + t.bronze, 0)}</span>,
+    },
+    {
+      key: "aksi",
+      label: "Aksi",
+      mobile: true,
+      render: (k) => (
+        <div className="flex items-center gap-3">
+          <button onClick={() => setEditing(k)} className="text-primary hover:underline" aria-label={`Kelola tally ${k.nama}`}>
+            <Pencil size={14} />
+          </button>
+          {!k.isOwn && (
+            <button onClick={() => handleDeleteKontingen(k)} className="text-neutral-400 hover:text-danger" aria-label={`Hapus ${k.nama}`}>
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-4">
@@ -250,33 +305,38 @@ function EventManager({
       <Card>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-neutral-900">Kabupaten &amp; Kota</h2>
-        </div>
-        <form onSubmit={handleAddKontingen} className="mb-4 flex gap-2">
-          <Input placeholder="Nama kabupaten/kota, mis. Bintan" value={kontingenNama} onChange={(e) => setKontingenNama(e.target.value)} className="flex-1" />
-          <Button type="submit" variant="outline">
+          <Button variant="outline" onClick={() => setAddModalOpen(true)}>
             <Plus size={16} /> Tambah
           </Button>
-        </form>
-
-        <div className="space-y-3">
-          {event.kontingen.map((k) => (
-            <KontingenCard key={k.id} kontingen={k} cabors={cabors} onDelete={() => handleDeleteKontingen(k)} onChange={onChange} />
-          ))}
         </div>
+        <DataTable columns={kontingenColumns} rows={event.kontingen} emptyMessage="Belum ada kontingen." />
       </Card>
+
+      {addModalOpen && (
+        <Modal title="Tambah Kontingen" onClose={() => setAddModalOpen(false)}>
+          <form onSubmit={handleAddKontingen} className="space-y-4">
+            <Field label="Nama Kabupaten/Kota" required htmlFor="kontingenNama">
+              <Input id="kontingenNama" required placeholder="mis. Bintan" value={kontingenNama} onChange={(e) => setKontingenNama(e.target.value)} />
+            </Field>
+            <Button type="submit">Tambah</Button>
+          </form>
+        </Modal>
+      )}
+
+      {editing && <TallyModal kontingen={editing} cabors={cabors} onClose={() => setEditing(null)} onChange={onChange} />}
     </div>
   );
 }
 
-function KontingenCard({
+function TallyModal({
   kontingen,
   cabors,
-  onDelete,
+  onClose,
   onChange,
 }: {
   kontingen: Kontingen;
   cabors: { id: string; nama: string }[];
-  onDelete: () => void;
+  onClose: () => void;
   onChange: () => void;
 }) {
   const [caborId, setCaborId] = useState("");
@@ -316,52 +376,49 @@ function KontingenCard({
     }
   }
 
-  const total = kontingen.tallies.reduce((s, t) => s + t.gold + t.silver + t.bronze, 0);
+  const tallyColumns: Column<Tally>[] = [
+    { key: "cabor", label: "Cabor", mobile: true, render: (t) => <span className="text-neutral-700">{t.cabangOlahraga.nama}</span> },
+    { key: "gold", label: "Emas", mobile: true, render: (t) => <span className="text-gold">{t.gold}</span> },
+    { key: "silver", label: "Perak", render: (t) => <span className="text-silver">{t.silver}</span> },
+    { key: "bronze", label: "Perunggu", render: (t) => <span className="text-bronze">{t.bronze}</span> },
+    {
+      key: "aksi",
+      label: "Aksi",
+      mobile: true,
+      render: (t) => (
+        <button onClick={() => handleRemoveTally(t.cabangOlahragaId)} className="text-neutral-400 hover:text-danger" aria-label={`Hapus tally ${t.cabangOlahraga.nama}`}>
+          <Trash2 size={14} />
+        </button>
+      ),
+    },
+  ];
 
   return (
-    <div className="rounded-lg border border-neutral-200 p-3">
-      <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-semibold text-neutral-900">{kontingen.nama}</p>
-          {kontingen.isOwn && <Badge tone="info">Kontingen Kita</Badge>}
-          <span className="text-xs text-neutral-500">Total {total}</span>
-        </div>
-        {!kontingen.isOwn && (
-          <button onClick={onDelete} className="text-neutral-400 hover:text-danger">
-            <Trash2 size={14} />
-          </button>
-        )}
-      </div>
-
-      {kontingen.tallies.length > 0 && (
-        <ul className="mb-2 divide-y divide-neutral-100 text-sm">
-          {kontingen.tallies.map((t) => (
-            <li key={t.id} className="flex items-center justify-between gap-2 py-1.5">
-              <span className="text-neutral-700">{t.cabangOlahraga.nama}</span>
-              <span className="flex items-center gap-3 text-xs">
-                <span className="text-gold">E{t.gold}</span>
-                <span className="text-silver">P{t.silver}</span>
-                <span className="text-bronze">G{t.bronze}</span>
-                <button onClick={() => handleRemoveTally(t.cabangOlahragaId)} className="text-neutral-400 hover:text-danger">
-                  <Trash2 size={13} />
-                </button>
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <form onSubmit={handleAddTally} className="flex flex-wrap items-end gap-2">
+    <Modal title={`Tally — ${kontingen.nama}`} onClose={onClose}>
+      <DataTable
+        columns={tallyColumns}
+        rows={kontingen.tallies.map((t) => ({ ...t, id: t.id }))}
+        emptyMessage="Belum ada tally untuk kontingen ini."
+      />
+      <form onSubmit={handleAddTally} className="mt-4 flex flex-wrap items-end gap-2 border-t border-neutral-100 pt-4">
         <div className="min-w-[180px] flex-1">
-          <Combobox value={caborId} onChange={setCaborId} options={cabors.map((c) => ({ value: c.id, label: c.nama }))} placeholder="Pilih cabor" />
+          <Field label="Cabor" htmlFor="cabor">
+            <Combobox id="cabor" value={caborId} onChange={setCaborId} options={cabors.map((c) => ({ value: c.id, label: c.nama }))} placeholder="Pilih cabor" />
+          </Field>
         </div>
-        <Input type="number" min={0} value={gold} onChange={(e) => setGold(e.target.value)} className="w-16" aria-label="Emas" />
-        <Input type="number" min={0} value={silver} onChange={(e) => setSilver(e.target.value)} className="w-16" aria-label="Perak" />
-        <Input type="number" min={0} value={bronze} onChange={(e) => setBronze(e.target.value)} className="w-16" aria-label="Perunggu" />
+        <Field label="Emas" htmlFor="gold">
+          <Input id="gold" type="number" min={0} value={gold} onChange={(e) => setGold(e.target.value)} className="w-16" />
+        </Field>
+        <Field label="Perak" htmlFor="silver">
+          <Input id="silver" type="number" min={0} value={silver} onChange={(e) => setSilver(e.target.value)} className="w-16" />
+        </Field>
+        <Field label="Perunggu" htmlFor="bronze">
+          <Input id="bronze" type="number" min={0} value={bronze} onChange={(e) => setBronze(e.target.value)} className="w-16" />
+        </Field>
         <Button type="submit" variant="outline" disabled={saving || !caborId}>
           Simpan
         </Button>
       </form>
-    </div>
+    </Modal>
   );
 }
