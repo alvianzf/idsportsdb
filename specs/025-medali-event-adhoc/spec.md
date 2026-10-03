@@ -151,9 +151,9 @@
      `024`'s `MiniTally` already established) and its Total. Cards are
      click-toggle filters, same interaction model as `024`'s Tingkat/Tahun
      cards.
-  4. A tab bar below the cards — **"Total Tally"** (default) and **"Per
+  4. A tab bar below the cards — **"Rekap"** (default) and **"Per
      Cabor"**:
-     - **Total Tally**:
+     - **Rekap**:
        - **No card selected (default)**: a leaderboard — one row per
          kontingen (incl. Batam), columns Kontingen/Emas/Perak/Perunggu/
          Total, sorted by Total descending.

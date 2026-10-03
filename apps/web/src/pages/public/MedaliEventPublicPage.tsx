@@ -178,11 +178,11 @@ export function MedaliEventPublicPage() {
         })}
       </div>
 
-      {/* Total Tally vs. Per Cabor */}
+      {/* Rekap vs. Per Cabor */}
       <div className="mb-4 flex gap-1 border-b border-neutral-200">
         {(
           [
-            { key: "total", label: "Total Tally" },
+            { key: "total", label: "Rekap" },
             { key: "cabor", label: "Per Cabor" },
           ] as { key: "total" | "cabor"; label: string }[]
         ).map((t) => (
@@ -203,7 +203,7 @@ export function MedaliEventPublicPage() {
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-neutral-700">
               <MedalIcon size={15} className="text-primary" />
-              {activeKontingen ? `Rekap Medali Cabor — Kontingen ${activeKontingen.nama}` : "Total Tally"}
+              {activeKontingen ? `Rekap Medali Cabor — Kontingen ${activeKontingen.nama}` : "Rekap"}
             </h2>
             <AnimatePresence>
               {activeKontingen && (
@@ -214,7 +214,7 @@ export function MedaliEventPublicPage() {
                   onClick={() => setSelected(null)}
                   className="rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary-100"
                 >
-                  Kembali ke Total Tally
+                  Kembali ke Rekap
                 </motion.button>
               )}
             </AnimatePresence>
