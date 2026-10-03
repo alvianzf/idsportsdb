@@ -357,6 +357,28 @@ caborRouter.post(
   }),
 );
 
+/** DELETE /cabor/:id/logo — remove the organisasi logo, no replacement. */
+caborRouter.delete(
+  "/:id/logo",
+  requireRole(["SUPER_ADMIN_KONI", "ADMIN_KONI"]),
+  asyncHandler(async (req, res) => {
+    const fs = await import("node:fs/promises");
+    const existing = await prisma.cabangOlahraga.findUnique({
+      where: { id: req.params.id },
+      select: { logoOrganisasiUrl: true },
+    });
+    if (!existing) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (existing.logoOrganisasiUrl) {
+      await prisma.cabangOlahraga.update({ where: { id: req.params.id }, data: { logoOrganisasiUrl: null } });
+      await fs.unlink(path.join(uploadRoot, existing.logoOrganisasiUrl.replace("/uploads/", ""))).catch(() => undefined);
+    }
+    res.status(204).end();
+  }),
+);
+
 // ---------------------------------------------------------------------------
 // CaborDocument — SK and official documents
 // ---------------------------------------------------------------------------

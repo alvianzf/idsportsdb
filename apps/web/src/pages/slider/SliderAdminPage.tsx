@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, Eye, EyeOff, Info, Trash2, Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowDown, ArrowUp, Eye, EyeOff, ImageUp, Info, Trash2, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import { Badge, Button, Card, DropZone, Field, Input, Modal, PageHeader } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
@@ -24,6 +24,8 @@ export function SliderAdminPage() {
   const [caption, setCaption] = useState("");
   const [showUpload, setShowUpload] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [replacingId, setReplacingId] = useState<string | null>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
 
   function load() {
     setError(false);
@@ -60,6 +62,30 @@ export function SliderAdminPage() {
       toast.error("Gagal mengunggah foto.");
     } finally {
       setUploading(false);
+    }
+  }
+
+  function requestReplace(id: string) {
+    setReplacingId(id);
+    replaceInputRef.current?.click();
+  }
+
+  async function handleReplaceFile(file: File | null) {
+    const id = replacingId;
+    setReplacingId(null);
+    if (!file || !id) return;
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      toast.error(`Ukuran file maksimal ${MAX_SIZE_MB} MB.`);
+      return;
+    }
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      await api.post(`/slider/${id}/image`, form);
+      toast.success("Foto slider berhasil diganti.");
+      load();
+    } catch {
+      toast.error("Gagal mengganti foto.");
     }
   }
 
@@ -159,6 +185,17 @@ export function SliderAdminPage() {
         <Card className="text-sm text-neutral-500">Belum ada foto slider. Unggah foto pertama di atas.</Card>
       )}
 
+      <input
+        ref={replaceInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          void handleReplaceFile(e.target.files?.[0] ?? null);
+          e.target.value = "";
+        }}
+      />
+
       <div className="space-y-3">
         {slides?.map((s, i) => (
           <Card key={s.id} className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -194,6 +231,9 @@ export function SliderAdminPage() {
                 title={s.isActive ? "Sembunyikan" : "Tayangkan"}
               >
                 {s.isActive ? <EyeOff size={14} /> : <Eye size={14} />}
+              </Button>
+              <Button variant="outline" onClick={() => requestReplace(s.id)} title="Ganti foto">
+                <ImageUp size={14} />
               </Button>
               <Button variant="danger" onClick={() => handleDelete(s)} title="Hapus">
                 <Trash2 size={14} />

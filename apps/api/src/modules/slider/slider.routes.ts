@@ -58,6 +58,38 @@ sliderRouter.post(
   }),
 );
 
+/** POST /:id/image — replace a slide's image in place, keeping its order/caption/isActive. */
+sliderRouter.post(
+  "/:id/image",
+  imageUpload.single("file"),
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      res.status(400).json({ error: "File gambar wajib diunggah" });
+      return;
+    }
+    if (!req.file.mimetype.startsWith("image/")) {
+      fs.unlink(req.file.path, () => undefined);
+      res.status(400).json({ error: "File harus berupa gambar (JPG/PNG/WebP)" });
+      return;
+    }
+
+    const existing = await prisma.sliderImage.findUnique({ where: { id: req.params.id } });
+    if (!existing) {
+      fs.unlink(req.file.path, () => undefined);
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    const slide = await prisma.sliderImage.update({
+      where: { id: req.params.id },
+      data: { imageUrl: publicUrl("slider", req.file.filename) },
+    });
+    fs.unlink(path.join(uploadRoot, existing.imageUrl.replace("/uploads/", "")), () => undefined);
+    emit("slider:change");
+    res.json(slide);
+  }),
+);
+
 const reorderSliderSchema = z.object({
   ids: z.array(z.string().uuid()).min(1),
 });

@@ -36,6 +36,7 @@ export function ArtikelFormPage() {
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [coverRemoved, setCoverRemoved] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showArticlePreview, setShowArticlePreview] = useState(false);
@@ -89,6 +90,7 @@ export function ArtikelFormPage() {
 
   function applyFile(file: File) {
     setCoverFile(file);
+    setCoverRemoved(false);
     const reader = new FileReader();
     reader.onload = (e) => setCoverPreview(e.target?.result as string);
     reader.readAsDataURL(file);
@@ -117,6 +119,7 @@ export function ArtikelFormPage() {
   }
 
   function removeCover() {
+    if (coverImageUrl) setCoverRemoved(true);
     setCoverFile(null);
     setCoverPreview(null);
     setCoverImageUrl(null);
@@ -155,6 +158,9 @@ export function ArtikelFormPage() {
         await api.post(`/artikel/${articleId}/cover`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
+      } else if (coverRemoved && articleId) {
+        await api.delete(`/artikel/${articleId}/cover`);
+        setCoverRemoved(false);
       }
 
       toast.success(isEdit ? "Pengumuman berhasil diubah." : "Pengumuman berhasil ditambahkan.");

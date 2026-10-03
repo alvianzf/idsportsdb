@@ -227,6 +227,26 @@ artikelRouter.post(
   }),
 );
 
+/** DELETE /artikel/:id/cover — remove the cover image, no replacement. */
+artikelRouter.delete(
+  "/:id/cover",
+  asyncHandler(async (req, res) => {
+    const existing = await prisma.article.findUnique({
+      where: { id: req.params.id },
+      select: { coverImageUrl: true },
+    });
+    if (!existing) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (existing.coverImageUrl) {
+      await prisma.article.update({ where: { id: req.params.id }, data: { coverImageUrl: null } });
+      fs.unlink(path.join(uploadRoot, existing.coverImageUrl.replace("/uploads/", "")), () => undefined);
+    }
+    res.status(204).end();
+  }),
+);
+
 artikelRouter.delete(
   "/:id",
   asyncHandler(async (req, res) => {

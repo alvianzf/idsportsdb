@@ -33,6 +33,7 @@ export function CaborFormPage() {
   const [form, setForm] = useState<CaborForm>(empty);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [removeLogo, setRemoveLogo] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
@@ -60,7 +61,16 @@ export function CaborFormPage() {
   }, [id]);
 
   function handleLogoFileChange(file: File | null) {
-    setLogoFile(file);
+    if (file) {
+      setLogoFile(file);
+      setRemoveLogo(false);
+    } else if (logoFile) {
+      // Un-stage the new file; the existing logo stays.
+      setLogoFile(null);
+    } else {
+      // X on the existing logo — delete it on save.
+      setRemoveLogo(true);
+    }
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -97,6 +107,9 @@ export function CaborFormPage() {
         });
         setUploadingLogo(false);
         setLogoFile(null);
+      } else if (removeLogo && caborId) {
+        await api.delete(`/cabor/${caborId}/logo`);
+        setRemoveLogo(false);
       }
 
       navigate(`/cabor/${caborId}`, { replace: true });
@@ -190,7 +203,7 @@ export function CaborFormPage() {
               <DropZone
                 accept="image/*"
                 value={logoFile}
-                existingUrl={logoUrl ? resolveFileUrl(logoUrl) : null}
+                existingUrl={!removeLogo && logoUrl ? resolveFileUrl(logoUrl) : null}
                 onChange={handleLogoFileChange}
                 disabled={uploadingLogo}
                 sublabel="PNG, JPG, SVG — maks. 5 MB"
