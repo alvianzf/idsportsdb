@@ -133,12 +133,14 @@
 - **`/medali` hub** gains a compact event banner/link when one is
   configured (logo + nama + tahun + grand total → `/medali/event`); absent
   entirely when none is configured.
-- **Landing page (`/`)** gains a compact card — placed near the existing
-  "Perolehan Medali" section — showing the event's name directly (no
-  eyebrow label) and Batam's own gold/silver/bronze as icon-only figures (a
-  medal icon per color + count, no text labels), linking to `/medali/event`.
-  Rendered only when an event is configured; otherwise the section doesn't
-  appear (no empty state on the landing page).
+- **Landing page (`/`)**: the existing "Perolehan Medali" card now switches
+  source when an event is configured — header shows the event's logo (if
+  any) + nama instead of "Perolehan Medali", the three figures are Batam's
+  own gold/silver/bronze for that event instead of the lifetime total, and
+  "Detail" / each figure link to `/medali/event` instead of `/medali` /
+  `/medali/:jenis`. No event configured → the card is unchanged from before
+  this spec (lifetime totals, `/medali` links). No separate event banner —
+  this one card covers both states.
 - **`/medali/event`** — the sketch (no `:id` — there's only ever one):
   1. Header: event logo (if any) + "Perolehan Medali — `<nama>`" + tingkat
      Tahun.

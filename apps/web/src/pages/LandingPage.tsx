@@ -203,83 +203,54 @@ export function LandingPage() {
       </section>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 md:px-6">
-        {/* specs/025-medali-event-adhoc/spec.md — current ad-hoc event, when
-            configured (identification + tally, linking to the full page). */}
-        {adHocEvent && (
-          <motion.section {...fadeUp} className="mt-10 md:mt-14">
-            <Link
-              to="/medali/event"
-              className="flex items-center gap-4 overflow-hidden rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
-            >
-              {adHocEvent.event.logoUrl ? (
-                <img src={resolveFileUrl(adHocEvent.event.logoUrl)} alt="" className="h-14 w-14 shrink-0 object-contain" />
-              ) : (
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#990000] to-[#d92626] text-white">
-                  <Trophy size={24} />
+        {/* specs/025-medali-event-adhoc/spec.md — when an ad-hoc event is
+            active, this card shows Batam's own tally for that event instead
+            of the lifetime total, and "Detail" points at the event page. */}
+        {stats &&
+          (() => {
+            const own = adHocEvent?.kontingen.find((k) => k.isOwn);
+            const medals = own ? { GOLD: own.gold, SILVER: own.silver, BRONZE: own.bronze } : stats.medals;
+            return (
+              <motion.section {...fadeUp} className="mt-10 md:mt-14">
+                <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+                  <div className="flex items-center justify-between gap-3 border-b border-neutral-100 px-5 py-4">
+                    <h2 className="flex min-w-0 items-center gap-2 text-sm font-bold uppercase tracking-widest text-neutral-900">
+                      {adHocEvent?.event.logoUrl && (
+                        <img src={resolveFileUrl(adHocEvent.event.logoUrl)} alt="" className="h-5 w-5 shrink-0 object-contain" />
+                      )}
+                      <span className="truncate">{adHocEvent ? adHocEvent.event.nama : "Perolehan Medali"}</span>
+                    </h2>
+                    <Link
+                      to={adHocEvent ? "/medali/event" : "/medali"}
+                      className="flex shrink-0 items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                    >
+                      Detail <ArrowRight size={13} />
+                    </Link>
+                  </div>
+                  <div className="grid grid-cols-3 divide-x divide-neutral-100">
+                    {[
+                      { label: "Emas", jenis: "emas", value: medals.GOLD, cls: "from-[#f7b500] to-[#e08700]", iconCls: "text-[#e08700]" },
+                      { label: "Perak", jenis: "perak", value: medals.SILVER, cls: "from-[#9ca3af] to-[#6b7280]", iconCls: "text-[#6b7280]" },
+                      { label: "Perunggu", jenis: "perunggu", value: medals.BRONZE, cls: "from-[#c9793a] to-[#98501c]", iconCls: "text-[#98501c]" },
+                    ].map((m) => (
+                      <Link
+                        key={m.label}
+                        to={adHocEvent ? "/medali/event" : `/medali/${m.jenis}`}
+                        className="block px-4 py-6 text-center transition-colors hover:bg-neutral-50"
+                      >
+                        <p className={`bg-gradient-to-b ${m.cls} bg-clip-text text-4xl font-extrabold tabular-nums text-transparent`}>
+                          {m.value}
+                        </p>
+                        <p className="mt-1 flex items-center justify-center gap-1 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+                          <MedalIcon size={12} className={m.iconCls} /> {m.label}
+                        </p>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-lg font-extrabold text-neutral-900">{adHocEvent.event.nama}</p>
-                {(() => {
-                  const own = adHocEvent.kontingen.find((k) => k.isOwn);
-                  return own ? (
-                    <div className="mt-1 flex items-center gap-3 text-sm font-bold">
-                      <span className="flex items-center gap-1 text-gold">
-                        <MedalIcon size={14} /> {own.gold}
-                      </span>
-                      <span className="flex items-center gap-1 text-silver">
-                        <MedalIcon size={14} /> {own.silver}
-                      </span>
-                      <span className="flex items-center gap-1 text-bronze">
-                        <MedalIcon size={14} /> {own.bronze}
-                      </span>
-                    </div>
-                  ) : null;
-                })()}
-              </div>
-              <ArrowRight size={18} className="shrink-0 text-primary" />
-            </Link>
-          </motion.section>
-        )}
-
-        {/* Medali */}
-        {stats && (
-          <motion.section {...fadeUp} className="mt-10 md:mt-14">
-            <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
-              <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
-                <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-900">
-                  Perolehan Medali
-                </h2>
-                <Link
-                  to="/medali"
-                  className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-                >
-                  Detail <ArrowRight size={13} />
-                </Link>
-              </div>
-              <div className="grid grid-cols-3 divide-x divide-neutral-100">
-                {[
-                  { label: "Emas", jenis: "emas", value: stats.medals.GOLD, cls: "from-[#f7b500] to-[#e08700]", iconCls: "text-[#e08700]" },
-                  { label: "Perak", jenis: "perak", value: stats.medals.SILVER, cls: "from-[#9ca3af] to-[#6b7280]", iconCls: "text-[#6b7280]" },
-                  { label: "Perunggu", jenis: "perunggu", value: stats.medals.BRONZE, cls: "from-[#c9793a] to-[#98501c]", iconCls: "text-[#98501c]" },
-                ].map((m) => (
-                  <Link
-                    key={m.label}
-                    to={`/medali/${m.jenis}`}
-                    className="block px-4 py-6 text-center transition-colors hover:bg-neutral-50"
-                  >
-                    <p className={`bg-gradient-to-b ${m.cls} bg-clip-text text-4xl font-extrabold tabular-nums text-transparent`}>
-                      {m.value}
-                    </p>
-                    <p className="mt-1 flex items-center justify-center gap-1 text-xs font-semibold uppercase tracking-wider text-neutral-500">
-                      <MedalIcon size={12} className={m.iconCls} /> {m.label}
-                    </p>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </motion.section>
-        )}
+              </motion.section>
+            );
+          })()}
 
         {/* Cabang Olahraga */}
         {cabor.length > 0 && (
