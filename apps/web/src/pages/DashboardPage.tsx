@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Users, UserCog, Building2, Trophy, Medal, ArrowLeftRight, UserPlus, Upload, CalendarPlus, Dumbbell } from "lucide-react";
+import toast from "react-hot-toast";
 import {
   DATA_ADMIN_ROLES,
   COMPETITION_LEVEL_CHOICES,
@@ -315,7 +316,10 @@ export function DashboardPage() {
 
   useEffect(() => {
     if (showEventForm && cabors.length === 0) {
-      api.get<{ id: string; nama: string }[]>("/cabor").then((res) => setCabors(res.data)).catch(() => undefined);
+      api
+        .get<{ id: string; nama: string }[]>("/cabor")
+        .then((res) => setCabors(res.data))
+        .catch(() => toast.error("Gagal memuat daftar cabor."));
     }
   }, [showEventForm, cabors.length]);
 

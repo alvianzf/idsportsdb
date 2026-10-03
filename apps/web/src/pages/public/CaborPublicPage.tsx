@@ -61,7 +61,7 @@ function CaborList() {
                   <Card className="h-full transition-colors hover:border-primary">
                     <div className="flex items-start gap-3">
                       {c.logoOrganisasiUrl ? (
-                        <img src={c.logoOrganisasiUrl} alt="" className="h-10 w-10 shrink-0 object-contain" />
+                        <img src={resolveFileUrl(c.logoOrganisasiUrl)} alt="" className="h-10 w-10 shrink-0 object-contain" />
                       ) : (
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary-50 text-sm font-bold text-primary">
                           {c.nama.slice(0, 2).toUpperCase()}

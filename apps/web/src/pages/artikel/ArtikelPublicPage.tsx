@@ -3,6 +3,8 @@ import { Link, useParams } from "react-router-dom";
 import { CalendarDays, ArrowLeft } from "lucide-react";
 import DOMPurify from "dompurify";
 import { api, resolveFileUrl } from "../../lib/api";
+import { Card } from "../../components/ui";
+import { PublicShell } from "../public/PublicShell";
 
 interface Article {
   id: string;
@@ -29,46 +31,38 @@ export function ArtikelPublicPage() {
 
   if (article === undefined) {
     return (
-      <div className="min-h-svh bg-neutral-50">
-        <div className="mx-auto max-w-2xl px-4 py-12 text-sm text-neutral-500">Memuat...</div>
-      </div>
+      <PublicShell title="Berita" description="Memuat artikel...">
+        <Card className="text-sm text-neutral-500">Memuat...</Card>
+      </PublicShell>
     );
   }
 
   if (article === null) {
     return (
-      <div className="min-h-svh bg-neutral-50">
-        <div className="mx-auto max-w-2xl px-4 py-12 text-sm text-neutral-500">
-          Artikel tidak ditemukan.{" "}
-          <Link to="/" className="text-primary hover:underline">
-            Kembali ke beranda
-          </Link>
-        </div>
-      </div>
+      <PublicShell title="Berita" description="Artikel tidak ditemukan.">
+        <Link to="/" className="inline-flex items-center gap-1 text-sm font-medium text-primary">
+          <ArrowLeft size={16} /> Kembali ke beranda
+        </Link>
+      </PublicShell>
     );
   }
 
   return (
-    <div className="min-h-svh bg-neutral-50">
-      <header className="border-b border-neutral-200 bg-white">
-        <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-4 md:px-6">
-          <Link to="/" className="flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-800">
-            <ArrowLeft size={16} /> KONI Batam
-          </Link>
-        </div>
-      </header>
+    <PublicShell title={article.title}>
+      <div className="space-y-6">
+        <Link to="/berita" className="inline-flex items-center gap-1 text-sm font-medium text-primary">
+          <ArrowLeft size={16} /> Kembali ke Berita
+        </Link>
 
-      <main className="mx-auto max-w-2xl px-4 py-8 md:px-6 md:py-12">
         {article.coverImageUrl && (
           <img
             src={resolveFileUrl(article.coverImageUrl)}
             alt=""
-            className="mb-6 h-56 w-full rounded-lg object-cover md:h-72"
+            className="h-56 w-full rounded-lg object-cover md:h-72"
           />
         )}
-        <h1 className="text-xl font-semibold text-neutral-900 md:text-2xl">{article.title}</h1>
         {article.publishedAt && (
-          <p className="mt-1 flex items-center gap-1 text-xs text-neutral-500">
+          <p className="flex items-center gap-1 text-xs text-neutral-500">
             <CalendarDays size={13} />
             {new Date(article.publishedAt).toLocaleDateString("id-ID", {
               year: "numeric",
@@ -78,13 +72,13 @@ export function ArtikelPublicPage() {
           </p>
         )}
         {article.excerpt && (
-          <p className="mt-3 text-sm font-medium text-neutral-600">{article.excerpt}</p>
+          <p className="text-sm font-medium text-neutral-600">{article.excerpt}</p>
         )}
         <div
-          className="prose-article mt-4 text-sm text-neutral-700"
+          className="prose-article text-sm text-neutral-700"
           dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.content) }}
         />
-      </main>
-    </div>
+      </div>
+    </PublicShell>
   );
 }

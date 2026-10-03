@@ -20,6 +20,11 @@ interface UserRow {
   createdAt: string;
 }
 
+function extractError(err: unknown): string | null {
+  const data = (err as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+  return typeof data === "string" ? data : null;
+}
+
 const ROLE_BADGE_TONE: Record<Role, "danger" | "info" | "warning" | "neutral"> = {
   SUPER_ADMIN_KONI: "danger",
   ADMIN_KONI: "info",
@@ -62,8 +67,8 @@ export function UsersListPage() {
     try {
       await api.post(`/users/${user.id}/reset-password`);
       toast.success(`Kata sandi direset. Email dikirim ke ${user.email}.`);
-    } catch {
-      toast.error("Gagal mereset kata sandi.");
+    } catch (err) {
+      toast.error(extractError(err) ?? "Gagal mereset kata sandi.");
     }
   }
 
@@ -78,8 +83,8 @@ export function UsersListPage() {
       await api.delete(`/users/${user.id}`);
       toast.success("Akun berhasil dinonaktifkan.");
       load();
-    } catch {
-      toast.error("Gagal menonaktifkan akun.");
+    } catch (err) {
+      toast.error(extractError(err) ?? "Gagal menonaktifkan akun.");
     }
   }
 
@@ -89,8 +94,8 @@ export function UsersListPage() {
       await api.patch(`/users/${user.id}`, { isActive: true });
       toast.success("Akun berhasil diaktifkan.");
       load();
-    } catch {
-      toast.error("Gagal mengaktifkan akun.");
+    } catch (err) {
+      toast.error(extractError(err) ?? "Gagal mengaktifkan akun.");
     }
   }
 
@@ -105,8 +110,8 @@ export function UsersListPage() {
       await api.delete(`/users/${user.id}/permanent`);
       toast.success("Akun berhasil dihapus permanen.");
       load();
-    } catch {
-      toast.error("Gagal menghapus akun.");
+    } catch (err) {
+      toast.error(extractError(err) ?? "Gagal menghapus akun.");
     }
   }
 
