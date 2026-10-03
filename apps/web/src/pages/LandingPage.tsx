@@ -26,6 +26,7 @@ import {
   formatEventDate,
   type PublicEvent,
 } from "./public/eventShared";
+import { effectiveEventStatus } from "./event/calendarUtils";
 
 interface PublicStats {
   caborCount: number;
@@ -321,8 +322,8 @@ export function LandingPage() {
                         {e.cabangOlahraga ? ` · ${e.cabangOlahraga.nama}` : ""}
                       </p>
                     </div>
-                    <span className={`shrink-0 text-xs font-bold uppercase tracking-wide ${EVENT_STATUS_TEXT[e.status]}`}>
-                      {EVENT_STATUS_LABELS[e.status]}
+                    <span className={`shrink-0 text-xs font-bold uppercase tracking-wide ${EVENT_STATUS_TEXT[effectiveEventStatus(e)]}`}>
+                      {EVENT_STATUS_LABELS[effectiveEventStatus(e)]}
                     </span>
                   </div>
                 </div>

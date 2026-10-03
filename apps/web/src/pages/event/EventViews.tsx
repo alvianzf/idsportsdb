@@ -12,6 +12,7 @@ import { EVENT_STATUS_TONE, formatEventDate, type PublicEvent } from "../public/
 import {
   addDays,
   diffDays,
+  effectiveEventStatus,
   eventEnd,
   eventStart,
   firstOfMonth,
@@ -285,9 +286,9 @@ export function EventMonthCalendar({
                     e.stopPropagation();
                     onEventClick?.(s.event);
                   }}
-                  title={`${s.event.namaKejuaraan} · ${formatEventDate(s.event)} · ${EVENT_STATUS_LABELS[s.event.status]}`}
+                  title={`${s.event.namaKejuaraan} · ${formatEventDate(s.event)} · ${EVENT_STATUS_LABELS[effectiveEventStatus(s.event)]}`}
                   className={`z-10 mx-0.5 truncate rounded px-1.5 text-left text-[11px] font-medium leading-6 text-white shadow-sm transition hover:opacity-85 ${
-                    STATUS_BG[s.event.status]
+                    STATUS_BG[effectiveEventStatus(s.event)]
                   } ${canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${s.isStart ? "" : "rounded-l-none"}`}
                   style={{ gridColumn: `${s.col} / span ${s.span}`, gridRow: s.lane + 2 }}
                 >
@@ -363,7 +364,7 @@ export function EventCards({
             {e.deskripsi && <p className="mt-1 text-xs text-neutral-500 line-clamp-2">{e.deskripsi}</p>}
           </div>
           <div className="flex shrink-0 items-center gap-2 self-start sm:self-center">
-            <StatusLabel status={e.status} />
+            <StatusLabel status={effectiveEventStatus(e)} />
             {actions?.(e)}
           </div>
         </Card>
@@ -415,8 +416,8 @@ export function EventTable({ events, onEventClick }: { events: PublicEvent[]; on
       key: "status",
       label: "Status",
       sortable: true,
-      getValue: (e) => e.status,
-      render: (e) => <StatusLabel status={e.status} />,
+      getValue: (e) => effectiveEventStatus(e),
+      render: (e) => <StatusLabel status={effectiveEventStatus(e)} />,
     },
   ];
 
@@ -475,8 +476,8 @@ export function EventGantt({ events, onEventClick }: { events: PublicEvent[]; on
                 <div className="relative h-5 flex-1">
                   <button
                     onClick={onEventClick ? () => onEventClick(e) : undefined}
-                    title={`${e.namaKejuaraan} · ${formatEventDate(e)} · ${EVENT_STATUS_LABELS[e.status]}`}
-                    className={`absolute top-0 h-5 rounded-full text-[10px] font-semibold text-white shadow-sm transition hover:opacity-85 ${STATUS_BG[e.status]} ${
+                    title={`${e.namaKejuaraan} · ${formatEventDate(e)} · ${EVENT_STATUS_LABELS[effectiveEventStatus(e)]}`}
+                    className={`absolute top-0 h-5 rounded-full text-[10px] font-semibold text-white shadow-sm transition hover:opacity-85 ${STATUS_BG[effectiveEventStatus(e)]} ${
                       onEventClick ? "cursor-pointer" : "cursor-default"
                     }`}
                     style={{ left: `${left}%`, width: `${width}%` }}

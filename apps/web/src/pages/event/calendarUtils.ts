@@ -1,3 +1,4 @@
+import type { EventStatus } from "@inasportdb/shared-types";
 import type { PublicEvent } from "../public/eventShared";
 
 /** Date-only string (YYYY-MM-DD) from an ISO datetime. */
@@ -42,6 +43,14 @@ export function eventCoversDay(e: PublicEvent, day: string): boolean {
   return eventStart(e) <= day && day <= eventEnd(e);
 }
 
+/** DIBATALKAN/DIUNDUR are manual calls that can't be inferred from dates, so
+ * they always win. Otherwise an ON_TRACK event whose end date has already
+ * passed is shown as SELESAI even if nobody went back to update it. */
+export function effectiveEventStatus(e: PublicEvent): EventStatus {
+  if (e.status === "ON_TRACK" && eventEnd(e) < todayYmd()) return "SELESAI";
+  return e.status;
+}
+
 export interface EventFilters {
   search: string;
   date: string;
@@ -70,7 +79,7 @@ export function filterEvents(events: PublicEvent[], f: EventFilters): PublicEven
       return false;
     }
     if (f.date && !eventCoversDay(e, f.date)) return false;
-    if (f.status && e.status !== f.status) return false;
+    if (f.status && effectiveEventStatus(e) !== f.status) return false;
     if (f.tingkat && e.tingkat !== f.tingkat) return false;
     if (f.cabor && e.cabangOlahraga?.id !== f.cabor) return false;
     return true;
