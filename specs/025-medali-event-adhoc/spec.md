@@ -151,14 +151,28 @@
      `024`'s `MiniTally` already established) and its Total. Cards are
      click-toggle filters, same interaction model as `024`'s Tingkat/Tahun
      cards.
-  4. Table, directly below the cards:
-     - **No card selected ("Total Tally", the default/main view)**: a
-       leaderboard — one row per kontingen (incl. Batam), columns
-       Kontingen/Emas/Perak/Perunggu/Total, sorted by Total descending.
-     - **A card selected**: the table swaps to that kontingen's own
-       `caborTally` — Cabor/Emas/Perak/Perunggu/Total, same shape/columns as
-       `024`'s `RekapMedaliTable` (reused). Clicking the already-selected
-       card deselects it, returning to the leaderboard.
+  4. A tab bar below the cards — **"Total Tally"** (default) and **"Per
+     Cabor"**:
+     - **Total Tally**:
+       - **No card selected (default)**: a leaderboard — one row per
+         kontingen (incl. Batam), columns Kontingen/Emas/Perak/Perunggu/
+         Total, sorted by Total descending.
+       - **A card selected**: the table swaps to that kontingen's own
+         `caborTally` — Cabor/Emas/Perak/Perunggu/Total, same shape/columns
+         as `024`'s `RekapMedaliTable` (reused). Clicking the
+         already-selected card deselects it, returning to the leaderboard.
+         Clicking any card also switches back to this tab if "Per Cabor"
+         was active.
+     - **Per Cabor**: a `Combobox` lists every cabang olahraga that appears
+       in any kontingen's `caborTally` (deduplicated, name-sorted). Once one
+       is picked, the table shows one row per Kota/Kab —
+       Kontingen/Emas/Perak/Perunggu/Total — with that kontingen's tally for
+       the selected cabor only (zero-filled if it has none), **sorted by
+       Emas descending, then Perak descending, then Perunggu descending**
+       (not Total — the one place on this page total isn't the sort key).
+       Computed entirely client-side from the already-fetched payload, no
+       extra request. Before a cabor is picked: a prompt, not an empty
+       table.
   5. Back button (`navigate(-1)`), consistent with `024`'s ranking page.
   6. **No event configured**: friendly empty state, not a 404 (this route
      always exists; its content depends on whether an event is set up).
@@ -201,6 +215,11 @@
   Batam's own tally without the visitor navigating anywhere first, and
   nothing on the page labels Batam as "ours" — the identification is
   implicit in the site itself.
+- Given the "Per Cabor" tab with a cabor selected where Kontingen A has
+  2 gold/0 silver and Kontingen B has 1 gold/3 silver, then A is ranked
+  above B (gold wins the tie-break before total would).
+- Given the "Per Cabor" tab, when no cabor is selected yet, then the table
+  area shows a prompt rather than an empty table.
 
 ## 7. Open Questions / Assumptions
 
