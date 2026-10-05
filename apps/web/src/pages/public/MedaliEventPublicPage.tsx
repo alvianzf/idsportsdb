@@ -17,6 +17,15 @@ interface PerCaborRow {
   total: number;
 }
 
+interface CaborOverviewRow {
+  id: string;
+  nama: string;
+  gold: number;
+  silver: number;
+  bronze: number;
+  total: number;
+}
+
 interface KontingenRow {
   id: string;
   nama: string;
@@ -88,6 +97,20 @@ export function MedaliEventPublicPage() {
       .sort((a, b) => b.gold - a.gold || b.silver - a.silver || b.bronze - a.bronze);
   }, [kontingenList, selectedCabor]);
 
+  // Every registered cabor, summed across all Kabupaten/Kota — shown before
+  // any cabor is picked, so the full list is visible (0s included) instead
+  // of hiding behind the dropdown.
+  const caborOverviewRows: CaborOverviewRow[] = useMemo(() => {
+    return caborOptions.map((c) => {
+      let gold = 0, silver = 0, bronze = 0;
+      for (const k of kontingenList) {
+        const t = k.caborTally.find((row) => row.cabangOlahragaId === c.id);
+        if (t) { gold += t.gold; silver += t.silver; bronze += t.bronze; }
+      }
+      return { id: c.id, nama: c.nama, gold, silver, bronze, total: gold + silver + bronze };
+    });
+  }, [caborOptions, kontingenList]);
+
   if (data === undefined) {
     return (
       <PublicShell title="Perolehan Medali" description="Memuat data...">
@@ -126,6 +149,27 @@ export function MedaliEventPublicPage() {
     { key: "silver", label: "Perak", render: (k) => <span className="text-silver">{k.silver}</span> },
     { key: "bronze", label: "Perunggu", render: (k) => <span className="text-bronze">{k.bronze}</span> },
     { key: "total", label: "Total", mobile: true, render: (k) => <span className="font-semibold text-neutral-900">{k.total}</span> },
+  ];
+
+  // Every registered cabor, clickable to drill into its per-Kabupaten/Kota
+  // breakdown (same as picking it from the Combobox above).
+  const caborOverviewColumns: Column<CaborOverviewRow>[] = [
+    {
+      key: "nama",
+      label: "Cabang Olahraga",
+      mobile: true,
+      sortable: true,
+      getValue: (c) => c.nama,
+      render: (c) => (
+        <button onClick={() => setSelectedCabor(c.id)} className="font-medium text-primary hover:underline">
+          {c.nama}
+        </button>
+      ),
+    },
+    { key: "gold", label: "Emas", mobile: true, sortable: true, getValue: (c) => c.gold, render: (c) => <span className="text-gold">{c.gold}</span> },
+    { key: "silver", label: "Perak", sortable: true, getValue: (c) => c.silver, render: (c) => <span className="text-silver">{c.silver}</span> },
+    { key: "bronze", label: "Perunggu", sortable: true, getValue: (c) => c.bronze, render: (c) => <span className="text-bronze">{c.bronze}</span> },
+    { key: "total", label: "Total", mobile: true, sortable: true, getValue: (c) => c.total, render: (c) => <span className="font-semibold text-neutral-900">{c.total}</span> },
   ];
 
   return (
@@ -244,17 +288,38 @@ export function MedaliEventPublicPage() {
 
       {view === "cabor" && (
         <>
-          <div className="mb-3 max-w-xs">
-            <Combobox
-              value={selectedCabor}
-              onChange={setSelectedCabor}
-              options={caborOptions.map((c) => ({ value: c.id, label: c.nama }))}
-              placeholder="Pilih cabang olahraga"
-            />
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            {selectedCabor ? (
+              <>
+                <h2 className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-neutral-700">
+                  <MedalIcon size={15} className="text-primary" />
+                  Perolehan — {caborOptions.find((c) => c.id === selectedCabor)?.nama}
+                </h2>
+                <button
+                  onClick={() => setSelectedCabor("")}
+                  className="rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary-100"
+                >
+                  Kembali ke Semua Cabor
+                </button>
+              </>
+            ) : (
+              <div className="max-w-xs flex-1">
+                <Combobox
+                  value={selectedCabor}
+                  onChange={setSelectedCabor}
+                  options={caborOptions.map((c) => ({ value: c.id, label: c.nama }))}
+                  placeholder="Cari cabang olahraga"
+                />
+              </div>
+            )}
           </div>
           <motion.div key={selectedCabor || "none"} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>
             {!selectedCabor ? (
-              <Card className="text-sm text-neutral-500">Pilih cabang olahraga untuk melihat perolehan tiap Kabupaten/Kota.</Card>
+              <DataTable
+                columns={caborOverviewColumns}
+                rows={caborOverviewRows}
+                emptyMessage="Belum ada cabor terdaftar di event ini."
+              />
             ) : (
               <DataTable
                 columns={perCaborColumns}
