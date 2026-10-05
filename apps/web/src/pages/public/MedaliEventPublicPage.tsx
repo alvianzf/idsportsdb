@@ -281,7 +281,7 @@ export function MedaliEventPublicPage() {
             ) : (
               <DataTable
                 columns={leaderboardColumns}
-                rows={[...kontingen].sort((a, b) => b.total - a.total)}
+                rows={[...kontingen].sort((a, b) => b.gold - a.gold || b.silver - a.silver || b.bronze - a.bronze)}
                 emptyMessage="Belum ada kontingen."
               />
             )}
