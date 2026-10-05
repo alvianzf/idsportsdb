@@ -101,14 +101,17 @@ export function MedaliEventPublicPage() {
   // any cabor is picked, so the full list is visible (0s included) instead
   // of hiding behind the dropdown.
   const caborOverviewRows: CaborOverviewRow[] = useMemo(() => {
-    return caborOptions.map((c) => {
-      let gold = 0, silver = 0, bronze = 0;
-      for (const k of kontingenList) {
-        const t = k.caborTally.find((row) => row.cabangOlahragaId === c.id);
-        if (t) { gold += t.gold; silver += t.silver; bronze += t.bronze; }
-      }
-      return { id: c.id, nama: c.nama, gold, silver, bronze, total: gold + silver + bronze };
-    });
+    return caborOptions
+      .map((c) => {
+        let gold = 0, silver = 0, bronze = 0;
+        for (const k of kontingenList) {
+          const t = k.caborTally.find((row) => row.cabangOlahragaId === c.id);
+          if (t) { gold += t.gold; silver += t.silver; bronze += t.bronze; }
+        }
+        return { id: c.id, nama: c.nama, gold, silver, bronze, total: gold + silver + bronze };
+      })
+      // Gold, then silver, then bronze, each descending — not total.
+      .sort((a, b) => b.gold - a.gold || b.silver - a.silver || b.bronze - a.bronze);
   }, [caborOptions, kontingenList]);
 
   if (data === undefined) {

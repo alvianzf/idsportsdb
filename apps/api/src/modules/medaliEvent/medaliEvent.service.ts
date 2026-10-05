@@ -94,14 +94,18 @@ export function buildPublicPayload(event: EventWithKontingen) {
 
   const kontingen = event.kontingen
     .map((k) => {
-      const caborTally = padKontingenTallies(registeredCabors, k.tallies).map((p) => ({
-        cabangOlahragaId: p.cabangOlahragaId,
-        nama: p.nama,
-        gold: p.gold,
-        silver: p.silver,
-        bronze: p.bronze,
-        total: p.gold + p.silver + p.bronze,
-      }));
+      const caborTally = padKontingenTallies(registeredCabors, k.tallies)
+        .map((p) => ({
+          cabangOlahragaId: p.cabangOlahragaId,
+          nama: p.nama,
+          gold: p.gold,
+          silver: p.silver,
+          bronze: p.bronze,
+          total: p.gold + p.silver + p.bronze,
+        }))
+        // Per-cabor tally tables sort by medal rank, not total: gold, then
+        // silver, then bronze, each descending.
+        .sort((a, b) => b.gold - a.gold || b.silver - a.silver || b.bronze - a.bronze);
       const gold = caborTally.reduce((s, c) => s + c.gold, 0);
       const silver = caborTally.reduce((s, c) => s + c.silver, 0);
       const bronze = caborTally.reduce((s, c) => s + c.bronze, 0);
