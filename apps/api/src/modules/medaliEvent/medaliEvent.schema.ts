@@ -17,6 +17,10 @@ export const createKontingenSchema = z.object({
 
 export const updateKontingenSchema = createKontingenSchema;
 
+export const addEventCaborSchema = z.object({
+  cabangOlahragaId: z.string().uuid(),
+});
+
 export const tallySchema = z.object({
   gold: z.coerce.number().int().min(0),
   silver: z.coerce.number().int().min(0),

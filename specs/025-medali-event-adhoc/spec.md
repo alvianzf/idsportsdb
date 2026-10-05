@@ -65,6 +65,16 @@
     kontingen; admin only creates a row for a cabor the kontingen actually
     won a medal in (sparse, same convention as `getRekapMedali` omitting
     zero-medal cabors).
+- **Entity**: `MedaliEventCabor` — which cabang olahraga are contested in
+  the event, independent of `MedaliEventKontingenTally`'s sparse rows. Lets
+  the public "Per Cabor" filter list (and the admin page) show a cabor —
+  including an exhibition sport with no existing `CabangOlahraga` record,
+  created on the fly — before any kontingen has a medal in it.
+  - `id: String (uuid)`
+  - `medaliEventId: String` (FK → `MedaliEvent`, cascade delete)
+  - `cabangOlahragaId: String` (FK → `CabangOlahraga`)
+  - `createdAt`
+  - `@@unique([medaliEventId, cabangOlahragaId])`
 
 ## 3. API Contract
 
@@ -80,6 +90,8 @@
 | PATCH | `/api/v1/medali-event/kontingen/:kontingenId` | SUPER_ADMIN_KONI, ADMIN_KONI | `{ nama }` | `MedaliEventKontingen` | |
 | DELETE | `/api/v1/medali-event/kontingen/:kontingenId` | SUPER_ADMIN_KONI, ADMIN_KONI | - | `204` or `400` | `400` when `isOwn` (the Batam row can't be deleted) |
 | PUT | `/api/v1/medali-event/kontingen/:kontingenId/tally/:cabangOlahragaId` | SUPER_ADMIN_KONI, ADMIN_KONI | `{ gold, silver, bronze }` | `MedaliEventKontingenTally` or `204` | upsert — creates/overwrites the row; an all-zero body deletes it instead (sparse convention) and returns `204` |
+| POST | `/api/v1/medali-event/:id/cabor` | SUPER_ADMIN_KONI, ADMIN_KONI | `{ cabangOlahragaId }` | `MedaliEventCabor` | registers a cabor as contested in the event, independent of any tally row; `409` on dup |
+| DELETE | `/api/v1/medali-event/:id/cabor/:cabangOlahragaId` | SUPER_ADMIN_KONI, ADMIN_KONI | - | `204` | unregisters the cabor; leaves any already-recorded tallies for it untouched |
 | GET | `/api/v1/public/medali-event` | none | - | see §3.1, or `null` | single source for the `/medali/event` page **and** the landing-page card |
 
 ### 3.1 `GET /public/medali-event` response shape (`null` when none configured)
@@ -94,6 +106,10 @@
     gold: number; silver: number; bronze: number; total: number;
     caborTally: Array<{ cabangOlahragaId, nama, gold, silver, bronze, total }>;
   }>;                       // Batam's entry always first, rest sorted by total desc
+  cabors: Array<{ id, nama }>; // every cabor registered via MedaliEventCabor —
+                                // the "Per Cabor" filter's option list, so a cabor
+                                // with zero medals so far is still selectable
+                                // (its row then reads 0/0/0 for every kontingen)
   grandTotal: number;       // sum of every kontingen's total, incl. Batam
 }
 ```
@@ -129,6 +145,11 @@
       .../tally/:cabangOlahragaId`); a trailing row (cabor `Combobox` +
       three number inputs + a `+` button) adds a new cabor's tally directly
       into the same table. Deleting a row's icon PUTs zeros.
+    - **"Cabang Olahraga"** — the `MedaliEventCabor` registrations, shown as
+      removable chips. "Tambah" opens a modal with a `Combobox` of existing
+      cabor not yet registered, or a free-text field to create a brand-new
+      one (for an exhibition sport with no master `CabangOlahraga` record
+      yet) and register it in the same step.
 
 ### Public
 

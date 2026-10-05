@@ -12,6 +12,10 @@ export function getCurrentEvent() {
           tallies: { include: { cabangOlahraga: { select: { id: true, nama: true } } } },
         },
       },
+      cabors: {
+        orderBy: { cabangOlahraga: { nama: "asc" } },
+        include: { cabangOlahraga: { select: { id: true, nama: true } } },
+      },
     },
   });
 }
@@ -51,6 +55,11 @@ export function buildPublicPayload(event: EventWithKontingen) {
 
   const grandTotal = kontingen.reduce((s, k) => s + k.total, 0);
 
+  // Every cabor registered to the event, regardless of whether any kontingen
+  // has a (sparse) tally row for it yet — lets the public "Per Cabor" filter
+  // offer a cabor before it has a single medal recorded.
+  const cabors = event.cabors.map((c) => ({ id: c.cabangOlahraga.id, nama: c.cabangOlahraga.nama }));
+
   return {
     event: {
       id: event.id,
@@ -60,6 +69,7 @@ export function buildPublicPayload(event: EventWithKontingen) {
       logoUrl: event.logoUrl,
     },
     kontingen,
+    cabors,
     grandTotal,
   };
 }

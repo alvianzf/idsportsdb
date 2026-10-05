@@ -175,6 +175,7 @@ model CabangOlahraga {
   documents     CaborDocument[]
   events        Event[]
   medaliEventKontingenTallies MedaliEventKontingenTally[]
+  medaliEventCabors MedaliEventCabor[]
 
   // jumlahAtlet / jumlahPelatih (Modul E) are derived via _count, not stored;
   // jumlahAtlet includes athletes whose primary cabor is this one plus those
@@ -194,6 +195,22 @@ model MedaliEvent {
   updatedAt        DateTime         @updatedAt
 
   kontingen MedaliEventKontingen[]
+  cabors    MedaliEventCabor[]
+}
+
+// Which cabang olahraga are contested in this event — independent of the
+// (sparse) per-kontingen tally rows, so a cabor can be listed/filterable
+// with an explicit 0 before anyone has won a medal in it, instead of only
+// appearing once a tally row exists.
+model MedaliEventCabor {
+  id               String         @id @default(uuid())
+  medaliEventId    String
+  medaliEvent      MedaliEvent    @relation(fields: [medaliEventId], references: [id], onDelete: Cascade)
+  cabangOlahragaId String
+  cabangOlahraga   CabangOlahraga @relation(fields: [cabangOlahragaId], references: [id])
+  createdAt        DateTime       @default(now())
+
+  @@unique([medaliEventId, cabangOlahragaId])
 }
 
 // One Kabupaten/Kota participating, Batam included (`isOwn`) — every

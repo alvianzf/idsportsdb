@@ -14,10 +14,12 @@ export function useCaborOptions() {
   const isUnscopedAdmin = !!role && UNSCOPED_VIEW_ROLES.includes(role);
   const [cabors, setCabors] = useState<CaborOption[]>([]);
 
-  useEffect(() => {
+  function reload() {
     if (!isUnscopedAdmin) return;
     api.get<CaborOption[]>("/cabor").then((res) => setCabors(res.data));
-  }, [isUnscopedAdmin]);
+  }
 
-  return { cabors, isUnscopedAdmin };
+  useEffect(reload, [isUnscopedAdmin]);
+
+  return { cabors, isUnscopedAdmin, reload };
 }

@@ -12,6 +12,7 @@ import {
   updateMedaliEventSchema,
   createKontingenSchema,
   updateKontingenSchema,
+  addEventCaborSchema,
   tallySchema,
 } from "./medaliEvent.schema.js";
 import { getCurrentEvent } from "./medaliEvent.service.js";
@@ -197,6 +198,46 @@ medaliEventRouter.delete(
       return;
     }
     await prisma.medaliEventKontingen.delete({ where: { id: req.params.kontingenId } });
+    res.status(204).end();
+  }),
+);
+
+/** POST /medali-event/:id/cabor — register a cabor as contested in this
+ * event, independent of any kontingen's (sparse) tally rows. */
+medaliEventRouter.post(
+  "/:id/cabor",
+  asyncHandler(async (req, res) => {
+    const parsed = addEventCaborSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+    try {
+      const entry = await prisma.medaliEventCabor.create({
+        data: { medaliEventId: req.params.id, cabangOlahragaId: parsed.data.cabangOlahragaId },
+        include: { cabangOlahraga: { select: { id: true, nama: true } } },
+      });
+      res.status(201).json(entry);
+    } catch (err) {
+      if (isUniqueConstraintError(err)) {
+        res.status(409).json({ error: "Cabor sudah terdaftar pada event ini." });
+        return;
+      }
+      throw err;
+    }
+  }),
+);
+
+/** DELETE /medali-event/:id/cabor/:cabangOlahragaId — unregister a cabor
+ * from the event. Leaves any already-recorded tallies for it untouched. */
+medaliEventRouter.delete(
+  "/:id/cabor/:cabangOlahragaId",
+  asyncHandler(async (req, res) => {
+    await prisma.medaliEventCabor
+      .delete({
+        where: { medaliEventId_cabangOlahragaId: { medaliEventId: req.params.id, cabangOlahragaId: req.params.cabangOlahragaId } },
+      })
+      .catch(() => undefined);
     res.status(204).end();
   }),
 );

@@ -31,6 +31,7 @@ interface KontingenRow {
 interface MedaliEventPayload {
   event: { id: string; nama: string; tahun: number; tingkatKejuaraan: CompetitionLevel; logoUrl: string | null };
   kontingen: KontingenRow[];
+  cabors: { id: string; nama: string }[];
   grandTotal: number;
 }
 
@@ -65,12 +66,15 @@ export function MedaliEventPublicPage() {
 
   const kontingenList = useMemo(() => data?.kontingen ?? [], [data]);
 
-  // Every distinct cabor any kontingen has a tally in, for the "Per Cabor" filter.
+  // Cabor registered to the event, plus (defensively) any cabor a tally
+  // already exists for — so the "Per Cabor" filter offers a sport before it
+  // has a single medal recorded, not just after.
   const caborOptions = useMemo(() => {
     const map = new Map<string, string>();
+    for (const c of data?.cabors ?? []) map.set(c.id, c.nama);
     for (const k of kontingenList) for (const c of k.caborTally) map.set(c.cabangOlahragaId, c.nama);
     return Array.from(map, ([id, nama]) => ({ id, nama })).sort((a, b) => a.nama.localeCompare(b.nama, "id"));
-  }, [kontingenList]);
+  }, [data, kontingenList]);
 
   // One row per Kota/Kab for the selected cabor — gold, then silver, then
   // bronze, descending (not total).

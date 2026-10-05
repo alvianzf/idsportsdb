@@ -24,6 +24,11 @@ interface Kontingen {
   tallies: Tally[];
 }
 
+interface EventCabor {
+  id: string;
+  cabangOlahraga: { id: string; nama: string };
+}
+
 interface MedaliEvent {
   id: string;
   nama: string;
@@ -31,6 +36,7 @@ interface MedaliEvent {
   tahun: number;
   logoUrl: string | null;
   kontingen: Kontingen[];
+  cabors: EventCabor[];
 }
 
 /** Admin "Event Medali" — at most one event exists at a time. See
@@ -38,7 +44,7 @@ interface MedaliEvent {
 export function MedaliEventAdminPage() {
   const role = useAuthStore((state) => state.user?.role);
   const canDelete = role === "SUPER_ADMIN_KONI";
-  const { cabors } = useCaborOptions();
+  const { cabors, reload: reloadCabors } = useCaborOptions();
 
   const [event, setEvent] = useState<MedaliEvent | null | undefined>(undefined);
 
@@ -55,7 +61,7 @@ export function MedaliEventAdminPage() {
       {!event ? (
         <CreateEventForm onCreated={load} />
       ) : (
-        <EventManager event={event} cabors={cabors} canDelete={canDelete} onChange={load} />
+        <EventManager event={event} cabors={cabors} onCaborsChange={reloadCabors} canDelete={canDelete} onChange={load} />
       )}
     </div>
   );
@@ -116,11 +122,13 @@ function CreateEventForm({ onCreated }: { onCreated: () => void }) {
 function EventManager({
   event,
   cabors,
+  onCaborsChange,
   canDelete,
   onChange,
 }: {
   event: MedaliEvent;
   cabors: { id: string; nama: string }[];
+  onCaborsChange: () => void;
   canDelete: boolean;
   onChange: () => void;
 }) {
@@ -131,6 +139,10 @@ function EventManager({
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [kontingenNama, setKontingenNama] = useState("");
+  const [caborModalOpen, setCaborModalOpen] = useState(false);
+  const [selectedCaborId, setSelectedCaborId] = useState("");
+  const [newCaborNama, setNewCaborNama] = useState("");
+  const [savingCabor, setSavingCabor] = useState(false);
 
   async function handleSaveDetails(e: FormEvent) {
     e.preventDefault();
@@ -207,6 +219,52 @@ function EventManager({
       toast.error(message ?? "Gagal menghapus kontingen.");
     }
   }
+
+  function closeCaborModal() {
+    setCaborModalOpen(false);
+    setSelectedCaborId("");
+    setNewCaborNama("");
+  }
+
+  // Registers a cabor so it's filterable/visible on the public page before
+  // any kontingen has a medal in it. "newCaborNama" covers exhibition sports
+  // not already in the master cabor list — creates the cabor record first.
+  async function handleAddCabor(e: FormEvent) {
+    e.preventDefault();
+    const trimmedNew = newCaborNama.trim();
+    if (!trimmedNew && !selectedCaborId) return;
+    setSavingCabor(true);
+    try {
+      let cabangOlahragaId = selectedCaborId;
+      if (trimmedNew) {
+        const res = await api.post<{ id: string }>("/cabor", { nama: trimmedNew });
+        cabangOlahragaId = res.data.id;
+        onCaborsChange();
+      }
+      await api.post(`/medali-event/${event.id}/cabor`, { cabangOlahragaId });
+      closeCaborModal();
+      onChange();
+    } catch (err) {
+      const message = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
+      toast.error(message ?? "Gagal menambah cabor.");
+    } finally {
+      setSavingCabor(false);
+    }
+  }
+
+  async function handleRemoveCabor(entry: EventCabor) {
+    if (!(await confirmAction({ text: `Hapus "${entry.cabangOlahraga.nama}" dari daftar cabor event ini?`, danger: true, confirmText: "Hapus" })))
+      return;
+    try {
+      await api.delete(`/medali-event/${event.id}/cabor/${entry.cabangOlahraga.id}`);
+      onChange();
+    } catch {
+      toast.error("Gagal menghapus cabor.");
+    }
+  }
+
+  const registeredCaborIds = new Set(event.cabors.map((c) => c.cabangOlahraga.id));
+  const availableCaborsForEvent = cabors.filter((c) => !registeredCaborIds.has(c.id));
 
   const kontingenColumns: Column<Kontingen>[] = [
     {
@@ -327,6 +385,39 @@ function EventManager({
         />
       </Card>
 
+      <Card>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-neutral-900">Cabang Olahraga</h2>
+          <Button variant="outline" onClick={() => setCaborModalOpen(true)}>
+            <Plus size={16} /> Tambah
+          </Button>
+        </div>
+        <p className="mb-2 text-xs text-neutral-500">
+          Cabor yang dipertandingkan di event ini — tampil di filter "Per Cabor" publik dengan 0 medali sampai ada tally.
+        </p>
+        {event.cabors.length === 0 ? (
+          <p className="text-sm text-neutral-500">Belum ada cabor terdaftar.</p>
+        ) : (
+          <ul className="flex flex-wrap gap-2">
+            {event.cabors.map((c) => (
+              <li
+                key={c.id}
+                className="flex items-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-50 py-1 pl-3 pr-1.5 text-sm text-neutral-700"
+              >
+                {c.cabangOlahraga.nama}
+                <button
+                  onClick={() => handleRemoveCabor(c)}
+                  aria-label={`Hapus ${c.cabangOlahraga.nama}`}
+                  className="rounded-full p-0.5 text-neutral-400 hover:text-danger"
+                >
+                  <X size={13} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+
       {addModalOpen && (
         <Modal title="Tambah Kontingen" onClose={() => setAddModalOpen(false)}>
           <form onSubmit={handleAddKontingen} className="space-y-4">
@@ -334,6 +425,35 @@ function EventManager({
               <Input id="kontingenNama" required placeholder="mis. Bintan" value={kontingenNama} onChange={(e) => setKontingenNama(e.target.value)} />
             </Field>
             <Button type="submit">Tambah</Button>
+          </form>
+        </Modal>
+      )}
+
+      {caborModalOpen && (
+        <Modal title="Tambah Cabor" onClose={closeCaborModal}>
+          <form onSubmit={handleAddCabor} className="space-y-4">
+            <Field label="Cabor yang sudah terdaftar di sistem" htmlFor="existingCabor">
+              <Combobox
+                id="existingCabor"
+                value={selectedCaborId}
+                onChange={(v) => { setSelectedCaborId(v); setNewCaborNama(""); }}
+                options={availableCaborsForEvent.map((c) => ({ value: c.id, label: c.nama }))}
+                placeholder="Pilih cabor"
+                disabled={!!newCaborNama.trim()}
+              />
+            </Field>
+            <p className="text-center text-xs text-neutral-400">atau</p>
+            <Field label="Tambahkan cabor baru (eksibisi)" htmlFor="newCaborNama">
+              <Input
+                id="newCaborNama"
+                placeholder="mis. Futsal"
+                value={newCaborNama}
+                onChange={(e) => { setNewCaborNama(e.target.value); setSelectedCaborId(""); }}
+              />
+            </Field>
+            <Button type="submit" disabled={savingCabor || (!selectedCaborId && !newCaborNama.trim())}>
+              {savingCabor ? "Menyimpan..." : "Tambah"}
+            </Button>
           </form>
         </Modal>
       )}
