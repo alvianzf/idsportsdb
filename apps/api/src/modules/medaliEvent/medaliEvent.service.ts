@@ -1,4 +1,7 @@
+import type { Response } from "express";
+import { competitionLevelLabel } from "@inasportdb/shared-types";
 import { prisma } from "../../lib/prisma.js";
+import { streamPdf, drawPdfTable, dateLabelWib, type PdfMeta } from "../../lib/pdf.js";
 
 /** specs/025-medali-event-adhoc/spec.md — at most one MedaliEvent ever
  * exists; this is the single source of truth for "is there a current one". */
@@ -141,4 +144,65 @@ export function buildPublicPayload(event: EventWithKontingen) {
     cabors,
     grandTotal,
   };
+}
+
+type PublicPayload = ReturnType<typeof buildPublicPayload>;
+
+/** Every registered cabor, summed across all Kabupaten/Kota, sorted the
+ * same gold>silver>bronze way as every other tally table — the "Cabor
+ * List" section of the printed tally and the public overview table. */
+export function buildCaborOverview(payload: PublicPayload) {
+  const totals = new Map<string, { nama: string; gold: number; silver: number; bronze: number }>();
+  for (const c of payload.cabors) totals.set(c.id, { nama: c.nama, gold: 0, silver: 0, bronze: 0 });
+  for (const k of payload.kontingen) {
+    for (const c of k.caborTally) {
+      const t = totals.get(c.cabangOlahragaId);
+      if (t) { t.gold += c.gold; t.silver += c.silver; t.bronze += c.bronze; }
+    }
+  }
+  return Array.from(totals.values())
+    .map((t) => ({ ...t, total: t.gold + t.silver + t.bronze }))
+    .sort((a, b) => b.gold - a.gold || b.silver - a.silver || b.bronze - a.bronze);
+}
+
+/** Printed tally: page 1 is the Kontingen (Rekap) leaderboard, page 2+ is
+ * the Cabor List overview — always a fresh page, even if the leaderboard
+ * leaves room. Shared by the admin and public "print" endpoints. */
+export function streamMedaliEventPdf(res: Response, payload: PublicPayload, meta: PdfMeta) {
+  const leaderboard = [...payload.kontingen].sort(
+    (a, b) => b.gold - a.gold || b.silver - a.silver || b.bronze - a.bronze,
+  );
+  const caborOverview = buildCaborOverview(payload);
+  const title =
+    `Rekap Perolehan Medali — ${payload.event.nama} ` +
+    `(${competitionLevelLabel(payload.event.tingkatKejuaraan)} ${payload.event.tahun}) — ${dateLabelWib()}`;
+
+  streamPdf(res, "rekap-medali-event.pdf", (doc) => {
+    drawPdfTable(
+      doc,
+      title,
+      [
+        { header: "Kontingen", width: 220 },
+        { header: "Emas", width: 80 },
+        { header: "Perak", width: 80 },
+        { header: "Perunggu", width: 80 },
+        { header: "Total", width: 80 },
+      ],
+      leaderboard.map((k) => [k.nama, k.gold, k.silver, k.bronze, k.total]),
+    );
+
+    doc.addPage();
+    drawPdfTable(
+      doc,
+      "Daftar Cabang Olahraga",
+      [
+        { header: "Cabang Olahraga", width: 220 },
+        { header: "Emas", width: 80 },
+        { header: "Perak", width: 80 },
+        { header: "Perunggu", width: 80 },
+        { header: "Total", width: 80 },
+      ],
+      caborOverview.map((c) => [c.nama, c.gold, c.silver, c.bronze, c.total]),
+    );
+  }, meta);
 }

@@ -98,6 +98,8 @@
 | POST | `/api/v1/medali-event/:id/cabor` | SUPER_ADMIN_KONI, ADMIN_KONI | `{ cabangOlahragaId }` | `MedaliEventCabor` | registers a cabor as contested in the event, independent of any tally row; `409` on dup |
 | DELETE | `/api/v1/medali-event/:id/cabor/:cabangOlahragaId` | SUPER_ADMIN_KONI, ADMIN_KONI | - | `204` | unregisters the cabor; leaves any already-recorded tallies for it untouched |
 | GET | `/api/v1/public/medali-event` | none | - | see §3.1, or `null` | single source for the `/medali/event` page **and** the landing-page card |
+| GET | `/api/v1/medali-event/pdf` | SUPER_ADMIN_KONI, ADMIN_KONI | - | PDF | printable tally — KONI header/footer (same as Module H reports); page 1 is the Kontingen leaderboard, page 2+ (always a fresh page) is the Cabor List overview. `404` if no event |
+| GET | `/api/v1/public/medali-event/pdf` | none | - | PDF | same document, no auth — footer reads "Diunduh oleh: Publik" |
 
 ### 3.1 `GET /public/medali-event` response shape (`null` when none configured)
 
@@ -136,7 +138,8 @@
   list:
   - **No event configured**: a form (Nama, Tingkat, Tahun) to create one —
     this also creates the Batam kontingen automatically.
-  - **Event configured**:
+  - **Event configured**: a "Cetak Rekap" button in the page header
+    downloads the printable tally (`GET /medali-event/pdf`).
     - Edit form for Nama/Tingkat/Tahun + logo upload (`DropZone`), with a
       small remove button on the current logo's thumbnail (if set) that
       clears it, + "Hapus Event" (`SUPER_ADMIN_KONI` only).
@@ -189,25 +192,29 @@
      - **Rekap**:
        - **No card selected (default)**: a leaderboard — one row per
          kontingen (incl. Batam), columns Kontingen/Emas/Perak/Perunggu/
-         Total, sorted by Total descending.
+         Total, **sorted by Emas descending, then Perak descending, then
+         Perunggu descending** (not Total).
        - **A card selected**: the table swaps to that kontingen's own
          `caborTally` — Cabor/Emas/Perak/Perunggu/Total, same shape/columns
-         as `024`'s `RekapMedaliTable` (reused). Clicking the
-         already-selected card deselects it, returning to the leaderboard.
-         Clicking any card also switches back to this tab if "Per Cabor"
-         was active.
-     - **Per Cabor**: a `Combobox` lists every cabang olahraga that appears
-       in any kontingen's `caborTally` (deduplicated, name-sorted). Once one
-       is picked, the table shows one row per Kota/Kab —
-       Kontingen/Emas/Perak/Perunggu/Total — with that kontingen's tally for
-       the selected cabor only (zero-filled if it has none), **sorted by
-       Emas descending, then Perak descending, then Perunggu descending**
-       (not Total — the one place on this page total isn't the sort key).
-       Computed entirely client-side from the already-fetched payload, no
-       extra request. Before a cabor is picked: a prompt, not an empty
-       table.
-  5. Back button (`navigate(-1)`), consistent with `024`'s ranking page.
-  6. **No event configured**: friendly empty state, not a 404 (this route
+         as `024`'s `RekapMedaliTable` (reused), one row per cabor
+         *registered to the event* (zero-filled, not just ones with a
+         tally — see §2's `MedaliEventCabor`), same Emas/Perak/Perunggu
+         sort. Clicking the already-selected card deselects it, returning
+         to the leaderboard. Clicking any card also switches back to this
+         tab if "Per Cabor" was active.
+     - **Per Cabor**: by default (no cabor picked) shows every registered
+       cabor as a table — Cabang Olahraga/Emas/Perak/Perunggu/Total, summed
+       across all Kabupaten/Kota, same Emas/Perak/Perunggu sort — so the
+       full roster is visible without picking anything first. Clicking a
+       cabor name (or using the `Combobox` that replaces the table header
+       once something's picked) drills into that cabor's own
+       Kontingen/Emas/Perak/Perunggu/Total table (zero-filled per
+       Kabupaten/Kota), same sort rule. Computed entirely client-side from
+       the already-fetched payload, no extra request.
+  5. **"Cetak Rekap"** button — downloads the printable tally (`GET
+     .../pdf`, no auth needed here either).
+  6. Back button (`navigate(-1)`), consistent with `024`'s ranking page.
+  7. **No event configured**: friendly empty state, not a 404 (this route
      always exists; its content depends on whether an event is set up).
 - **Mobile**: card grid collapses to 2-across then 1-across; table reuses
   `DataTable`'s existing mobile-collapse behavior.

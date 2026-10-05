@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Medal as MedalIcon, Trophy } from "lucide-react";
+import { ArrowLeft, Medal as MedalIcon, Printer, Trophy } from "lucide-react";
+import toast from "react-hot-toast";
 import { competitionLevelLabel, type CompetitionLevel } from "@inasportdb/shared-types";
-import { Card, Combobox, DataTable, type Column } from "../../components/ui";
+import { Button, Card, Combobox, DataTable, type Column } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
 import { PublicShell } from "./PublicShell";
 import { RekapMedaliTable, type RekapMedaliRow } from "./RekapMedaliTable";
@@ -68,6 +69,24 @@ export function MedaliEventPublicPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [view, setView] = useState<"total" | "cabor">("total");
   const [selectedCabor, setSelectedCabor] = useState("");
+  const [printing, setPrinting] = useState(false);
+
+  async function handlePrint() {
+    setPrinting(true);
+    try {
+      const res = await api.get("/public/medali-event/pdf", { responseType: "blob" });
+      const url = URL.createObjectURL(res.data as Blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "rekap-medali-event.pdf";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Gagal mencetak rekap.");
+    } finally {
+      setPrinting(false);
+    }
+  }
 
   useEffect(() => {
     api.get<MedaliEventPayload | null>("/public/medali-event").then((res) => setData(res.data));
@@ -177,9 +196,14 @@ export function MedaliEventPublicPage() {
 
   return (
     <PublicShell title={`Perolehan Medali — ${event.nama}`} description={`${competitionLevelLabel(event.tingkatKejuaraan)} Tahun ${event.tahun}`}>
-      <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-1.5 text-sm font-medium text-neutral-500 hover:text-neutral-700">
-        <ArrowLeft size={16} /> Kembali
-      </button>
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm font-medium text-neutral-500 hover:text-neutral-700">
+          <ArrowLeft size={16} /> Kembali
+        </button>
+        <Button variant="outline" onClick={handlePrint} disabled={printing}>
+          <Printer size={16} /> {printing ? "Mencetak..." : "Cetak Rekap"}
+        </Button>
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: -12 }}

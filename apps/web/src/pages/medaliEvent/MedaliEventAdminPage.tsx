@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Printer, Trash2, X } from "lucide-react";
 import { COMPETITION_LEVEL_CHOICES, COMPETITION_LEVEL_LABELS, type CompetitionLevel } from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Field, Input, Select, Combobox, DropZone, Modal, DataTable, type Column } from "../../components/ui";
 import { api, resolveFileUrl } from "../../lib/api";
@@ -47,17 +47,45 @@ export function MedaliEventAdminPage() {
   const { cabors, reload: reloadCabors } = useCaborOptions();
 
   const [event, setEvent] = useState<MedaliEvent | null | undefined>(undefined);
+  const [printing, setPrinting] = useState(false);
 
   function load() {
     api.get<MedaliEvent | null>("/medali-event").then((res) => setEvent(res.data));
   }
   useEffect(load, []);
 
+  async function handlePrint() {
+    setPrinting(true);
+    try {
+      const res = await api.get("/medali-event/pdf", { responseType: "blob" });
+      const url = URL.createObjectURL(res.data as Blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "rekap-medali-event.pdf";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Gagal mencetak rekap.");
+    } finally {
+      setPrinting(false);
+    }
+  }
+
   if (event === undefined) return <Card className="text-sm text-neutral-500">Memuat data...</Card>;
 
   return (
     <div>
-      <PageHeader title="Event Medali" description="Tally medali ad-hoc lintas kabupaten/kota (mis. PORPROV)." />
+      <PageHeader
+        title="Event Medali"
+        description="Tally medali ad-hoc lintas kabupaten/kota (mis. PORPROV)."
+        actions={
+          event ? (
+            <Button variant="outline" onClick={handlePrint} disabled={printing}>
+              <Printer size={16} /> {printing ? "Mencetak..." : "Cetak Rekap"}
+            </Button>
+          ) : undefined
+        }
+      />
       {!event ? (
         <CreateEventForm onCreated={load} />
       ) : (

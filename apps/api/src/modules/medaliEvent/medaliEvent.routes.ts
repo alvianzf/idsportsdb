@@ -15,13 +15,18 @@ import {
   addEventCaborSchema,
   tallySchema,
 } from "./medaliEvent.schema.js";
-import { getCurrentEvent, padEventForAdmin } from "./medaliEvent.service.js";
+import { getCurrentEvent, padEventForAdmin, buildPublicPayload, streamMedaliEventPdf } from "./medaliEvent.service.js";
 
 export const medaliEventRouter = Router();
 
 const ADMIN_ROLES = ["SUPER_ADMIN_KONI", "ADMIN_KONI"] as const;
 
 medaliEventRouter.use(authenticate, requireRole([...ADMIN_ROLES]));
+
+async function pdfMetaFor(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { fullName: true, email: true } });
+  return { downloadedBy: user ? `${user.fullName} (${user.email})` : "-" };
+}
 
 const logoUpload = multer({
   dest: path.join(uploadRoot, "medali-event-logos"),
@@ -36,6 +41,20 @@ medaliEventRouter.get(
   asyncHandler(async (_req, res) => {
     const event = await getCurrentEvent();
     res.json(event ? padEventForAdmin(event) : null);
+  }),
+);
+
+/** GET /medali-event/pdf — printable tally: Kontingen leaderboard, then (on
+ * its own page) the Cabor List overview. */
+medaliEventRouter.get(
+  "/pdf",
+  asyncHandler(async (req, res) => {
+    const event = await getCurrentEvent();
+    if (!event) {
+      res.status(404).json({ error: "Belum ada event medali." });
+      return;
+    }
+    streamMedaliEventPdf(res, buildPublicPayload(event), await pdfMetaFor(req.user!.id));
   }),
 );
 

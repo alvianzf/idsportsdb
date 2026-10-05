@@ -6,7 +6,7 @@ import { sortByJabatan } from "../../lib/jabatanOrder.js";
 import { COMPETITION_LEVELS, type CompetitionLevel } from "@inasportdb/shared-types";
 import { getCaborMedalTally, getMedaliSummary, getRekapMedali } from "../reports/reports.service.js";
 import { atletInCaborFilter, atletNotDeleted } from "../atlet/atlet.service.js";
-import { getCurrentEvent, buildPublicPayload } from "../medaliEvent/medaliEvent.service.js";
+import { getCurrentEvent, buildPublicPayload, streamMedaliEventPdf } from "../medaliEvent/medaliEvent.service.js";
 
 export const publicRouter = Router();
 
@@ -391,5 +391,19 @@ publicRouter.get(
       return;
     }
     res.json(await buildPublicPayload(event));
+  }),
+);
+
+/** GET /public/medali-event/pdf — same printable tally as the admin export,
+ * no auth required. */
+publicRouter.get(
+  "/medali-event/pdf",
+  asyncHandler(async (_req, res) => {
+    const event = await getCurrentEvent();
+    if (!event) {
+      res.status(404).json({ error: "Belum ada event medali." });
+      return;
+    }
+    streamMedaliEventPdf(res, buildPublicPayload(event), { downloadedBy: "Publik" });
   }),
 );
