@@ -62,9 +62,14 @@
     master sport list so columns/names line up across every kontingen
   - `gold: Int @default(0)`, `silver: Int @default(0)`, `bronze: Int @default(0)`
   - `@@unique([kontingenId, cabangOlahragaId])` — one row per cabor per
-    kontingen; admin only creates a row for a cabor the kontingen actually
-    won a medal in (sparse, same convention as `getRekapMedali` omitting
-    zero-medal cabors).
+    kontingen; storage stays sparse (a row only exists once a non-zero count
+    is saved, same convention as `getRekapMedali` omitting zero-medal
+    cabors — an all-zero `PUT` deletes the row). **Display is not sparse**:
+    both the admin and public payloads pad this out with a 0/0/0 entry for
+    every cabor registered via `MedaliEventCabor` that has no row yet (see
+    `padKontingenTallies` in `medaliEvent.service.ts`), so a cabor is always
+    visible/editable once registered, regardless of whether anyone has
+    actually recorded a medal for it.
 - **Entity**: `MedaliEventCabor` — which cabang olahraga are contested in
   the event, independent of `MedaliEventKontingenTally`'s sparse rows. Lets
   the public "Per Cabor" filter list (and the admin page) show a cabor —
@@ -105,6 +110,9 @@
     isOwn: boolean;         // drives sort order only — never rendered as a marker
     gold: number; silver: number; bronze: number; total: number;
     caborTally: Array<{ cabangOlahragaId, nama, gold, silver, bronze, total }>;
+    // one entry per cabor REGISTERED to the event (plus any orphaned tally
+    // for a cabor since unregistered), not just ones with a tally row —
+    // zero-filled where nothing's been recorded
   }>;                       // Batam's entry always first, rest sorted by total desc
   cabors: Array<{ id, nama }>; // every cabor registered via MedaliEventCabor —
                                 // the "Per Cabor" filter's option list, so a cabor
@@ -140,11 +148,13 @@
       inline). Each row's delete action is hidden for the Batam row.
     - **Tally editing is inline, not a modal**: clicking a kontingen row
       expands an editable tally table directly beneath it (`DataTable`'s
-      `expandContent`) — existing rows' Emas/Perak/Perunggu are `<input
+      `expandContent`) — one row per cabor *registered to the event* (not
+      just ones with an existing tally), each already showing 0/0/0 if
+      nothing's been entered yet. Emas/Perak/Perunggu are `<input
       type="number">` cells that save on blur (`PUT
-      .../tally/:cabangOlahragaId`); a trailing row (cabor `Combobox` +
-      three number inputs + a `+` button) adds a new cabor's tally directly
-      into the same table. Deleting a row's icon PUTs zeros.
+      .../tally/:cabangOlahragaId`). There's no separate "add a cabor here"
+      step — registering a cabor (below) is what makes its row appear,
+      already editable, under every kontingen at once.
     - **"Cabang Olahraga"** — the `MedaliEventCabor` registrations, shown as
       removable chips. "Tambah" opens a modal with a `Combobox` of existing
       cabor not yet registered, or a free-text field to create a brand-new

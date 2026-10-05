@@ -15,7 +15,7 @@ import {
   addEventCaborSchema,
   tallySchema,
 } from "./medaliEvent.schema.js";
-import { getCurrentEvent } from "./medaliEvent.service.js";
+import { getCurrentEvent, padEventForAdmin } from "./medaliEvent.service.js";
 
 export const medaliEventRouter = Router();
 
@@ -35,7 +35,7 @@ medaliEventRouter.get(
   "/",
   asyncHandler(async (_req, res) => {
     const event = await getCurrentEvent();
-    res.json(event);
+    res.json(event ? padEventForAdmin(event) : null);
   }),
 );
 

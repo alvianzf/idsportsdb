@@ -21,21 +21,86 @@ export function getCurrentEvent() {
 }
 
 type EventWithKontingen = NonNullable<Awaited<ReturnType<typeof getCurrentEvent>>>;
+type RawTally = EventWithKontingen["kontingen"][number]["tallies"][number];
+
+interface PaddedTally {
+  tallyId: string | null;
+  cabangOlahragaId: string;
+  nama: string;
+  gold: number;
+  silver: number;
+  bronze: number;
+}
+
+/** One row per cabor *registered to the event*, not just per existing
+ * (sparse) tally row — a registered cabor with no tally shows up as an
+ * explicit 0/0/0 instead of being invisible. Any tally for a cabor that
+ * was since unregistered is still appended, so recorded medals are never
+ * silently dropped. */
+function padKontingenTallies(registeredCabors: { id: string; nama: string }[], tallies: RawTally[]): PaddedTally[] {
+  const byCaborId = new Map(tallies.map((t) => [t.cabangOlahragaId, t]));
+  const registeredIds = new Set(registeredCabors.map((c) => c.id));
+
+  const padded = registeredCabors.map((c) => {
+    const t = byCaborId.get(c.id);
+    return {
+      tallyId: t?.id ?? null,
+      cabangOlahragaId: c.id,
+      nama: c.nama,
+      gold: t?.gold ?? 0,
+      silver: t?.silver ?? 0,
+      bronze: t?.bronze ?? 0,
+    };
+  });
+  const orphans = tallies
+    .filter((t) => !registeredIds.has(t.cabangOlahragaId))
+    .map((t) => ({
+      tallyId: t.id,
+      cabangOlahragaId: t.cabangOlahragaId,
+      nama: t.cabangOlahraga.nama,
+      gold: t.gold,
+      silver: t.silver,
+      bronze: t.bronze,
+    }));
+  return [...padded, ...orphans];
+}
+
+/** Admin shape: same `kontingen[].tallies[]` the UI already renders, just
+ * padded so every registered cabor has a row (editable straight to 0). */
+export function padEventForAdmin(event: EventWithKontingen) {
+  const registeredCabors = event.cabors.map((c) => c.cabangOlahraga);
+  return {
+    ...event,
+    kontingen: event.kontingen.map((k) => ({
+      ...k,
+      tallies: padKontingenTallies(registeredCabors, k.tallies).map((p) => ({
+        id: p.tallyId ?? `virtual-${k.id}-${p.cabangOlahragaId}`,
+        cabangOlahragaId: p.cabangOlahragaId,
+        cabangOlahraga: { id: p.cabangOlahragaId, nama: p.nama },
+        gold: p.gold,
+        silver: p.silver,
+        bronze: p.bronze,
+      })),
+    })),
+  };
+}
 
 /** specs/025-medali-event-adhoc/spec.md §3.1 — the public payload. Every
  * kontingen, Batam (`isOwn`) included, is entered the same manual way — this
  * is a separate ad-hoc record, not derived from Prestasi. Batam sorts first,
  * the rest by total descending. */
 export function buildPublicPayload(event: EventWithKontingen) {
+  const registeredCabors = event.cabors.map((c) => c.cabangOlahraga);
+
   const kontingen = event.kontingen
     .map((k) => {
-      const caborTally = k.tallies.map((t) => ({
-        cabangOlahragaId: t.cabangOlahragaId,
-        nama: t.cabangOlahraga.nama,
-        gold: t.gold,
-        silver: t.silver,
-        bronze: t.bronze,
-        total: t.gold + t.silver + t.bronze,
+      const caborTally = padKontingenTallies(registeredCabors, k.tallies).map((p) => ({
+        cabangOlahragaId: p.cabangOlahragaId,
+        nama: p.nama,
+        gold: p.gold,
+        silver: p.silver,
+        bronze: p.bronze,
+        total: p.gold + p.silver + p.bronze,
       }));
       const gold = caborTally.reduce((s, c) => s + c.gold, 0);
       const silver = caborTally.reduce((s, c) => s + c.silver, 0);
@@ -58,7 +123,7 @@ export function buildPublicPayload(event: EventWithKontingen) {
   // Every cabor registered to the event, regardless of whether any kontingen
   // has a (sparse) tally row for it yet — lets the public "Per Cabor" filter
   // offer a cabor before it has a single medal recorded.
-  const cabors = event.cabors.map((c) => ({ id: c.cabangOlahraga.id, nama: c.cabangOlahraga.nama }));
+  const cabors = registeredCabors;
 
   return {
     event: {

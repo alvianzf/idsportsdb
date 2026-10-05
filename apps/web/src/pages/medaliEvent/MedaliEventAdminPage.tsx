@@ -381,7 +381,7 @@ function EventManager({
           columns={kontingenColumns}
           rows={event.kontingen}
           emptyMessage="Belum ada kontingen."
-          expandContent={(k) => <InlineTally kontingen={k} cabors={cabors} onChange={onChange} />}
+          expandContent={(k) => <InlineTally kontingen={k} onChange={onChange} />}
         />
       </Card>
 
@@ -464,28 +464,17 @@ function EventManager({
 const numberCellClass = "w-16 rounded border border-neutral-200 px-2 py-1 text-sm";
 
 /** Inline, editable per-cabor tally — expanded directly under a kontingen's
- * row (DataTable's `expandContent`), no modal. Existing rows save on blur;
- * a trailing row adds a new cabor directly into the table. */
-function InlineTally({
-  kontingen,
-  cabors,
-  onChange,
-}: {
-  kontingen: Kontingen;
-  cabors: { id: string; nama: string }[];
-  onChange: () => void;
-}) {
+ * row (DataTable's `expandContent`), no modal. One row per cabor registered
+ * to the event (via the "Cabang Olahraga" card above), always present and
+ * starting at 0 — there's no separate "add a cabor here" step, the admin
+ * just types the counts in. Saves on blur. */
+function InlineTally({ kontingen, onChange }: { kontingen: Kontingen; onChange: () => void }) {
   const [drafts, setDrafts] = useState<Record<string, { gold: string; silver: string; bronze: string }>>({});
   useEffect(() => {
     setDrafts(
       Object.fromEntries(kontingen.tallies.map((t) => [t.id, { gold: String(t.gold), silver: String(t.silver), bronze: String(t.bronze) }])),
     );
   }, [kontingen.tallies]);
-
-  const [newCaborId, setNewCaborId] = useState("");
-  const [newGold, setNewGold] = useState("0");
-  const [newSilver, setNewSilver] = useState("0");
-  const [newBronze, setNewBronze] = useState("0");
 
   async function saveRow(t: Tally) {
     const d = drafts[t.id];
@@ -502,49 +491,24 @@ function InlineTally({
     }
   }
 
-  async function removeRow(t: Tally) {
-    if (!(await confirmAction({ text: `Hapus tally ${t.cabangOlahraga.nama} untuk "${kontingen.nama}"?`, danger: true, confirmText: "Hapus" }))) return;
-    try {
-      await api.put(`/medali-event/kontingen/${kontingen.id}/tally/${t.cabangOlahragaId}`, { gold: 0, silver: 0, bronze: 0 });
-      onChange();
-    } catch {
-      toast.error("Gagal menghapus tally.");
-    }
+  if (kontingen.tallies.length === 0) {
+    return (
+      <div onClick={(e) => e.stopPropagation()} className="rounded-lg border border-neutral-200 bg-white p-3 text-sm text-neutral-500">
+        Belum ada cabor terdaftar di event ini — tambahkan lewat kartu "Cabang Olahraga" di atas.
+      </div>
+    );
   }
-
-  async function addRow(e: FormEvent) {
-    e.preventDefault();
-    if (!newCaborId) return;
-    try {
-      await api.put(`/medali-event/kontingen/${kontingen.id}/tally/${newCaborId}`, {
-        gold: Number(newGold) || 0,
-        silver: Number(newSilver) || 0,
-        bronze: Number(newBronze) || 0,
-      });
-      setNewCaborId("");
-      setNewGold("0");
-      setNewSilver("0");
-      setNewBronze("0");
-      onChange();
-    } catch {
-      toast.error("Gagal menambah tally.");
-    }
-  }
-
-  const usedCaborIds = new Set(kontingen.tallies.map((t) => t.cabangOlahragaId));
-  const availableCabors = cabors.filter((c) => !usedCaborIds.has(c.id));
 
   return (
     // Stop the click from bubbling to the kontingen row (which would toggle it closed).
     <div onClick={(e) => e.stopPropagation()} className="overflow-x-auto rounded-lg border border-neutral-200 bg-white p-3">
-      <table className="w-full min-w-[480px] text-sm">
+      <table className="w-full min-w-[420px] text-sm">
         <thead>
           <tr className="text-left text-xs text-neutral-400">
             <th className="pb-2 pr-3 font-medium">Cabor</th>
             <th className="pb-2 pr-3 font-medium text-gold">Emas</th>
             <th className="pb-2 pr-3 font-medium text-silver">Perak</th>
             <th className="pb-2 pr-3 font-medium text-bronze">Perunggu</th>
-            <th className="w-8 pb-2" />
           </tr>
         </thead>
         <tbody className="divide-y divide-neutral-100">
@@ -584,37 +548,8 @@ function InlineTally({
                   aria-label={`Perunggu ${t.cabangOlahraga.nama}`}
                 />
               </td>
-              <td className="py-2">
-                <button onClick={() => removeRow(t)} className="text-neutral-400 hover:text-danger" aria-label={`Hapus ${t.cabangOlahraga.nama}`}>
-                  <Trash2 size={14} />
-                </button>
-              </td>
             </tr>
           ))}
-          <tr>
-            <td className="py-2 pr-3">
-              <Combobox
-                value={newCaborId}
-                onChange={setNewCaborId}
-                options={availableCabors.map((c) => ({ value: c.id, label: c.nama }))}
-                placeholder="+ Tambah cabor"
-              />
-            </td>
-            <td className="py-2 pr-3">
-              <input type="number" min={0} className={numberCellClass} value={newGold} onChange={(e) => setNewGold(e.target.value)} aria-label="Emas cabor baru" />
-            </td>
-            <td className="py-2 pr-3">
-              <input type="number" min={0} className={numberCellClass} value={newSilver} onChange={(e) => setNewSilver(e.target.value)} aria-label="Perak cabor baru" />
-            </td>
-            <td className="py-2 pr-3">
-              <input type="number" min={0} className={numberCellClass} value={newBronze} onChange={(e) => setNewBronze(e.target.value)} aria-label="Perunggu cabor baru" />
-            </td>
-            <td className="py-2">
-              <button onClick={addRow} disabled={!newCaborId} className="text-primary hover:text-primary-700 disabled:opacity-30" aria-label="Tambah cabor">
-                <Plus size={16} />
-              </button>
-            </td>
-          </tr>
         </tbody>
       </table>
     </div>
