@@ -176,8 +176,12 @@ export function streamMedaliEventPdf(res: Response, payload: PublicPayload, meta
   const title =
     `Rekap Perolehan Medali — ${payload.event.nama} ` +
     `(${competitionLevelLabel(payload.event.tingkatKejuaraan)} ${payload.event.tahun}) — ${dateLabelWib()}`;
+  // Downloaded filename and the PDF viewer's own window/tab title both
+  // match the event's name, not a generic "rekap-medali-event".
+  const fileSlug = payload.event.nama.trim().replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "rekap-medali-event";
 
-  streamPdf(res, "rekap-medali-event.pdf", (doc) => {
+  streamPdf(res, `${fileSlug}.pdf`, (doc) => {
+    doc.info.Title = payload.event.nama;
     drawPdfTable(
       doc,
       title,

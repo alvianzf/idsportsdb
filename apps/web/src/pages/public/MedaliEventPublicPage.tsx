@@ -78,7 +78,8 @@ export function MedaliEventPublicPage() {
       const url = URL.createObjectURL(res.data as Blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "rekap-medali-event.pdf";
+      const slug = data?.event.nama.trim().replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "rekap-medali-event";
+      link.download = `${slug}.pdf`;
       link.click();
       URL.revokeObjectURL(url);
     } catch {
