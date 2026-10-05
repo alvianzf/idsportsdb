@@ -1,5 +1,4 @@
 import type { Response } from "express";
-import { competitionLevelLabel } from "@inasportdb/shared-types";
 import { prisma } from "../../lib/prisma.js";
 import { streamPdf, drawPdfTable, dateLabelWib, type PdfMeta } from "../../lib/pdf.js";
 
@@ -173,9 +172,7 @@ export function streamMedaliEventPdf(res: Response, payload: PublicPayload, meta
     (a, b) => b.gold - a.gold || b.silver - a.silver || b.bronze - a.bronze,
   );
   const caborOverview = buildCaborOverview(payload);
-  const title =
-    `Rekap Perolehan Medali — ${payload.event.nama} ` +
-    `(${competitionLevelLabel(payload.event.tingkatKejuaraan)} ${payload.event.tahun}) — ${dateLabelWib()}`;
+  const title = `Rekap Perolehan Medali — ${payload.event.nama} — ${dateLabelWib()}`;
   // Downloaded filename and the PDF viewer's own window/tab title both
   // match the event's name, not a generic "rekap-medali-event".
   const fileSlug = payload.event.nama.trim().replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "rekap-medali-event";
