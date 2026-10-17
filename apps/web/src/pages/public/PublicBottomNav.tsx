@@ -7,7 +7,7 @@ const ITEMS = [
   { to: "/", label: "Beranda", icon: Home, end: true },
   { to: "/data", label: "Data", icon: BarChart3, end: false },
   { to: "/cabang-olahraga", label: "Cabor", icon: Building2, end: false },
-  { to: "/medali", label: "Medali", icon: Medal, end: false },
+  { to: "/medali/event", label: "Medali", icon: Medal, end: false }, // TODO: temporary — point back to /medali after PON/Porprov event wraps up
   ...(BERITA_ENABLED ? [{ to: "/berita", label: "Berita", icon: Newspaper, end: false }] : []),
   { to: "/event", label: "Kalender", icon: CalendarDays, end: false },
 ];
