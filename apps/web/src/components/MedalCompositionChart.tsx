@@ -65,10 +65,10 @@ export function MedalCompositionChart({ totals }: { totals: MedalTotals }) {
           />
         </PieChart>
       </ResponsiveContainer>
-      <div className="-mt-4 flex items-center justify-center gap-3 text-[11px] font-semibold">
+      <div className="mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-[11px] font-semibold">
         {SLICES.map((s) => (
-          <span key={s.key} className="flex items-center gap-1" style={{ color: s.color }}>
-            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: s.color }} /> {s.label} {totals[s.key]}
+          <span key={s.key} className="flex shrink-0 items-center gap-1 whitespace-nowrap" style={{ color: s.color }}>
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: s.color }} /> {s.label} {totals[s.key]}
           </span>
         ))}
       </div>

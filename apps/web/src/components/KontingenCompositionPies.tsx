@@ -98,7 +98,7 @@ export function KontingenCompositionPies({ kontingen }: { kontingen: KontingenTo
       </div>
       <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-[11px] font-medium text-neutral-600">
         {kontingen.map((k) => (
-          <span key={k.id} className="flex items-center gap-1">
+          <span key={k.id} className="flex shrink-0 items-center gap-1 whitespace-nowrap">
             <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: colorOf(k.id) }} /> {k.nama}
           </span>
         ))}
