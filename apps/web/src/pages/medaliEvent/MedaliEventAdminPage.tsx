@@ -4,6 +4,7 @@ import { Plus, Printer, Trash2, X } from "lucide-react";
 import { COMPETITION_LEVEL_CHOICES, COMPETITION_LEVEL_LABELS, type CompetitionLevel } from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Field, Input, Select, Combobox, DropZone, Modal, DataTable, type Column } from "../../components/ui";
 import { MedalCompositionChart } from "../../components/MedalCompositionChart";
+import { KontingenCompositionPies } from "../../components/KontingenCompositionPies";
 import { api, resolveFileUrl } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 import { useAuthStore } from "../../store/authStore";
@@ -296,6 +297,13 @@ function EventManager({
   const registeredCaborIds = new Set(event.cabors.map((c) => c.cabangOlahraga.id));
   const availableCaborsForEvent = cabors.filter((c) => !registeredCaborIds.has(c.id));
 
+  const kontingenTotals = event.kontingen.map((k) => {
+    const gold = k.tallies.reduce((s, t) => s + t.gold, 0);
+    const silver = k.tallies.reduce((s, t) => s + t.silver, 0);
+    const bronze = k.tallies.reduce((s, t) => s + t.bronze, 0);
+    return { id: k.id, nama: k.nama, gold, silver, bronze, total: gold + silver + bronze };
+  });
+
   const kontingenColumns: Column<Kontingen>[] = [
     {
       key: "nama",
@@ -407,6 +415,11 @@ function EventManager({
           </Button>
         </div>
         <p className="mb-2 text-xs text-neutral-500">Klik baris untuk mengelola tally per cabor.</p>
+        {event.kontingen.length > 0 && (
+          <div className="mb-4 rounded-xl border border-neutral-200 p-3">
+            <KontingenCompositionPies kontingen={kontingenTotals} />
+          </div>
+        )}
         <DataTable
           columns={kontingenColumns}
           rows={event.kontingen}
