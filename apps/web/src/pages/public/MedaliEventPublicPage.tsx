@@ -5,6 +5,7 @@ import { ArrowLeft, Medal as MedalIcon, Printer, Trophy } from "lucide-react";
 import toast from "react-hot-toast";
 import { competitionLevelLabel, type CompetitionLevel } from "@inasportdb/shared-types";
 import { Button, Card, Combobox, DataTable, type Column } from "../../components/ui";
+import { MedalCompositionChart } from "../../components/MedalCompositionChart";
 import { api, resolveFileUrl } from "../../lib/api";
 import { PublicShell } from "./PublicShell";
 import { RekapMedaliTable, type RekapMedaliRow } from "./RekapMedaliTable";
@@ -298,11 +299,17 @@ export function MedaliEventPublicPage() {
 
           <motion.div key={selected ?? "total"} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>
             {activeKontingen ? (
-              <RekapMedaliTable
-                rows={activeKontingen.caborTally}
-                emptyMessage="Belum ada tally untuk kontingen ini."
-                linkState={{ backTo: "/medali/event", backLabel: "Kembali ke Perolehan Medali" }}
-              />
+              <>
+                <Card className="mb-4">
+                  <h3 className="mb-1 text-center text-xs font-bold uppercase tracking-wide text-neutral-500">Komposisi Medali</h3>
+                  <MedalCompositionChart totals={activeKontingen} />
+                </Card>
+                <RekapMedaliTable
+                  rows={activeKontingen.caborTally}
+                  emptyMessage="Belum ada tally untuk kontingen ini."
+                  linkState={{ backTo: "/medali/event", backLabel: "Kembali ke Perolehan Medali" }}
+                />
+              </>
             ) : (
               <DataTable
                 columns={leaderboardColumns}

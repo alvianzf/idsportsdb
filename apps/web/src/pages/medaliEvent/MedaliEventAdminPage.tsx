@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import { Plus, Printer, Trash2, X } from "lucide-react";
 import { COMPETITION_LEVEL_CHOICES, COMPETITION_LEVEL_LABELS, type CompetitionLevel } from "@inasportdb/shared-types";
 import { Card, PageHeader, Button, Field, Input, Select, Combobox, DropZone, Modal, DataTable, type Column } from "../../components/ui";
+import { MedalCompositionChart } from "../../components/MedalCompositionChart";
 import { api, resolveFileUrl } from "../../lib/api";
 import { confirmAction } from "../../lib/confirm";
 import { useAuthStore } from "../../store/authStore";
@@ -528,9 +529,18 @@ function InlineTally({ kontingen, onChange }: { kontingen: Kontingen; onChange: 
     );
   }
 
+  const totals = kontingen.tallies.reduce(
+    (acc, t) => ({ gold: acc.gold + t.gold, silver: acc.silver + t.silver, bronze: acc.bronze + t.bronze }),
+    { gold: 0, silver: 0, bronze: 0 },
+  );
+
   return (
     // Stop the click from bubbling to the kontingen row (which would toggle it closed).
     <div onClick={(e) => e.stopPropagation()} className="overflow-x-auto rounded-lg border border-neutral-200 bg-white p-3">
+      <div className="mb-3 max-w-xs">
+        <h3 className="mb-1 text-center text-xs font-bold uppercase tracking-wide text-neutral-500">Komposisi Medali</h3>
+        <MedalCompositionChart totals={totals} />
+      </div>
       <table className="w-full min-w-[420px] text-sm">
         <thead>
           <tr className="text-left text-xs text-neutral-400">
