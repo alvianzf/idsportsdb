@@ -57,7 +57,10 @@ export function MedalCompositionChart({ totals }: { totals: MedalTotals }) {
             ))}
           </Pie>
           <Tooltip
-            formatter={(value: number, name: string) => [`${value} (${Math.round((value / total) * 100)}%)`, name]}
+            formatter={(value, name) => {
+              const n = Number(value) || 0;
+              return [`${n} (${Math.round((n / total) * 100)}%)`, name];
+            }}
             contentStyle={{ borderRadius: 8, borderColor: "#e5e5e5", fontSize: 12 }}
           />
         </PieChart>
