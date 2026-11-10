@@ -6,7 +6,6 @@ import toast from "react-hot-toast";
 import { competitionLevelLabel, type CompetitionLevel } from "@inasportdb/shared-types";
 import { Button, Card, Combobox, DataTable, type Column } from "../../components/ui";
 import { MedalCompositionChart } from "../../components/MedalCompositionChart";
-import { KontingenCompositionPies } from "../../components/KontingenCompositionPies";
 import { api, resolveFileUrl } from "../../lib/api";
 import { PublicShell } from "./PublicShell";
 import { RekapMedaliTable, type RekapMedaliRow } from "./RekapMedaliTable";
@@ -97,10 +96,20 @@ export function MedaliEventPublicPage() {
 
   const kontingenList = useMemo(() => data?.kontingen ?? [], [data]);
 
-  // Gold, then silver, then bronze, descending — not total. Shared by the
-  // leaderboard table and the composition pies so colors line up.
+  // Gold, then silver, then bronze, descending — not total.
   const leaderboardRows = useMemo(
     () => [...kontingenList].sort((a, b) => b.gold - a.gold || b.silver - a.silver || b.bronze - a.bronze),
+    [kontingenList],
+  );
+
+  // Overall gold/silver/bronze split across every kontingen — same shape
+  // MedalCompositionChart takes for a single kontingen, so the unfiltered
+  // chart looks identical to the filtered one.
+  const overallTotals = useMemo(
+    () => kontingenList.reduce(
+      (acc, k) => ({ gold: acc.gold + k.gold, silver: acc.silver + k.silver, bronze: acc.bronze + k.bronze }),
+      { gold: 0, silver: 0, bronze: 0 },
+    ),
     [kontingenList],
   );
 
@@ -321,7 +330,8 @@ export function MedaliEventPublicPage() {
             ) : (
               <>
                 <Card className="mb-4">
-                  <KontingenCompositionPies kontingen={leaderboardRows} />
+                  <h3 className="mb-1 text-center text-xs font-bold uppercase tracking-wide text-neutral-500">Komposisi Medali</h3>
+                  <MedalCompositionChart totals={overallTotals} />
                 </Card>
                 <DataTable columns={leaderboardColumns} rows={leaderboardRows} emptyMessage="Belum ada kontingen." />
               </>
