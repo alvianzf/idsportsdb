@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { competitionLevelLabel, type CompetitionLevel } from "@inasportdb/shared-types";
 import { Button, Card, Combobox, DataTable, type Column } from "../../components/ui";
 import { MedalCompositionChart } from "../../components/MedalCompositionChart";
+import { KontingenCompositionPies } from "../../components/KontingenCompositionPies";
 import { api, resolveFileUrl } from "../../lib/api";
 import { PublicShell } from "./PublicShell";
 import { RekapMedaliTable, type RekapMedaliRow } from "./RekapMedaliTable";
@@ -95,6 +96,13 @@ export function MedaliEventPublicPage() {
   }, []);
 
   const kontingenList = useMemo(() => data?.kontingen ?? [], [data]);
+
+  // Gold, then silver, then bronze, descending — not total. Shared by the
+  // leaderboard table and the composition pies so colors line up.
+  const leaderboardRows = useMemo(
+    () => [...kontingenList].sort((a, b) => b.gold - a.gold || b.silver - a.silver || b.bronze - a.bronze),
+    [kontingenList],
+  );
 
   // Cabor registered to the event, plus (defensively) any cabor a tally
   // already exists for — so the "Per Cabor" filter offers a sport before it
@@ -311,11 +319,12 @@ export function MedaliEventPublicPage() {
                 />
               </>
             ) : (
-              <DataTable
-                columns={leaderboardColumns}
-                rows={[...kontingen].sort((a, b) => b.gold - a.gold || b.silver - a.silver || b.bronze - a.bronze)}
-                emptyMessage="Belum ada kontingen."
-              />
+              <>
+                <Card className="mb-4">
+                  <KontingenCompositionPies kontingen={leaderboardRows} />
+                </Card>
+                <DataTable columns={leaderboardColumns} rows={leaderboardRows} emptyMessage="Belum ada kontingen." />
+              </>
             )}
           </motion.div>
         </>
